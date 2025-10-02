@@ -9,32 +9,24 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.streaming.api.functions.sink.filesystem.StreamingFileSink;
-import org.apache.flink.streaming.api.functions.sink.filesystem.bucketassigners.DateTimeBucketAssigner;
-import org.apache.flink.streaming.api.functions.sink.filesystem.rollingpolicies.DefaultRollingPolicy;
-import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
-import org.apache.hadoop.conf.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Apache Flink connector for writing validated payroll records to Apache Iceberg tables.
- * Provides efficient, ACID-compliant storage with schema evolution, time-travel queries,
- * and optimized data layout for analytical workloads.
+ * Apache Flink connector for writing validated payroll records to Apache Iceberg tables. Provides
+ * efficient, ACID-compliant storage with schema evolution, time-travel queries, and optimized data
+ * layout for analytical workloads.
  *
- * Features:
- * - ACID transactions with exactly-once guarantees
- * - Automatic table partitioning by date and department
- * - Schema evolution and backward compatibility
- * - Optimized file formats (Parquet with compression)
- * - Automatic compaction and maintenance
- * - PII compliance with column-level encryption
- * - Real-time metrics and monitoring
- * - Integration with data catalog and governance tools
+ * <p>Features: - ACID transactions with exactly-once guarantees - Automatic table partitioning by
+ * date and department - Schema evolution and backward compatibility - Optimized file formats
+ * (Parquet with compression) - Automatic compaction and maintenance - PII compliance with
+ * column-level encryption - Real-time metrics and monitoring - Integration with data catalog and
+ * governance tools
  */
 public class PayrollIcebergSinkConnector {
 
@@ -46,6 +38,9 @@ public class PayrollIcebergSinkConnector {
   private final String tableName;
   private final String warehousePath;
   private final Map<String, String> catalogProperties;
+  private final String restCatalogUri;
+  private final String restCredentialsKey;
+  private final String restCredentialsToken;
 
   // Sink configuration
   private final boolean enableCompaction;
@@ -73,24 +68,42 @@ public class PayrollIcebergSinkConnector {
 
   // Constructor
   public PayrollIcebergSinkConnector(String warehousePath) {
-    this(DEFAULT_CATALOG, DEFAULT_DATABASE, DEFAULT_TABLE, warehousePath,
-         new HashMap<>(), true, Duration.ofMinutes(30), false, "date");
+    this(
+        DEFAULT_CATALOG,
+        DEFAULT_DATABASE,
+        DEFAULT_TABLE,
+        warehousePath,
+        new HashMap<>(),
+        null,
+        null,
+        null,
+        true,
+        Duration.ofMinutes(30),
+        false,
+        "date");
   }
 
-  public PayrollIcebergSinkConnector(String catalogName,
-                                    String databaseName,
-                                    String tableName,
-                                    String warehousePath,
-                                    Map<String, String> catalogProperties,
-                                    boolean enableCompaction,
-                                    Duration compactionInterval,
-                                    boolean enableEncryption,
-                                    String partitionSpec) {
+  public PayrollIcebergSinkConnector(
+      String catalogName,
+      String databaseName,
+      String tableName,
+      String warehousePath,
+      Map<String, String> catalogProperties,
+      String restCatalogUri,
+      String restCredentialsKey,
+      String restCredentialsToken,
+      boolean enableCompaction,
+      Duration compactionInterval,
+      boolean enableEncryption,
+      String partitionSpec) {
     this.catalogName = catalogName;
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.warehousePath = warehousePath;
     this.catalogProperties = new HashMap<>(catalogProperties);
+    this.restCatalogUri = restCatalogUri;
+    this.restCredentialsKey = restCredentialsKey;
+    this.restCredentialsToken = restCredentialsToken;
     this.enableCompaction = enableCompaction;
     this.compactionInterval = compactionInterval;
     this.enableEncryption = enableEncryption;
@@ -101,14 +114,17 @@ public class PayrollIcebergSinkConnector {
     this.batchSize = DEFAULT_BATCH_SIZE;
     this.compressionCodec = DEFAULT_COMPRESSION;
 
-    LOG.info("Initialized PayrollIcebergSinkConnector - Catalog: {}, Database: {}, Table: {}, Warehouse: {}",
-             catalogName, databaseName, tableName, warehousePath);
+    LOG.info(
+        "Initialized PayrollIcebergSinkConnector - Catalog: {}, Database: {}, Table: {}, Warehouse: {}",
+        catalogName,
+        databaseName,
+        tableName,
+        warehousePath);
   }
 
-  /**
-   * Create Iceberg sink for validated payroll records
-   */
-  public void createPayrollSink(DataStream<PayrollEmployee> payrollStream, TableEnvironment tableEnv) {
+  /** Create Iceberg sink for validated payroll records */
+  public void createPayrollSink(
+      DataStream<PayrollEmployee> payrollStream, StreamTableEnvironment tableEnv) {
     LOG.info("Creating Iceberg sink for validated payroll records");
 
     try {
@@ -119,9 +135,8 @@ public class PayrollIcebergSinkConnector {
       createOrVerifyTable(tableEnv);
 
       // Convert PayrollEmployee to RowData
-      DataStream<RowData> rowDataStream = payrollStream
-          .map(new PayrollEmployeeToRowDataMapper())
-          .name("Convert to RowData");
+      DataStream<RowData> rowDataStream =
+          payrollStream.map(new PayrollEmployeeToRowDataMapper()).name("Convert to RowData");
 
       // Configure and create Iceberg sink
       configureSinkToTable(rowDataStream, tableEnv);
@@ -134,20 +149,29 @@ public class PayrollIcebergSinkConnector {
     }
   }
 
-  /**
-   * Initialize Iceberg catalog with Hadoop configuration
-   */
-  private void initializeIcebergCatalog(TableEnvironment tableEnv) {
+  /** Initialize Iceberg catalog with Hadoop configuration */
+  private void initializeIcebergCatalog(StreamTableEnvironment tableEnv) {
     LOG.info("Initializing Iceberg catalog: {}", catalogName);
 
     // Configure catalog properties
     Map<String, String> catalogConfig = new HashMap<>();
     catalogConfig.put("type", "iceberg");
-    catalogConfig.put("catalog-type", "hadoop");
     catalogConfig.put("warehouse", warehousePath);
 
-    // Add Hadoop configuration
-    catalogConfig.put("hadoop-conf-dir", "/etc/hadoop/conf");
+    if (restCatalogUri != null && !restCatalogUri.isBlank()) {
+      catalogConfig.put("catalog-type", "rest");
+      catalogConfig.put("uri", restCatalogUri);
+
+      if (restCredentialsKey != null
+          && !restCredentialsKey.isBlank()
+          && restCredentialsToken != null
+          && !restCredentialsToken.isBlank()) {
+        catalogConfig.put(restCredentialsKey, restCredentialsToken);
+      }
+    } else {
+      catalogConfig.put("catalog-type", "hadoop");
+      catalogConfig.put("hadoop-conf-dir", "/etc/hadoop/conf");
+    }
 
     // Add custom properties
     catalogConfig.putAll(catalogProperties);
@@ -166,22 +190,24 @@ public class PayrollIcebergSinkConnector {
     catalogConfig.put("write.metadata.previous-versions-max", "5");
 
     // Create catalog
-    String createCatalogSql = String.format(
-        "CREATE CATALOG IF NOT EXISTS %s WITH (%s)",
-        catalogName,
-        formatCatalogProperties(catalogConfig)
-    );
+    String createCatalogSql =
+        String.format(
+            "CREATE CATALOG %s WITH (%s)", catalogName, formatCatalogProperties(catalogConfig));
 
-    tableEnv.executeSql(createCatalogSql);
+    if (!tableEnv.getCatalog(catalogName).isPresent()) {
+      tableEnv.executeSql(createCatalogSql);
+      LOG.info("Created Iceberg catalog: {}", catalogName);
+    } else {
+      LOG.info("Iceberg catalog already exists: {}", catalogName);
+    }
+
     tableEnv.useCatalog(catalogName);
 
     LOG.info("Iceberg catalog initialized successfully");
   }
 
-  /**
-   * Create or verify Iceberg table schema
-   */
-  private void createOrVerifyTable(TableEnvironment tableEnv) {
+  /** Create or verify Iceberg table schema */
+  private void createOrVerifyTable(StreamTableEnvironment tableEnv) {
     LOG.info("Creating/verifying Iceberg table: {}.{}.{}", catalogName, databaseName, tableName);
 
     // Create database if not exists
@@ -189,7 +215,9 @@ public class PayrollIcebergSinkConnector {
     tableEnv.executeSql(createDatabaseSql);
 
     // Create table with optimized schema
-    String createTableSql = String.format("""
+    String createTableSql =
+        String.format(
+            """
         CREATE TABLE IF NOT EXISTS %s.%s.%s (
           employee_id INT NOT NULL,
           first_name STRING NOT NULL,
@@ -215,24 +243,26 @@ public class PayrollIcebergSinkConnector {
           'write.update.mode' = 'merge-on-read',
           'write.merge.mode' = 'merge-on-read'
         )
-        """, catalogName, databaseName, tableName);
+        """,
+            catalogName, databaseName, tableName);
 
     tableEnv.executeSql(createTableSql);
 
     LOG.info("Iceberg table created/verified successfully");
   }
 
-  /**
-   * Configure sink to write to Iceberg table
-   */
-  private void configureSinkToTable(DataStream<RowData> rowDataStream, TableEnvironment tableEnv) {
+  /** Configure sink to write to Iceberg table */
+  private void configureSinkToTable(
+      DataStream<RowData> rowDataStream, StreamTableEnvironment tableEnv) {
     String fullTableName = String.format("%s.%s.%s", catalogName, databaseName, tableName);
 
     // Create temporary view from stream
     tableEnv.createTemporaryView("payroll_stream", rowDataStream);
 
     // Configure streaming insert
-    String insertSql = String.format("""
+    String insertSql =
+        String.format(
+            """
         INSERT INTO %s
         SELECT
           employee_id,
@@ -252,7 +282,8 @@ public class PayrollIcebergSinkConnector {
           MONTH(validation_timestamp) as month,
           DAYOFMONTH(validation_timestamp) as day
         FROM payroll_stream
-        """, fullTableName);
+        """,
+            fullTableName);
 
     // Execute streaming insert
     tableEnv.executeSql(insertSql);
@@ -260,10 +291,9 @@ public class PayrollIcebergSinkConnector {
     LOG.info("Configured streaming insert to Iceberg table: {}", fullTableName);
   }
 
-  /**
-   * Mapper to convert PayrollEmployee to Flink RowData
-   */
-  private static class PayrollEmployeeToRowDataMapper implements MapFunction<PayrollEmployee, RowData> {
+  /** Mapper to convert PayrollEmployee to Flink RowData */
+  private static class PayrollEmployeeToRowDataMapper
+      implements MapFunction<PayrollEmployee, RowData> {
 
     @Override
     public RowData map(PayrollEmployee employee) throws Exception {
@@ -271,36 +301,48 @@ public class PayrollIcebergSinkConnector {
 
       // Basic employee information
       row.setField(0, employee.getEmployeeId());
-      row.setField(1, StringData.fromString(employee.getFirstName() != null ? employee.getFirstName() : ""));
-      row.setField(2, StringData.fromString(employee.getLastName() != null ? employee.getLastName() : ""));
+      row.setField(
+          1, StringData.fromString(employee.getFirstName() != null ? employee.getFirstName() : ""));
+      row.setField(
+          2, StringData.fromString(employee.getLastName() != null ? employee.getLastName() : ""));
       row.setField(3, employee.getAge());
       row.setField(4, employee.getSsn() != null ? StringData.fromString(employee.getSsn()) : null);
       row.setField(5, employee.getHourlyRate());
-      row.setField(6, employee.getGender() != null ? StringData.fromString(employee.getGender()) : null);
-      row.setField(7, employee.getEmail() != null ? StringData.fromString(employee.getEmail()) : null);
+      row.setField(
+          6, employee.getGender() != null ? StringData.fromString(employee.getGender()) : null);
+      row.setField(
+          7, employee.getEmail() != null ? StringData.fromString(employee.getEmail()) : null);
 
       // Metadata fields
-      row.setField(8, employee.getSourceSystem() != null ?
-                   StringData.fromString(employee.getSourceSystem()) :
-                   StringData.fromString("UNKNOWN"));
-      row.setField(9, employee.getIngestionTimestamp() != null ?
-                   TimestampData.fromInstant(employee.getIngestionTimestamp()) :
-                   TimestampData.fromEpochMillis(System.currentTimeMillis()));
-      row.setField(10, employee.getPipelineVersion() != null ?
-                   StringData.fromString(employee.getPipelineVersion()) :
-                   StringData.fromString("1.0.0"));
+      row.setField(
+          8,
+          employee.getSourceSystem() != null
+              ? StringData.fromString(employee.getSourceSystem())
+              : StringData.fromString("UNKNOWN"));
+      row.setField(
+          9,
+          employee.getIngestionTimestamp() != null
+              ? TimestampData.fromEpochMillis(employee.getIngestionTimestamp())
+              : TimestampData.fromEpochMillis(System.currentTimeMillis()));
+      row.setField(
+          10,
+          employee.getPipelineVersion() != null
+              ? StringData.fromString(employee.getPipelineVersion())
+              : StringData.fromString("1.0.0"));
 
       // Processing metadata
       long validationTime = System.currentTimeMillis();
       row.setField(11, TimestampData.fromEpochMillis(validationTime));
 
       // Partition fields (computed from validation timestamp)
-      LocalDateTime validationDateTime = LocalDateTime.ofInstant(
-          java.time.Instant.ofEpochMilli(validationTime),
-          java.time.ZoneId.systemDefault()
-      );
+      LocalDateTime validationDateTime =
+          LocalDateTime.ofInstant(
+              java.time.Instant.ofEpochMilli(validationTime), java.time.ZoneId.systemDefault());
 
-      row.setField(12, (int) validationDateTime.toLocalDate().toEpochDay()); // processing_date as days since epoch
+      row.setField(
+          12,
+          (int)
+              validationDateTime.toLocalDate().toEpochDay()); // processing_date as days since epoch
       row.setField(13, validationDateTime.getYear());
       row.setField(14, validationDateTime.getMonthValue());
       row.setField(15, validationDateTime.getDayOfMonth());
@@ -309,24 +351,21 @@ public class PayrollIcebergSinkConnector {
     }
   }
 
-  /**
-   * Format catalog properties for SQL DDL
-   */
+  /** Format catalog properties for SQL DDL */
   private String formatCatalogProperties(Map<String, String> properties) {
     StringBuilder sb = new StringBuilder();
-    properties.forEach((key, value) -> {
-      if (sb.length() > 0) {
-        sb.append(", ");
-      }
-      sb.append("'").append(key).append("' = '").append(value).append("'");
-    });
+    properties.forEach(
+        (key, value) -> {
+          if (sb.length() > 0) {
+            sb.append(", ");
+          }
+          sb.append("'").append(key).append("' = '").append(value).append("'");
+        });
     return sb.toString();
   }
 
-  /**
-   * Schedule automatic table maintenance
-   */
-  public void scheduleTableMaintenance(TableEnvironment tableEnv) {
+  /** Schedule automatic table maintenance */
+  public void scheduleTableMaintenance(StreamTableEnvironment tableEnv) {
     if (!enableCompaction) {
       return;
     }
@@ -337,26 +376,27 @@ public class PayrollIcebergSinkConnector {
     String fullTableName = String.format("%s.%s.%s", catalogName, databaseName, tableName);
 
     // Example maintenance operations (would be scheduled externally)
-    String compactSql = String.format("CALL %s.system.rewrite_data_files('%s')", catalogName, fullTableName);
-    String expireSnapshotsSql = String.format(
-        "CALL %s.system.expire_snapshots(table => '%s', older_than => TIMESTAMP '%s')",
-        catalogName, fullTableName,
-        LocalDateTime.now().minusDays(7).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
-    );
+    String compactSql =
+        String.format("CALL %s.system.rewrite_data_files('%s')", catalogName, fullTableName);
+    String expireSnapshotsSql =
+        String.format(
+            "CALL %s.system.expire_snapshots(table => '%s', older_than => TIMESTAMP '%s')",
+            catalogName,
+            fullTableName,
+            LocalDateTime.now()
+                .minusDays(7)
+                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
 
-    LOG.info("Table maintenance commands prepared - Compact: {}, Expire: {}", compactSql, expireSnapshotsSql);
+    LOG.info(
+        "Table maintenance commands prepared - Compact: {}, Expire: {}",
+        compactSql,
+        expireSnapshotsSql);
   }
 
-  /**
-   * Get sink performance metrics
-   */
+  /** Get sink performance metrics */
   public IcebergSinkMetrics getMetrics() {
     return new IcebergSinkMetrics(
-        recordsWritten.get(),
-        bytesWritten.get(),
-        commitsPerformed.get(),
-        calculateThroughput()
-    );
+        recordsWritten.get(), bytesWritten.get(), commitsPerformed.get(), calculateThroughput());
   }
 
   private double calculateThroughput() {
@@ -364,15 +404,16 @@ public class PayrollIcebergSinkConnector {
     return recordsWritten.get() / 60.0; // Records per minute
   }
 
-  /**
-   * Builder for PayrollIcebergSinkConnector configuration
-   */
+  /** Builder for PayrollIcebergSinkConnector configuration */
   public static class Builder {
     private String catalogName = DEFAULT_CATALOG;
     private String databaseName = DEFAULT_DATABASE;
     private String tableName = DEFAULT_TABLE;
     private String warehousePath;
     private Map<String, String> catalogProperties = new HashMap<>();
+    private String restCatalogUri;
+    private String restCredentialsKey;
+    private String restCredentialsToken;
     private boolean enableCompaction = true;
     private Duration compactionInterval = Duration.ofMinutes(30);
     private boolean enableEncryption = false;
@@ -423,21 +464,39 @@ public class PayrollIcebergSinkConnector {
       return this;
     }
 
+    public Builder restCatalog(String uri) {
+      this.restCatalogUri = uri;
+      return this;
+    }
+
+    public Builder restCredentials(String key, String token) {
+      this.restCredentialsKey = key;
+      this.restCredentialsToken = token;
+      return this;
+    }
+
     public PayrollIcebergSinkConnector build() {
       if (warehousePath == null || warehousePath.trim().isEmpty()) {
         throw new IllegalArgumentException("Warehouse path is required");
       }
 
       return new PayrollIcebergSinkConnector(
-          catalogName, databaseName, tableName, warehousePath,
-          catalogProperties, enableCompaction, compactionInterval,
-          enableEncryption, partitionSpec);
+          catalogName,
+          databaseName,
+          tableName,
+          warehousePath,
+          catalogProperties,
+          restCatalogUri,
+          restCredentialsKey,
+          restCredentialsToken,
+          enableCompaction,
+          compactionInterval,
+          enableEncryption,
+          partitionSpec);
     }
   }
 
-  /**
-   * Factory methods for common configurations
-   */
+  /** Factory methods for common configurations */
   public static PayrollIcebergSinkConnector forDevelopment(String warehousePath) {
     return new Builder()
         .warehousePath(warehousePath)
@@ -471,27 +530,36 @@ public class PayrollIcebergSinkConnector {
         .build();
   }
 
-  /**
-   * Metrics data class
-   */
+  /** Metrics data class */
   public static class IcebergSinkMetrics {
     private final long recordsWritten;
     private final long bytesWritten;
     private final long commitsPerformed;
     private final double throughputPerMinute;
 
-    public IcebergSinkMetrics(long recordsWritten, long bytesWritten,
-                             long commitsPerformed, double throughputPerMinute) {
+    public IcebergSinkMetrics(
+        long recordsWritten, long bytesWritten, long commitsPerformed, double throughputPerMinute) {
       this.recordsWritten = recordsWritten;
       this.bytesWritten = bytesWritten;
       this.commitsPerformed = commitsPerformed;
       this.throughputPerMinute = throughputPerMinute;
     }
 
-    public long getRecordsWritten() { return recordsWritten; }
-    public long getBytesWritten() { return bytesWritten; }
-    public long getCommitsPerformed() { return commitsPerformed; }
-    public double getThroughputPerMinute() { return throughputPerMinute; }
+    public long getRecordsWritten() {
+      return recordsWritten;
+    }
+
+    public long getBytesWritten() {
+      return bytesWritten;
+    }
+
+    public long getCommitsPerformed() {
+      return commitsPerformed;
+    }
+
+    public double getThroughputPerMinute() {
+      return throughputPerMinute;
+    }
 
     public double getAverageRecordsPerCommit() {
       return commitsPerformed > 0 ? (double) recordsWritten / commitsPerformed : 0.0;
@@ -501,7 +569,11 @@ public class PayrollIcebergSinkConnector {
     public String toString() {
       return String.format(
           "IcebergSinkMetrics{records=%d, bytes=%d, commits=%d, throughput=%.2f/min, avgPerCommit=%.2f}",
-          recordsWritten, bytesWritten, commitsPerformed, throughputPerMinute, getAverageRecordsPerCommit());
+          recordsWritten,
+          bytesWritten,
+          commitsPerformed,
+          throughputPerMinute,
+          getAverageRecordsPerCommit());
     }
   }
 }
