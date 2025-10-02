@@ -47,7 +47,30 @@
 ## Constitution Check
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Stream-First Architecture**: Does the design prioritize streaming over batch processing?
+- [ ] All data flows designed as streaming transformations
+- [ ] Batch processing explicitly justified if used
+- [ ] Proper windowing and watermarking strategy defined
+
+**Fault Tolerance**: Are failure scenarios properly addressed?
+- [ ] Error handling and backpressure management designed
+- [ ] Circuit breaker patterns identified
+- [ ] Checkpointing and recovery strategies defined
+
+**Test-First Development**: Are comprehensive tests planned?
+- [ ] Integration tests designed before implementation
+- [ ] Property-based tests for data transformations planned
+- [ ] End-to-end pipeline tests including failure scenarios
+
+**Schema Evolution**: Is schema compatibility addressed?
+- [ ] Schema versioning strategy defined
+- [ ] Backward/forward compatibility plan
+- [ ] Migration paths for breaking changes
+
+**Operational Monitoring**: Are observability requirements met?
+- [ ] Metrics, logging, and health checks planned
+- [ ] Performance monitoring strategy defined
+- [ ] Alerting and runbook requirements identified
 
 ## Project Structure
 
@@ -216,4 +239,4 @@ directories captured above]
 - [ ] Complexity deviations documented
 
 ---
-*Based on Constitution v2.1.1 - See `/memory/constitution.md`*
+*Based on Constitution v1.0.0 - See `/memory/constitution.md`*

@@ -1,0 +1,63 @@
+{
+  "type": "record",
+  "name": "PayrollEmployee",
+  "namespace": "com.flinkpipeline.payroll.schemas",
+  "doc": "Employee payroll record schema for data quality validation",
+  "fields": [
+    {
+      "name": "employee_id",
+      "type": "int",
+      "doc": "Unique employee identifier (positive integer)"
+    },
+    {
+      "name": "first_name",
+      "type": "string",
+      "doc": "Employee first name (1-50 chars, validated format)"
+    },
+    {
+      "name": "last_name",
+      "type": "string",
+      "doc": "Employee last name (1-50 chars, validated format)"
+    },
+    {
+      "name": "age",
+      "type": "int",
+      "doc": "Employee age (16-75 for employment eligibility)"
+    },
+    {
+      "name": "ssn",
+      "type": "string",
+      "doc": "Social Security Number (XXX-XX-XXXX format, PII encrypted)"
+    },
+    {
+      "name": "hourly_rate",
+      "type": "int",
+      "doc": "Hourly wage rate in cents ($7.25-$150.00 range)"
+    },
+    {
+      "name": "gender",
+      "type": {
+        "type": "enum",
+        "name": "Gender",
+        "symbols": ["male", "female", "non-binary", "prefer-not-to-say"]
+      },
+      "doc": "Gender identification from approved values"
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "doc": "Company email address (validated format and domain)"
+    },
+    {
+      "name": "ingestion_timestamp",
+      "type": "long",
+      "doc": "When record was ingested into pipeline (epoch millis)"
+    },
+    {
+      "name": "source_system",
+      "type": "string",
+      "default": "hr-system",
+      "doc": "Originating HR system identifier"
+    }
+  ]
+}

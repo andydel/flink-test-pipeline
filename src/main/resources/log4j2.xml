@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="30">
+
+    <!-- Properties for payroll pipeline logging -->
+    <Properties>
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level [%X{correlationId}] [%X{userId}] [%X{operation}] %logger{36} - %msg%n</Property>
+        <Property name="JSON_PATTERN">{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","level":"%level","thread":"%t","logger":"%logger{36}","correlation_id":"%X{correlationId}","user_id":"%X{userId}","operation":"%X{operation}","employee_id":"%X{employeeId}","validation_rule":"%X{validationRule}","pii_access":"%X{piiAccess}","compliance_flag":"%X{complianceFlag}","message":"%msg","exception":"%ex{full}"}</Property>
+        <Property name="COMPLIANCE_JSON_PATTERN">{"timestamp":"%d{yyyy-MM-dd HH:mm:ss.SSS}","audit_type":"PII_ACCESS","correlation_id":"%X{correlationId}","user_id":"%X{userId}","employee_id":"%X{employeeId}","pii_fields_accessed":"%X{piiFields}","operation":"%X{operation}","access_reason":"%X{accessReason}","compliance_status":"%X{complianceStatus}","data_classification":"%X{dataClassification}","retention_expires":"%X{retentionExpires}","source_ip":"%X{sourceIp}","session_id":"%X{sessionId}","message":"%msg","logger":"%logger{36}"}</Property>
+        <Property name="LOG_DIR">${sys:LOG_DIR:-/opt/payroll-pipeline/logs}</Property>
+    </Properties>
+
+    <Appenders>
+        <!-- Console appender for development -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="${JSON_PATTERN}%n"/>
+        </Console>
+
+        <!-- Main application log file -->
+        <RollingFile name="FILE"
+                     fileName="${LOG_DIR}/payroll-pipeline.log"
+                     filePattern="${LOG_DIR}/payroll-pipeline.%d{yyyy-MM-dd}.%i.log.gz"
+                     immediateFlush="false">
+            <PatternLayout pattern="${JSON_PATTERN}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="30" compressionLevel="9">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="payroll-pipeline.*.log.gz"/>
+                    <IfLastModified age="30d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Compliance audit log file - CRITICAL for regulatory requirements -->
+        <RollingFile name="COMPLIANCE_AUDIT"
+                     fileName="${LOG_DIR}/compliance-audit.log"
+                     filePattern="${LOG_DIR}/compliance-audit.%d{yyyy-MM-dd}.%i.log.gz"
+                     immediateFlush="true">
+            <PatternLayout pattern="${COMPLIANCE_JSON_PATTERN}%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="50MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="2555" compressionLevel="9">
+                <!-- Keep for 7 years for compliance -->
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="compliance-audit.*.log.gz"/>
+                    <IfLastModified age="2555d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Metrics and performance log file -->
+        <RollingFile name="METRICS"
+                     fileName="${LOG_DIR}/metrics.log"
+                     filePattern="${LOG_DIR}/metrics.%d{yyyy-MM-dd}.%i.log.gz"
+                     immediateFlush="false">
+            <JSONLayout compact="true" eventEol="true">
+                <KeyValuePair key="timestamp" value="$${date:yyyy-MM-dd HH:mm:ss.SSS}"/>
+                <KeyValuePair key="metric_type" value="$${ctx:metricType}"/>
+                <KeyValuePair key="metric_name" value="$${ctx:metricName}"/>
+                <KeyValuePair key="metric_value" value="$${ctx:metricValue}"/>
+                <KeyValuePair key="metric_unit" value="$${ctx:metricUnit}"/>
+                <KeyValuePair key="validation_rule" value="$${ctx:validationRule}"/>
+                <KeyValuePair key="processing_latency_ms" value="$${ctx:processingLatencyMs}"/>
+                <KeyValuePair key="throughput_rps" value="$${ctx:throughputRps}"/>
+                <KeyValuePair key="error_rate" value="$${ctx:errorRate}"/>
+                <KeyValuePair key="queue_size" value="$${ctx:queueSize}"/>
+                <KeyValuePair key="memory_usage_mb" value="$${ctx:memoryUsageMb}"/>
+                <KeyValuePair key="cpu_usage_percent" value="$${ctx:cpuUsagePercent}"/>
+            </JSONLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="50MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="90" compressionLevel="9">
+                <Delete basePath="${LOG_DIR}" maxDepth="1">
+                    <IfFileName glob="metrics.*.log.gz"/>
+                    <IfLastModified age="90d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingFile>
+
+        <!-- Async wrappers for performance -->
+        <AsyncAppender name="ASYNC_FILE" bufferSize="512" includeLocation="true">
+            <AppenderRef ref="FILE"/>
+        </AsyncAppender>
+
+        <AsyncAppender name="ASYNC_COMPLIANCE" bufferSize="256" includeLocation="true">
+            <AppenderRef ref="COMPLIANCE_AUDIT"/>
+        </AsyncAppender>
+
+        <AsyncAppender name="ASYNC_METRICS" bufferSize="256" includeLocation="false">
+            <AppenderRef ref="METRICS"/>
+        </AsyncAppender>
+
+        <!-- Kafka appender for centralized logging (optional) -->
+        <Kafka name="KAFKA_LOGS" topic="payroll-pipeline-logs">
+            <PatternLayout pattern="${JSON_PATTERN}"/>
+            <Property name="bootstrap.servers">localhost:9092</Property>
+            <Property name="key.serializer">org.apache.kafka.common.serialization.StringSerializer</Property>
+            <Property name="value.serializer">org.apache.kafka.common.serialization.StringSerializer</Property>
+            <Property name="acks">1</Property>
+            <Property name="compression.type">snappy</Property>
+        </Kafka>
+
+    </Appenders>
+
+    <Loggers>
+        <!-- Compliance audit logger - separate from main application logs -->
+        <Logger name="com.flinkpipeline.payroll.compliance" level="INFO" additivity="false">
+            <AppenderRef ref="ASYNC_COMPLIANCE"/>
+        </Logger>
+
+        <!-- PII access logger -->
+        <Logger name="com.flinkpipeline.payroll.compliance.PIIAccess" level="INFO" additivity="false">
+            <AppenderRef ref="ASYNC_COMPLIANCE"/>
+        </Logger>
+
+        <!-- Metrics logger -->
+        <Logger name="com.flinkpipeline.payroll.monitoring" level="INFO" additivity="false">
+            <AppenderRef ref="ASYNC_METRICS"/>
+        </Logger>
+
+        <!-- Payroll validation loggers -->
+        <Logger name="com.flinkpipeline.payroll.validation" level="DEBUG"/>
+        <Logger name="com.flinkpipeline.payroll.validation.rules" level="DEBUG"/>
+        <Logger name="com.flinkpipeline.payroll.operators" level="DEBUG"/>
+
+        <!-- HR workflow loggers -->
+        <Logger name="com.flinkpipeline.payroll.hr" level="INFO"/>
+
+        <!-- Connector loggers -->
+        <Logger name="com.flinkpipeline.payroll.connectors" level="INFO"/>
+
+        <!-- Reduce Flink framework noise -->
+        <Logger name="org.apache.flink" level="WARN"/>
+        <Logger name="org.apache.flink.runtime.taskmanager" level="INFO"/>
+        <Logger name="org.apache.flink.runtime.checkpoint" level="INFO"/>
+
+        <!-- Reduce Kafka framework noise -->
+        <Logger name="org.apache.kafka" level="WARN"/>
+        <Logger name="org.apache.kafka.clients.consumer" level="INFO"/>
+        <Logger name="org.apache.kafka.clients.producer" level="INFO"/>
+
+        <!-- Reduce Avro/Schema Registry noise -->
+        <Logger name="io.confluent.kafka.schemaregistry" level="WARN"/>
+        <Logger name="org.apache.avro" level="WARN"/>
+
+        <!-- Reduce AWS SDK noise -->
+        <Logger name="software.amazon.awssdk" level="WARN"/>
+        <Logger name="com.amazonaws" level="WARN"/>
+
+        <!-- Reduce Iceberg noise -->
+        <Logger name="org.apache.iceberg" level="WARN"/>
+
+        <!-- Security-related loggers - always at INFO level -->
+        <Logger name="SECURITY" level="INFO"/>
+        <Logger name="com.flinkpipeline.payroll.security" level="INFO"/>
+
+        <!-- Root logger configuration -->
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="ASYNC_FILE"/>
+        </Root>
+
+    </Loggers>
+
+</Configuration>

@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Properties for payroll pipeline logging -->
+    <property name="LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{correlationId}] [%X{userId}] [%X{operation}] %logger{36} - %msg%n"/>
+    <property name="COMPLIANCE_LOG_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} [COMPLIANCE] [%X{correlationId}] [%X{userId}] [%X{piiFields}] [%X{operation}] %logger{36} - %msg%n"/>
+    <property name="LOG_FILE" value="${LOG_FILE:-/opt/payroll-pipeline/logs/payroll-pipeline.log}"/>
+    <property name="COMPLIANCE_LOG_FILE" value="${COMPLIANCE_LOG_FILE:-/opt/payroll-pipeline/logs/compliance-audit.log}"/>
+    <property name="METRICS_LOG_FILE" value="${METRICS_LOG_FILE:-/opt/payroll-pipeline/logs/metrics.log}"/>
+
+    <!-- Console appender for development -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <mdc/>
+                <arguments/>
+                <message/>
+                <pattern>
+                    <pattern>
+                        {
+                            "timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+                            "level": "%level",
+                            "thread": "%thread",
+                            "logger": "%logger{36}",
+                            "correlation_id": "%X{correlationId:-}",
+                            "user_id": "%X{userId:-}",
+                            "operation": "%X{operation:-}",
+                            "employee_id": "%X{employeeId:-}",
+                            "validation_rule": "%X{validationRule:-}",
+                            "pii_access": "%X{piiAccess:-}",
+                            "compliance_flag": "%X{complianceFlag:-}",
+                            "message": "%msg",
+                            "exception": "%ex"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+    </appender>
+
+    <!-- Main application log file -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <mdc/>
+                <arguments/>
+                <message/>
+                <pattern>
+                    <pattern>
+                        {
+                            "timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+                            "level": "%level",
+                            "thread": "%thread",
+                            "logger": "%logger{36}",
+                            "correlation_id": "%X{correlationId:-}",
+                            "user_id": "%X{userId:-}",
+                            "operation": "%X{operation:-}",
+                            "employee_id": "%X{employeeId:-}",
+                            "validation_rule": "%X{validationRule:-}",
+                            "processing_latency_ms": "%X{processingLatencyMs:-}",
+                            "records_processed": "%X{recordsProcessed:-}",
+                            "message": "%msg",
+                            "exception": "%ex"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>10GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Compliance audit log file - CRITICAL for regulatory requirements -->
+    <appender name="COMPLIANCE_AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${COMPLIANCE_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <mdc/>
+                <arguments/>
+                <message/>
+                <pattern>
+                    <pattern>
+                        {
+                            "timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+                            "audit_type": "PII_ACCESS",
+                            "correlation_id": "%X{correlationId:-}",
+                            "user_id": "%X{userId:-}",
+                            "employee_id": "%X{employeeId:-}",
+                            "pii_fields_accessed": "%X{piiFields:-}",
+                            "operation": "%X{operation:-}",
+                            "access_reason": "%X{accessReason:-}",
+                            "compliance_status": "%X{complianceStatus:-}",
+                            "data_classification": "%X{dataClassification:-}",
+                            "retention_expires": "%X{retentionExpires:-}",
+                            "source_ip": "%X{sourceIp:-}",
+                            "session_id": "%X{sessionId:-}",
+                            "message": "%msg",
+                            "logger": "%logger{36}"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${COMPLIANCE_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>2555</maxHistory> <!-- 7 years for compliance -->
+            <totalSizeCap>100GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Metrics and performance log file -->
+    <appender name="METRICS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${METRICS_LOG_FILE}</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <mdc/>
+                <message/>
+                <pattern>
+                    <pattern>
+                        {
+                            "timestamp": "%d{yyyy-MM-dd HH:mm:ss.SSS}",
+                            "metric_type": "%X{metricType:-}",
+                            "metric_name": "%X{metricName:-}",
+                            "metric_value": "%X{metricValue:-}",
+                            "metric_unit": "%X{metricUnit:-}",
+                            "validation_rule": "%X{validationRule:-}",
+                            "processing_latency_ms": "%X{processingLatencyMs:-}",
+                            "throughput_rps": "%X{throughputRps:-}",
+                            "error_rate": "%X{errorRate:-}",
+                            "queue_size": "%X{queueSize:-}",
+                            "memory_usage_mb": "%X{memoryUsageMb:-}",
+                            "cpu_usage_percent": "%X{cpuUsagePercent:-}",
+                            "message": "%msg"
+                        }
+                    </pattern>
+                </pattern>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${METRICS_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+            <maxFileSize>50MB</maxFileSize>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Async wrapper for performance -->
+    <appender name="ASYNC_FILE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="FILE"/>
+        <queueSize>512</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <appender name="ASYNC_COMPLIANCE" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="COMPLIANCE_AUDIT"/>
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>true</includeCallerData>
+    </appender>
+
+    <appender name="ASYNC_METRICS" class="ch.qos.logback.classic.AsyncAppender">
+        <appender-ref ref="METRICS"/>
+        <queueSize>256</queueSize>
+        <discardingThreshold>0</discardingThreshold>
+        <includeCallerData>false</includeCallerData>
+    </appender>
+
+    <!-- Compliance audit logger - separate from main application logs -->
+    <logger name="com.flinkpipeline.payroll.compliance" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_COMPLIANCE"/>
+    </logger>
+
+    <!-- PII access logger -->
+    <logger name="com.flinkpipeline.payroll.compliance.PIIAccess" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_COMPLIANCE"/>
+    </logger>
+
+    <!-- Metrics logger -->
+    <logger name="com.flinkpipeline.payroll.monitoring" level="INFO" additivity="false">
+        <appender-ref ref="ASYNC_METRICS"/>
+    </logger>
+
+    <!-- Payroll validation loggers -->
+    <logger name="com.flinkpipeline.payroll.validation" level="DEBUG"/>
+    <logger name="com.flinkpipeline.payroll.validation.rules" level="DEBUG"/>
+    <logger name="com.flinkpipeline.payroll.operators" level="DEBUG"/>
+
+    <!-- HR workflow loggers -->
+    <logger name="com.flinkpipeline.payroll.hr" level="INFO"/>
+
+    <!-- Connector loggers -->
+    <logger name="com.flinkpipeline.payroll.connectors" level="INFO"/>
+
+    <!-- Reduce Flink framework noise -->
+    <logger name="org.apache.flink" level="WARN"/>
+    <logger name="org.apache.flink.runtime.taskmanager" level="INFO"/>
+    <logger name="org.apache.flink.runtime.checkpoint" level="INFO"/>
+
+    <!-- Reduce Kafka framework noise -->
+    <logger name="org.apache.kafka" level="WARN"/>
+    <logger name="org.apache.kafka.clients.consumer" level="INFO"/>
+    <logger name="org.apache.kafka.clients.producer" level="INFO"/>
+
+    <!-- Reduce Avro/Schema Registry noise -->
+    <logger name="io.confluent.kafka.schemaregistry" level="WARN"/>
+    <logger name="org.apache.avro" level="WARN"/>
+
+    <!-- Reduce AWS SDK noise -->
+    <logger name="software.amazon.awssdk" level="WARN"/>
+    <logger name="com.amazonaws" level="WARN"/>
+
+    <!-- Reduce Iceberg noise -->
+    <logger name="org.apache.iceberg" level="WARN"/>
+
+    <!-- Security-related loggers - always at INFO level -->
+    <logger name="SECURITY" level="INFO"/>
+    <logger name="com.flinkpipeline.payroll.security" level="INFO"/>
+
+    <!-- Root logger configuration -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="ASYNC_FILE"/>
+    </root>
+
+    <!-- Conditional logging based on environment -->
+    <springProfile name="development">
+        <root level="DEBUG">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="production">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_FILE"/>
+        </root>
+    </springProfile>
+
+</configuration>

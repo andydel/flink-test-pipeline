@@ -1,0 +1,108 @@
+{
+  "version": "1.0.0",
+  "description": "Data quality rules configuration for pipeline validation",
+  "rules": [
+    {
+      "name": "required_fields_check",
+      "type": "SCHEMA",
+      "description": "Validates that all required fields are present and non-null",
+      "expression": "payload.containsKey('user_id') && payload.containsKey('action') && payload.get('user_id') != null",
+      "errorMessage": "Missing required fields: user_id or action",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "applicableEventTypes": ["user_action", "system_event"]
+    },
+    {
+      "name": "timestamp_validity",
+      "type": "RANGE",
+      "description": "Ensures event timestamp is within acceptable range",
+      "expression": "timestamp > (System.currentTimeMillis() - 86400000) && timestamp <= System.currentTimeMillis()",
+      "errorMessage": "Event timestamp is outside valid range (last 24 hours)",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "applicableEventTypes": ["*"]
+    },
+    {
+      "name": "user_id_format",
+      "type": "BUSINESS",
+      "description": "Validates user ID format (UUID)",
+      "expression": "payload.get('user_id').matches('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$')",
+      "errorMessage": "Invalid user ID format, must be UUID",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "applicableEventTypes": ["user_action"]
+    },
+    {
+      "name": "event_size_limit",
+      "type": "RANGE",
+      "description": "Ensures event payload size is within limits",
+      "expression": "payload.toString().length() <= 10240",
+      "errorMessage": "Event payload exceeds maximum size limit (10KB)",
+      "severity": "WARNING",
+      "enabled": true,
+      "applicableEventTypes": ["*"]
+    },
+    {
+      "name": "source_system_whitelist",
+      "type": "BUSINESS",
+      "description": "Validates source system is from approved list",
+      "expression": "['web-app', 'mobile-app', 'batch-processor', 'admin-console'].contains(metadata.source)",
+      "errorMessage": "Event from unauthorized source system",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "applicableEventTypes": ["*"]
+    },
+    {
+      "name": "duplicate_detection",
+      "type": "UNIQUENESS",
+      "description": "Detects duplicate events within time window",
+      "expression": "!isDuplicateWithinWindow(id, 300000)", // 5 minutes
+      "errorMessage": "Duplicate event detected within 5-minute window",
+      "severity": "WARNING",
+      "enabled": true,
+      "applicableEventTypes": ["*"]
+    },
+    {
+      "name": "action_type_validation",
+      "type": "BUSINESS",
+      "description": "Validates action type for user events",
+      "expression": "['login', 'logout', 'view_page', 'click_button', 'form_submit'].contains(payload.get('action'))",
+      "errorMessage": "Invalid action type for user event",
+      "severity": "WARNING",
+      "enabled": true,
+      "applicableEventTypes": ["user_action"]
+    },
+    {
+      "name": "schema_version_compatibility",
+      "type": "SCHEMA",
+      "description": "Ensures schema version is supported",
+      "expression": "['1.0.0', '1.1.0', '1.2.0'].contains(schemaVersion)",
+      "errorMessage": "Unsupported schema version",
+      "severity": "CRITICAL",
+      "enabled": true,
+      "applicableEventTypes": ["*"]
+    }
+  ],
+  "ruleExecutionConfig": {
+    "maxExecutionTimeMs": 100,
+    "parallelExecution": true,
+    "failFast": false,
+    "cacheResults": true,
+    "cacheExpiryMs": 300000
+  },
+  "alertingConfig": {
+    "failureRateThreshold": 0.05,
+    "windowSizeMs": 300000,
+    "alertChannels": ["slack", "email"],
+    "escalationRules": [
+      {
+        "threshold": 0.10,
+        "action": "page_oncall"
+      },
+      {
+        "threshold": 0.25,
+        "action": "auto_disable_pipeline"
+      }
+    ]
+  }
+}

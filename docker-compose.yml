@@ -1,0 +1,255 @@
+version: '3.8'
+
+services:
+  # Zookeeper for Kafka
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.1
+    container_name: payroll-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+
+  # Kafka for payroll data streaming
+  kafka:
+    image: confluentinc/cp-kafka:7.5.1
+    container_name: payroll-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_DELETE_TOPIC_ENABLE: 'true'
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Schema Registry for Avro schemas
+  schema-registry:
+    image: confluentinc/cp-schema-registry:7.5.1
+    container_name: payroll-schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+      SCHEMA_REGISTRY_KAFKASTORE_TOPIC: _schemas
+      SCHEMA_REGISTRY_DEBUG: 'true'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # LocalStack for S3 simulation
+  localstack:
+    image: localstack/localstack:3.0
+    container_name: payroll-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - DATA_DIR=/tmp/localstack/data
+      - PERSISTENCE=1
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - localstack-data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Flink Job Manager
+  flink-jobmanager:
+    image: flink:1.18.1-scala_2.12-java17
+    container_name: payroll-flink-jobmanager
+    ports:
+      - "8080:8080"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        jobmanager.memory.process.size: 1600m
+        taskmanager.memory.process.size: 1728m
+        taskmanager.numberOfTaskSlots: 4
+        parallelism.default: 1
+        state.backend: filesystem
+        state.checkpoints.dir: file:///checkpoints
+        execution.checkpointing.interval: 10000
+        execution.checkpointing.mode: EXACTLY_ONCE
+        restart-strategy: fixed-delay
+        restart-strategy.fixed-delay.attempts: 3
+        restart-strategy.fixed-delay.delay: 10s
+    volumes:
+      - flink-checkpoints:/checkpoints
+      - flink-savepoints:/savepoints
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Flink Task Manager
+  flink-taskmanager:
+    image: flink:1.18.1-scala_2.12-java17
+    container_name: payroll-flink-taskmanager
+    depends_on:
+      - flink-jobmanager
+    command: taskmanager
+    scale: 2
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.memory.process.size: 1728m
+        taskmanager.numberOfTaskSlots: 4
+    volumes:
+      - flink-checkpoints:/checkpoints
+      - flink-savepoints:/savepoints
+
+  # PostgreSQL for Iceberg Catalog
+  postgres:
+    image: postgres:15
+    container_name: payroll-postgres
+    environment:
+      POSTGRES_DB: icebergdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-iceberg-catalog.sql:/docker-entrypoint-initdb.d/init-iceberg-catalog.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Kafka UI for debugging
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: payroll-kafka-ui
+    depends_on:
+      - kafka
+      - schema-registry
+    ports:
+      - "8082:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: payroll-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: 'true'
+
+  # MinIO for S3-compatible storage (alternative to LocalStack)
+  minio:
+    image: minio/minio:latest
+    container_name: payroll-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+      MINIO_DEFAULT_BUCKETS: payroll-data-lake
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Payroll data generator for testing
+  payroll-data-generator:
+    build:
+      context: .
+      dockerfile: docker/data-generator.Dockerfile
+    container_name: payroll-data-generator
+    depends_on:
+      - kafka
+      - schema-registry
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      PAYROLL_TOPIC: payroll-employees
+      GENERATION_RATE: 100
+      GENERATION_MODE: continuous
+    profiles:
+      - testing
+
+  # Metrics and monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: payroll-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    profiles:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: payroll-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./docker/grafana/datasources:/etc/grafana/provisioning/datasources
+    profiles:
+      - monitoring
+
+volumes:
+  zookeeper-data:
+  zookeeper-logs:
+  kafka-data:
+  localstack-data:
+  flink-checkpoints:
+  flink-savepoints:
+  minio-data:
+  postgres-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  default:
+    name: payroll-network

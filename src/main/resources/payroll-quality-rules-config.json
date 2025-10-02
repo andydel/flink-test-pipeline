@@ -1,0 +1,169 @@
+{
+  "version": "1.0.0",
+  "description": "Payroll-specific data quality rules configuration",
+  "rules": [
+    {
+      "rule_id": "DQ-001",
+      "rule_name": "Employee ID Uniqueness",
+      "field_name": "employee_id",
+      "rule_type": "UNIQUENESS",
+      "validation_expression": "employee_id > 0 && !isDuplicateWithinWindow(employee_id, 3600000)",
+      "error_template": "Employee ID {employee_id} is either invalid (must be positive) or duplicate within 1-hour window",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 300000,
+      "suggested_correction": "Verify employee ID is correct and not recently processed"
+    },
+    {
+      "rule_id": "DQ-002",
+      "rule_name": "Name Completeness",
+      "field_name": "first_name,last_name",
+      "rule_type": "COMPLETENESS",
+      "validation_expression": "first_name != null && !first_name.trim().isEmpty() && last_name != null && !last_name.trim().isEmpty()",
+      "error_template": "Employee name is incomplete - both first and last names are required",
+      "compliance_level": "BUSINESS",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Enter complete first and last name for employee"
+    },
+    {
+      "rule_id": "DQ-003",
+      "rule_name": "Name Format Validation",
+      "field_name": "first_name,last_name",
+      "rule_type": "FORMAT",
+      "validation_expression": "first_name.matches('^[a-zA-Z\\s\\-\\']{1,50}$') && last_name.matches('^[a-zA-Z\\s\\-\\']{1,50}$')",
+      "error_template": "Name contains invalid characters - only letters, spaces, hyphens, and apostrophes allowed (1-50 characters)",
+      "compliance_level": "BUSINESS",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Remove special characters and ensure name is 1-50 characters"
+    },
+    {
+      "rule_id": "DQ-004",
+      "rule_name": "Age Employment Eligibility",
+      "field_name": "age",
+      "rule_type": "RANGE",
+      "validation_expression": "age >= 16 && age <= 75",
+      "error_template": "Age {age} is outside employment eligibility range (16-75 years)",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Verify employee age is correct and within legal employment range"
+    },
+    {
+      "rule_id": "DQ-005",
+      "rule_name": "SSN Format Validation",
+      "field_name": "ssn",
+      "rule_type": "FORMAT",
+      "validation_expression": "ssn.matches('^\\d{3}-\\d{2}-\\d{4}$')",
+      "error_template": "Invalid SSN format - must be XXX-XX-XXXX",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Enter SSN in format XXX-XX-XXXX (e.g., 123-45-6789)"
+    },
+    {
+      "rule_id": "DQ-006",
+      "rule_name": "SSN Blacklist Check",
+      "field_name": "ssn",
+      "rule_type": "COMPLIANCE",
+      "validation_expression": "!isBlacklistedSSN(ssn)",
+      "error_template": "SSN {ssn} appears to be invalid or test data",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 3600000,
+      "suggested_correction": "Verify SSN is real and not a test number (e.g., 000-00-0000, 123-45-6789)"
+    },
+    {
+      "rule_id": "DQ-007",
+      "rule_name": "Hourly Rate Range",
+      "field_name": "hourly_rate",
+      "rule_type": "RANGE",
+      "validation_expression": "hourly_rate >= 725 && hourly_rate <= 15000",
+      "error_template": "Hourly rate ${hourly_rate/100} is outside valid range ($7.25 - $150.00)",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Verify hourly rate is within federal minimum wage ($7.25) and executive cap ($150.00)"
+    },
+    {
+      "rule_id": "DQ-008",
+      "rule_name": "Gender Value Validation",
+      "field_name": "gender",
+      "rule_type": "FORMAT",
+      "validation_expression": "['male', 'female', 'non-binary', 'prefer-not-to-say'].contains(gender)",
+      "error_template": "Gender '{gender}' is not from approved list",
+      "compliance_level": "BUSINESS",
+      "enabled": true,
+      "cache_duration_ms": 0,
+      "suggested_correction": "Select from: male, female, non-binary, prefer-not-to-say"
+    },
+    {
+      "rule_id": "DQ-009",
+      "rule_name": "Email Format and Domain",
+      "field_name": "email",
+      "rule_type": "FORMAT",
+      "validation_expression": "email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') && isApprovedDomain(email)",
+      "error_template": "Invalid email format or unauthorized domain",
+      "compliance_level": "BUSINESS",
+      "enabled": true,
+      "cache_duration_ms": 300000,
+      "suggested_correction": "Use valid email format with approved company domain"
+    },
+    {
+      "rule_id": "DQ-010",
+      "rule_name": "SSN Uniqueness Check",
+      "field_name": "ssn",
+      "rule_type": "UNIQUENESS",
+      "validation_expression": "!isDuplicateSSN(ssn)",
+      "error_template": "SSN {ssn} is already associated with another employee",
+      "compliance_level": "REGULATORY",
+      "enabled": true,
+      "cache_duration_ms": 3600000,
+      "suggested_correction": "Verify SSN is correct or investigate potential duplicate employee record"
+    }
+  ],
+  "rule_execution_config": {
+    "max_execution_time_ms": 50,
+    "parallel_execution": true,
+    "fail_fast_critical": false,
+    "cache_results": true,
+    "cache_expiry_ms": 300000
+  },
+  "compliance_config": {
+    "pii_encryption_required": true,
+    "audit_trail_enabled": true,
+    "audit_retention_days": 2555,
+    "access_logging_enabled": true
+  },
+  "hr_workflow_config": {
+    "failure_topic_retention_days": 30,
+    "correction_priority_mapping": {
+      "REGULATORY": "CRITICAL",
+      "BUSINESS": "HIGH",
+      "INFORMATIONAL": "MEDIUM"
+    },
+    "estimated_correction_times": {
+      "FORMAT": 5,
+      "RANGE": 10,
+      "COMPLIANCE": 30,
+      "UNIQUENESS": 60,
+      "COMPLETENESS": 15
+    }
+  },
+  "alerting_config": {
+    "failure_rate_threshold": 0.05,
+    "window_size_ms": 300000,
+    "alert_channels": ["slack", "email"],
+    "escalation_rules": [
+      {
+        "threshold": 0.10,
+        "action": "page_hr_manager"
+      },
+      {
+        "threshold": 0.25,
+        "action": "escalate_to_compliance_team"
+      }
+    ]
+  }
+}

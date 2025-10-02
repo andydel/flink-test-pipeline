@@ -13,11 +13,11 @@
    → contracts/: Each file → contract test task
    → research.md: Extract decisions → setup tasks
 3. Generate tasks by category:
-   → Setup: project init, dependencies, linting
-   → Tests: contract tests, integration tests
-   → Core: models, services, CLI commands
-   → Integration: DB, middleware, logging
-   → Polish: unit tests, performance, docs
+   → Setup: project init, Flink dependencies, schema registry
+   → Tests: stream tests, fault tolerance tests, end-to-end pipeline tests
+   → Core: stream transformations, operators, windowing logic
+   → Integration: sources, sinks, state management, checkpointing
+   → Monitoring: metrics, logging, health checks, performance validation
 4. Apply task rules:
    → Different files = mark [P] for parallel
    → Same file = sequential (no [P])
@@ -49,30 +49,30 @@
 
 ## Phase 3.2: Tests First (TDD) ⚠️ MUST COMPLETE BEFORE 3.3
 **CRITICAL: These tests MUST be written and MUST FAIL before ANY implementation**
-- [ ] T004 [P] Contract test POST /api/users in tests/contract/test_users_post.py
-- [ ] T005 [P] Contract test GET /api/users/{id} in tests/contract/test_users_get.py
-- [ ] T006 [P] Integration test user registration in tests/integration/test_registration.py
-- [ ] T007 [P] Integration test auth flow in tests/integration/test_auth.py
+- [ ] T004 [P] Stream processing test for data transformation in tests/stream/test_transform.py
+- [ ] T005 [P] Fault tolerance test with checkpoint recovery in tests/fault/test_recovery.py
+- [ ] T006 [P] End-to-end pipeline test with backpressure in tests/e2e/test_pipeline.py
+- [ ] T007 [P] Schema evolution test with version compatibility in tests/schema/test_evolution.py
 
 ## Phase 3.3: Core Implementation (ONLY after tests are failing)
-- [ ] T008 [P] User model in src/models/user.py
-- [ ] T009 [P] UserService CRUD in src/services/user_service.py
-- [ ] T010 [P] CLI --create-user in src/cli/user_commands.py
-- [ ] T011 POST /api/users endpoint
-- [ ] T012 GET /api/users/{id} endpoint
+- [ ] T008 [P] Data model schemas in src/schemas/events.avro
+- [ ] T009 [P] Stream transformation operators in src/operators/transform.py
+- [ ] T010 [P] Windowing functions in src/windows/tumbling.py
+- [ ] T011 Source connector for data ingestion in src/sources/kafka_source.py
+- [ ] T012 Sink connector for data output in src/sinks/elasticsearch_sink.py
 - [ ] T013 Input validation
 - [ ] T014 Error handling and logging
 
 ## Phase 3.4: Integration
-- [ ] T015 Connect UserService to DB
-- [ ] T016 Auth middleware
-- [ ] T017 Request/response logging
-- [ ] T018 CORS and security headers
+- [ ] T015 Configure Flink state backend with checkpointing
+- [ ] T016 Implement exactly-once semantics
+- [ ] T017 Setup structured logging with correlation IDs
+- [ ] T018 Configure monitoring and alerting
 
 ## Phase 3.5: Polish
-- [ ] T019 [P] Unit tests for validation in tests/unit/test_validation.py
-- [ ] T020 Performance tests (<200ms)
-- [ ] T021 [P] Update docs/api.md
+- [ ] T019 [P] Property-based tests for data transformations in tests/property/test_transforms.py
+- [ ] T020 Performance tests (throughput and latency validation)
+- [ ] T021 [P] Update pipeline documentation in docs/pipeline.md
 - [ ] T022 Remove duplication
 - [ ] T023 Run manual-testing.md
 
@@ -85,10 +85,10 @@
 ## Parallel Example
 ```
 # Launch T004-T007 together:
-Task: "Contract test POST /api/users in tests/contract/test_users_post.py"
-Task: "Contract test GET /api/users/{id} in tests/contract/test_users_get.py"
-Task: "Integration test registration in tests/integration/test_registration.py"
-Task: "Integration test auth in tests/integration/test_auth.py"
+Task: "Stream processing test for data transformation in tests/stream/test_transform.py"
+Task: "Fault tolerance test with checkpoint recovery in tests/fault/test_recovery.py"
+Task: "End-to-end pipeline test with backpressure in tests/e2e/test_pipeline.py"
+Task: "Schema evolution test with version compatibility in tests/schema/test_evolution.py"
 ```
 
 ## Notes
@@ -119,9 +119,10 @@ Task: "Integration test auth in tests/integration/test_auth.py"
 ## Validation Checklist
 *GATE: Checked by main() before returning*
 
-- [ ] All contracts have corresponding tests
-- [ ] All entities have model tasks
-- [ ] All tests come before implementation
+- [ ] All stream transformations have corresponding tests
+- [ ] All schemas have validation and evolution tasks
+- [ ] All tests come before implementation (TDD)
+- [ ] Fault tolerance and monitoring tasks included
 - [ ] Parallel tasks truly independent
 - [ ] Each task specifies exact file path
 - [ ] No task modifies same file as another [P] task

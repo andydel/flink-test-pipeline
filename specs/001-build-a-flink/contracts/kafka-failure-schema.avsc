@@ -1,0 +1,106 @@
+{
+  "type": "record",
+  "name": "FailedEvent",
+  "namespace": "com.flinkpipeline.schemas",
+  "doc": "Schema for failed events sent to failure topic",
+  "fields": [
+    {
+      "name": "originalEvent",
+      "type": "com.flinkpipeline.schemas.InputEvent",
+      "doc": "The original event that failed validation"
+    },
+    {
+      "name": "validationResult",
+      "type": {
+        "type": "record",
+        "name": "ValidationResult",
+        "fields": [
+          {
+            "name": "eventId",
+            "type": "string",
+            "doc": "Reference to original event ID"
+          },
+          {
+            "name": "isValid",
+            "type": "boolean",
+            "doc": "Overall validation result (always false for failure topic)"
+          },
+          {
+            "name": "ruleResults",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "RuleResult",
+                "fields": [
+                  {
+                    "name": "ruleName",
+                    "type": "string",
+                    "doc": "Identifier of executed rule"
+                  },
+                  {
+                    "name": "ruleType",
+                    "type": {
+                      "type": "enum",
+                      "name": "RuleType",
+                      "symbols": ["SCHEMA", "BUSINESS", "RANGE", "UNIQUENESS", "COMPLETENESS"]
+                    },
+                    "doc": "Category of validation rule"
+                  },
+                  {
+                    "name": "passed",
+                    "type": "boolean",
+                    "doc": "Whether this specific rule passed"
+                  },
+                  {
+                    "name": "errorMessage",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Error description if rule failed"
+                  },
+                  {
+                    "name": "severity",
+                    "type": {
+                      "type": "enum",
+                      "name": "Severity",
+                      "symbols": ["CRITICAL", "WARNING", "INFO"]
+                    },
+                    "doc": "Impact level of rule failure"
+                  }
+                ]
+              }
+            },
+            "doc": "Results of individual validation rules"
+          },
+          {
+            "name": "validationTimestamp",
+            "type": "long",
+            "doc": "When validation was completed (epoch millis)"
+          },
+          {
+            "name": "processingLatency",
+            "type": "long",
+            "doc": "Validation duration in milliseconds"
+          }
+        ]
+      },
+      "doc": "Detailed validation failure information"
+    },
+    {
+      "name": "failureTimestamp",
+      "type": "long",
+      "doc": "When failure was recorded (epoch millis)"
+    },
+    {
+      "name": "retryCount",
+      "type": "int",
+      "default": 0,
+      "doc": "Number of retry attempts"
+    },
+    {
+      "name": "quarantineReason",
+      "type": "string",
+      "doc": "Human-readable summary of failure cause"
+    }
+  ]
+}

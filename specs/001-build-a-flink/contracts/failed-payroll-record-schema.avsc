@@ -1,0 +1,139 @@
+{
+  "type": "record",
+  "name": "FailedPayrollRecord",
+  "namespace": "com.flinkpipeline.payroll.schemas",
+  "doc": "Failed payroll record with detailed validation errors for HR correction",
+  "fields": [
+    {
+      "name": "original_record",
+      "type": "com.flinkpipeline.payroll.schemas.PayrollEmployee",
+      "doc": "The original employee record that failed validation"
+    },
+    {
+      "name": "validation_result",
+      "type": {
+        "type": "record",
+        "name": "PayrollValidationResult",
+        "fields": [
+          {
+            "name": "employee_id",
+            "type": "int",
+            "doc": "Reference to original employee record"
+          },
+          {
+            "name": "validation_timestamp",
+            "type": "long",
+            "doc": "When validation was completed (epoch millis)"
+          },
+          {
+            "name": "overall_status",
+            "type": {
+              "type": "enum",
+              "name": "ValidationStatus",
+              "symbols": ["VALID", "INVALID", "COMPLIANCE_VIOLATION"]
+            },
+            "doc": "Overall validation outcome"
+          },
+          {
+            "name": "field_results",
+            "type": {
+              "type": "array",
+              "items": {
+                "type": "record",
+                "name": "FieldValidationResult",
+                "fields": [
+                  {
+                    "name": "field_name",
+                    "type": "string",
+                    "doc": "Name of validated field"
+                  },
+                  {
+                    "name": "rule_name",
+                    "type": "string",
+                    "doc": "Specific validation rule applied"
+                  },
+                  {
+                    "name": "rule_type",
+                    "type": {
+                      "type": "enum",
+                      "name": "RuleType",
+                      "symbols": ["FORMAT", "RANGE", "COMPLIANCE", "UNIQUENESS", "COMPLETENESS"]
+                    },
+                    "doc": "Category of validation rule"
+                  },
+                  {
+                    "name": "status",
+                    "type": {
+                      "type": "enum",
+                      "name": "FieldStatus",
+                      "symbols": ["PASSED", "FAILED", "WARNING"]
+                    },
+                    "doc": "Validation result for this field"
+                  },
+                  {
+                    "name": "error_message",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "HR-friendly error description"
+                  },
+                  {
+                    "name": "severity",
+                    "type": {
+                      "type": "enum",
+                      "name": "Severity",
+                      "symbols": ["CRITICAL", "WARNING", "INFO"]
+                    },
+                    "doc": "Impact level of validation failure"
+                  },
+                  {
+                    "name": "suggested_correction",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Guidance for HR correction"
+                  }
+                ]
+              }
+            },
+            "doc": "Results for each validated field"
+          },
+          {
+            "name": "processing_latency_ms",
+            "type": "long",
+            "doc": "Validation duration in milliseconds"
+          },
+          {
+            "name": "rule_version",
+            "type": "string",
+            "doc": "Version of validation rules applied"
+          }
+        ]
+      },
+      "doc": "Detailed validation failure information"
+    },
+    {
+      "name": "failure_timestamp",
+      "type": "long",
+      "doc": "When failure was recorded (epoch millis)"
+    },
+    {
+      "name": "hr_workflow_id",
+      "type": ["null", "string"],
+      "default": null,
+      "doc": "Reference for HR correction tracking"
+    },
+    {
+      "name": "correction_priority",
+      "type": {
+        "type": "enum",
+        "name": "Priority",
+        "symbols": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+      },
+      "doc": "Priority level for HR correction workflow"
+    },
+    {
+      "name": "estimated_correction_time_minutes",
+      "type": "int",
+      "doc": "Estimated time for HR correction in minutes"
+    }
+  ]
+}

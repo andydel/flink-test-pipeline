@@ -1,0 +1,140 @@
+# Java Security Properties for Payroll Data Quality Pipeline
+# Enhanced security configuration for PII handling and compliance
+
+# ===================================================================
+# CRYPTOGRAPHIC SETTINGS
+# ===================================================================
+# Strong cryptography for PII encryption
+security.provider.1=SUN
+security.provider.2=SunEC
+security.provider.3=SunJSSE
+security.provider.4=SunJCE
+security.provider.5=SunJGSS
+
+# Disable weak cryptographic algorithms
+jdk.certpath.disabledAlgorithms=MD2, MD5, SHA1 jdkCA & usage TLSServer, RSA keySize < 2048, DSA keySize < 2048, EC keySize < 224
+jdk.jar.disabledAlgorithms=MD2, MD5, RSA keySize < 2048, DSA keySize < 2048
+jdk.tls.disabledAlgorithms=SSLv3, TLSv1, TLSv1.1, RC4, DES, MD5withRSA, DH keySize < 2048, EC keySize < 224, 3DES_EDE_CBC, anon, NULL
+jdk.tls.legacyAlgorithms=NULL, anon, RC4, DES, 3DES_EDE_CBC
+
+# Enforce strong random number generation for PII encryption
+securerandom.source=file:/dev/./urandom
+securerandom.strongAlgorithms=NativePRNGBlocking:SUN,DRBG:SUN
+
+# ===================================================================
+# NETWORK SECURITY
+# ===================================================================
+# Network security for Kafka and Schema Registry connections
+networkaddress.cache.ttl=30
+networkaddress.cache.negative.ttl=10
+
+# Disable DNS lookups in security manager
+jdk.net.useExclusiveBind=false
+
+# ===================================================================
+# ACCESS CONTROL
+# ===================================================================
+# Restrict file access for payroll processing
+java.security.policy=all.policy
+java.security.manager=
+
+# Package access control
+package.access=sun.,com.sun.,org.apache.commons.collections.functors.,org.apache.xalan.,org.apache.xpath.
+package.definition=sun.,com.sun.,java.,javax.,org.apache.commons.collections.functors.,org.apache.xalan.,org.apache.xpath.
+
+# ===================================================================
+# PAYROLL-SPECIFIC SECURITY SETTINGS
+# ===================================================================
+# PII handling security
+payroll.pii.encryption.algorithm=AES/GCM/NoPadding
+payroll.pii.key.length=256
+payroll.pii.iv.length=12
+payroll.pii.tag.length=16
+
+# Compliance audit security
+payroll.audit.signing.algorithm=SHA256withRSA
+payroll.audit.key.length=2048
+
+# HR workflow security
+payroll.hr.api.tls.version=TLSv1.3
+payroll.hr.api.cipher.suites=TLS_AES_256_GCM_SHA384,TLS_CHACHA20_POLY1305_SHA256,TLS_AES_128_GCM_SHA256
+
+# ===================================================================
+# SERIALIZATION SECURITY
+# ===================================================================
+# Restrict serialization for security (important for Kafka/Avro)
+jdk.serialFilter=!*;java.base/**;java.logging/**;java.management/**;com.flinkpipeline.payroll.models.**;org.apache.avro.**;org.apache.kafka.**
+
+# ===================================================================
+# JVM SECURITY FLAGS
+# ===================================================================
+# Security flags for production deployment
+# Add these as JVM arguments: -Djava.security.properties=java.security
+
+# Disable potentially dangerous features
+com.sun.jndi.ldap.object.trustURLCodebase=false
+com.sun.jndi.rmi.object.trustURLCodebase=false
+com.sun.jndi.cosnaming.object.trustURLCodebase=false
+
+# Enable security debug (remove in production)
+# java.security.debug=all
+
+# ===================================================================
+# FLINK-SPECIFIC SECURITY
+# ===================================================================
+# Flink security settings
+flink.security.ssl.enabled=false
+flink.security.ssl.keystore=
+flink.security.ssl.keystore-password=
+flink.security.ssl.key-password=
+flink.security.ssl.truststore=
+flink.security.ssl.truststore-password=
+
+# ===================================================================
+# KAFKA SECURITY
+# ===================================================================
+# Kafka SSL/SASL settings
+kafka.security.protocol=PLAINTEXT
+# For production, use:
+# kafka.security.protocol=SASL_SSL
+# kafka.sasl.mechanism=SCRAM-SHA-512
+
+# ===================================================================
+# AWS SECURITY
+# ===================================================================
+# AWS SDK security settings
+aws.crt.debugNative=false
+aws.crt.memory.tracing=false
+aws.region=us-east-1
+
+# ===================================================================
+# COMPLIANCE SETTINGS
+# ===================================================================
+# Compliance-specific security requirements
+compliance.audit.integrity.check=true
+compliance.pii.access.logging=true
+compliance.data.retention.enforcement=true
+
+# GDPR/Privacy settings
+privacy.data.anonymization.enabled=true
+privacy.data.pseudonymization.enabled=true
+privacy.right.to.erasure.enabled=true
+
+# ===================================================================
+# MONITORING AND ALERTING
+# ===================================================================
+# Security monitoring
+security.monitoring.enabled=true
+security.alerting.enabled=true
+security.incident.response.enabled=true
+
+# Intrusion detection
+security.intrusion.detection.enabled=false
+security.anomaly.detection.enabled=false
+
+# ===================================================================
+# CUSTOM PROPERTIES
+# ===================================================================
+# Custom security properties for payroll pipeline
+payroll.security.version=1.0.0
+payroll.security.profile=production

@@ -1,0 +1,67 @@
+{
+  "type": "record",
+  "name": "InputEvent",
+  "namespace": "com.flinkpipeline.schemas",
+  "doc": "Schema for events consumed from input Kafka topic",
+  "fields": [
+    {
+      "name": "id",
+      "type": "string",
+      "doc": "Unique event identifier (UUID format)"
+    },
+    {
+      "name": "timestamp",
+      "type": "long",
+      "doc": "Event creation timestamp (epoch milliseconds)"
+    },
+    {
+      "name": "eventType",
+      "type": "string",
+      "doc": "Type of event for routing and validation"
+    },
+    {
+      "name": "payload",
+      "type": {
+        "type": "map",
+        "values": ["null", "string", "long", "double", "boolean"]
+      },
+      "doc": "Event data content as key-value pairs"
+    },
+    {
+      "name": "metadata",
+      "type": {
+        "type": "record",
+        "name": "EventMetadata",
+        "fields": [
+          {
+            "name": "source",
+            "type": "string",
+            "doc": "Originating system or service"
+          },
+          {
+            "name": "correlationId",
+            "type": ["null", "string"],
+            "default": null,
+            "doc": "For distributed tracing"
+          },
+          {
+            "name": "headers",
+            "type": {
+              "type": "map",
+              "values": "string"
+            },
+            "default": {},
+            "doc": "Additional headers from source system"
+          }
+        ]
+      },
+      "doc": "Additional context information"
+    },
+    {
+      "name": "schemaVersion",
+      "type": "string",
+      "default": "1.0.0",
+      "doc": "Schema version for compatibility checking"
+    }
+  ]
+}
