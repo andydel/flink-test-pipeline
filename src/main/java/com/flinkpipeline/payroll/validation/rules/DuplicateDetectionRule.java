@@ -6,18 +6,14 @@ import com.flinkpipeline.payroll.models.PayrollEmployee;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Validation rule for detecting duplicate employees in payroll processing.
- * Implements windowed duplicate detection using SSN, email, and name similarity
- * algorithms with configurable time windows and similarity thresholds.
+ * Validation rule for detecting duplicate employees in payroll processing. Implements windowed
+ * duplicate detection using SSN, email, and name similarity algorithms with configurable time
+ * windows and similarity thresholds.
  */
 public class DuplicateDetectionRule {
 
@@ -53,16 +49,18 @@ public class DuplicateDetectionRule {
     this(DEFAULT_DETECTION_WINDOW, ENABLE_NAME_SIMILARITY, NAME_SIMILARITY_THRESHOLD);
   }
 
-  public DuplicateDetectionRule(Duration detectionWindow, boolean enableNameSimilarity,
-                               double nameSimilarityThreshold) {
+  public DuplicateDetectionRule(Duration detectionWindow) {
+    this(detectionWindow, ENABLE_NAME_SIMILARITY, NAME_SIMILARITY_THRESHOLD);
+  }
+
+  public DuplicateDetectionRule(
+      Duration detectionWindow, boolean enableNameSimilarity, double nameSimilarityThreshold) {
     this.detectionWindow = detectionWindow;
     this.enableNameSimilarity = enableNameSimilarity;
     this.nameSimilarityThreshold = nameSimilarityThreshold;
   }
 
-  /**
-   * Check for duplicate employee based on multiple criteria
-   */
+  /** Check for duplicate employee based on multiple criteria */
   public FieldValidationResult checkDuplicate(PayrollEmployee employee) {
     if (employee == null) {
       return FieldValidationResult.failure(
@@ -70,8 +68,7 @@ public class DuplicateDetectionRule {
           "Duplicate Detection",
           "Employee record is null",
           "Provide valid employee record for duplicate checking",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     totalProcessed++;
@@ -116,9 +113,7 @@ public class DuplicateDetectionRule {
     return FieldValidationResult.success("employee_id", "Duplicate Detection");
   }
 
-  /**
-   * Check for SSN-based duplicates
-   */
+  /** Check for SSN-based duplicates */
   private DuplicateMatch checkSSNDuplicate(EmployeeRecord newRecord) {
     if (newRecord.ssn == null || newRecord.ssn.trim().isEmpty()) {
       return null; // Cannot check duplicates without SSN
@@ -133,16 +128,13 @@ public class DuplicateDetectionRule {
           DuplicateType.SSN_DUPLICATE,
           1.0, // Exact match
           "Exact SSN match found",
-          generateResolutionGuidance("SSN", existingRecord, newRecord)
-      );
+          generateResolutionGuidance("SSN", existingRecord, newRecord));
     }
 
     return null;
   }
 
-  /**
-   * Check for email-based duplicates
-   */
+  /** Check for email-based duplicates */
   private DuplicateMatch checkEmailDuplicate(EmployeeRecord newRecord) {
     if (newRecord.email == null || newRecord.email.trim().isEmpty()) {
       return null; // Cannot check duplicates without email
@@ -157,16 +149,13 @@ public class DuplicateDetectionRule {
           DuplicateType.EMAIL_DUPLICATE,
           1.0, // Exact match
           "Exact email match found",
-          generateResolutionGuidance("EMAIL", existingRecord, newRecord)
-      );
+          generateResolutionGuidance("EMAIL", existingRecord, newRecord));
     }
 
     return null;
   }
 
-  /**
-   * Check for name similarity duplicates
-   */
+  /** Check for name similarity duplicates */
   private DuplicateMatch checkNameSimilarity(EmployeeRecord newRecord) {
     if (newRecord.firstName == null || newRecord.lastName == null) {
       return null; // Cannot check similarity without names
@@ -186,8 +175,7 @@ public class DuplicateDetectionRule {
               DuplicateType.NAME_SIMILARITY,
               similarity,
               String.format("Name similarity %.2f%% detected", similarity * 100),
-              generateResolutionGuidance("NAME_SIMILARITY", existingRecord, newRecord)
-          );
+              generateResolutionGuidance("NAME_SIMILARITY", existingRecord, newRecord));
         }
       }
     }
@@ -195,9 +183,7 @@ public class DuplicateDetectionRule {
     return null;
   }
 
-  /**
-   * Add record to all relevant indices
-   */
+  /** Add record to all relevant indices */
   private void addToIndices(EmployeeRecord record) {
     // Add to SSN index
     if (record.ssn != null && !record.ssn.trim().isEmpty()) {
@@ -218,79 +204,74 @@ public class DuplicateDetectionRule {
     }
   }
 
-  /**
-   * Create failure result for duplicate detection
-   */
-  private FieldValidationResult createDuplicateFailureResult(PayrollEmployee employee,
-                                                           DuplicateMatch match,
-                                                           String duplicateType) {
-    String errorMessage = String.format(
-        "Duplicate employee detected: %s (Confidence: %.1f%%, Original Employee ID: %d)",
-        match.reason,
-        match.confidence * 100,
-        match.originalRecord.employeeId
-    );
+  /** Create failure result for duplicate detection */
+  private FieldValidationResult createDuplicateFailureResult(
+      PayrollEmployee employee, DuplicateMatch match, String duplicateType) {
+    String errorMessage =
+        String.format(
+            "Duplicate employee detected: %s (Confidence: %.1f%%, Original Employee ID: %d)",
+            match.reason, match.confidence * 100, match.originalRecord.employeeId);
 
-    String correctionGuidance = String.format(
-        "DUPLICATE DETECTED - %s\n\n%s\n\nRecommended Action: %s",
-        duplicateType,
-        match.resolutionGuidance,
-        getRecommendedAction(match.type)
-    );
+    String correctionGuidance =
+        String.format(
+            "DUPLICATE DETECTED - %s\n\n%s\n\nRecommended Action: %s",
+            duplicateType, match.resolutionGuidance, getRecommendedAction(match.type));
 
     return FieldValidationResult.failure(
         "employee_id",
         "Duplicate Detection",
         errorMessage,
         correctionGuidance,
-        ComplianceLevel.BUSINESS
-    );
+        ComplianceLevel.BUSINESS);
   }
 
-  /**
-   * Create warning result for name similarity
-   */
-  private FieldValidationResult createSimilarityWarningResult(PayrollEmployee employee,
-                                                            DuplicateMatch match) {
-    String warningMessage = String.format(
-        "Potential duplicate detected: %s (Similarity: %.1f%%, Employee ID: %d)",
-        match.reason,
-        match.confidence * 100,
-        match.originalRecord.employeeId
-    );
+  /** Create warning result for name similarity */
+  private FieldValidationResult createSimilarityWarningResult(
+      PayrollEmployee employee, DuplicateMatch match) {
+    String warningMessage =
+        String.format(
+            "Potential duplicate detected: %s (Similarity: %.1f%%, Employee ID: %d)",
+            match.reason, match.confidence * 100, match.originalRecord.employeeId);
 
-    String correctionGuidance = String.format(
-        "POTENTIAL DUPLICATE - NAME SIMILARITY\n\n%s\n\nRecommended Action: Manual review recommended",
-        match.resolutionGuidance
-    );
+    String correctionGuidance =
+        String.format(
+            "POTENTIAL DUPLICATE - NAME SIMILARITY\n\n%s\n\nRecommended Action: Manual review recommended",
+            match.resolutionGuidance);
 
     return FieldValidationResult.warning(
         "employee_id",
         "Duplicate Detection",
         warningMessage,
         correctionGuidance,
-        ComplianceLevel.BUSINESS
-    );
+        ComplianceLevel.BUSINESS);
   }
 
-  /**
-   * Generate resolution guidance for duplicate handling
-   */
-  private String generateResolutionGuidance(String duplicateType, EmployeeRecord existing,
-                                          EmployeeRecord newRecord) {
+  /** Generate resolution guidance for duplicate handling */
+  private String generateResolutionGuidance(
+      String duplicateType, EmployeeRecord existing, EmployeeRecord newRecord) {
     StringBuilder guidance = new StringBuilder();
 
     guidance.append("DUPLICATE EMPLOYEE DETECTED\n\n");
     guidance.append("Existing Employee:\n");
     guidance.append("- Employee ID: ").append(existing.employeeId).append("\n");
-    guidance.append("- Name: ").append(existing.firstName).append(" ").append(existing.lastName).append("\n");
+    guidance
+        .append("- Name: ")
+        .append(existing.firstName)
+        .append(" ")
+        .append(existing.lastName)
+        .append("\n");
     guidance.append("- Email: ").append(existing.email).append("\n");
     guidance.append("- SSN: ").append(maskSSN(existing.ssn)).append("\n");
     guidance.append("- Processed: ").append(existing.timestamp).append("\n\n");
 
     guidance.append("New Employee:\n");
     guidance.append("- Employee ID: ").append(newRecord.employeeId).append("\n");
-    guidance.append("- Name: ").append(newRecord.firstName).append(" ").append(newRecord.lastName).append("\n");
+    guidance
+        .append("- Name: ")
+        .append(newRecord.firstName)
+        .append(" ")
+        .append(newRecord.lastName)
+        .append("\n");
     guidance.append("- Email: ").append(newRecord.email).append("\n");
     guidance.append("- SSN: ").append(maskSSN(newRecord.ssn)).append("\n\n");
 
@@ -318,9 +299,7 @@ public class DuplicateDetectionRule {
     return guidance.toString();
   }
 
-  /**
-   * Get recommended action based on duplicate type
-   */
+  /** Get recommended action based on duplicate type */
   private String getRecommendedAction(DuplicateType type) {
     switch (type) {
       case SSN_DUPLICATE:
@@ -334,29 +313,25 @@ public class DuplicateDetectionRule {
     }
   }
 
-  /**
-   * Calculate name similarity using Levenshtein distance and fuzzy matching
-   */
+  /** Calculate name similarity using Levenshtein distance and fuzzy matching */
   private double calculateNameSimilarity(EmployeeRecord record1, EmployeeRecord record2) {
     // Calculate similarity for first names
-    double firstNameSimilarity = calculateStringSimilarity(
-        normalizeNameForComparison(record1.firstName),
-        normalizeNameForComparison(record2.firstName)
-    );
+    double firstNameSimilarity =
+        calculateStringSimilarity(
+            normalizeNameForComparison(record1.firstName),
+            normalizeNameForComparison(record2.firstName));
 
     // Calculate similarity for last names
-    double lastNameSimilarity = calculateStringSimilarity(
-        normalizeNameForComparison(record1.lastName),
-        normalizeNameForComparison(record2.lastName)
-    );
+    double lastNameSimilarity =
+        calculateStringSimilarity(
+            normalizeNameForComparison(record1.lastName),
+            normalizeNameForComparison(record2.lastName));
 
     // Combined similarity (weighted average)
     return (firstNameSimilarity * 0.4) + (lastNameSimilarity * 0.6);
   }
 
-  /**
-   * Calculate string similarity using normalized edit distance
-   */
+  /** Calculate string similarity using normalized edit distance */
   private double calculateStringSimilarity(String s1, String s2) {
     if (s1 == null || s2 == null) return 0.0;
     if (s1.equals(s2)) return 1.0;
@@ -367,9 +342,7 @@ public class DuplicateDetectionRule {
     return maxLength == 0 ? 1.0 : 1.0 - ((double) editDistance / maxLength);
   }
 
-  /**
-   * Calculate Levenshtein distance between two strings
-   */
+  /** Calculate Levenshtein distance between two strings */
   private int levenshteinDistance(String s1, String s2) {
     int[][] dp = new int[s1.length() + 1][s2.length() + 1];
 
@@ -390,33 +363,25 @@ public class DuplicateDetectionRule {
     return dp[s1.length()][s2.length()];
   }
 
-  /**
-   * Normalize string for name comparison
-   */
+  /** Normalize string for name comparison */
   private String normalizeNameForComparison(String name) {
     if (name == null) return "";
     return name.toLowerCase().trim().replaceAll("[\\s\\-']+", "");
   }
 
-  /**
-   * Normalize SSN for comparison
-   */
+  /** Normalize SSN for comparison */
   private String normalizeSSN(String ssn) {
     if (ssn == null) return "";
     return ssn.replaceAll("[^0-9]", "");
   }
 
-  /**
-   * Normalize email for comparison
-   */
+  /** Normalize email for comparison */
   private String normalizeEmail(String email) {
     if (email == null) return "";
     return email.toLowerCase().trim();
   }
 
-  /**
-   * Generate name key for indexing
-   */
+  /** Generate name key for indexing */
   private String generateNameKey(String firstName, String lastName) {
     if (firstName == null || lastName == null) return "";
     String first = firstName.toLowerCase().trim();
@@ -424,31 +389,23 @@ public class DuplicateDetectionRule {
     return first.charAt(0) + ":" + last.charAt(0); // First letter of each name
   }
 
-  /**
-   * Mask SSN for logging/display purposes
-   */
+  /** Mask SSN for logging/display purposes */
   private String maskSSN(String ssn) {
     if (ssn == null || ssn.length() < 4) return "***-**-****";
     return "***-**-" + ssn.substring(ssn.length() - 4);
   }
 
-  /**
-   * Check if record is expired based on detection window
-   */
+  /** Check if record is expired based on detection window */
   private boolean isExpired(EmployeeRecord record) {
     return Instant.now().isAfter(record.timestamp.plus(detectionWindow));
   }
 
-  /**
-   * Check if cleanup should be performed
-   */
+  /** Check if cleanup should be performed */
   private boolean shouldPerformCleanup() {
     return Instant.now().isAfter(lastCleanup.plus(CLEANUP_INTERVAL));
   }
 
-  /**
-   * Perform cleanup of expired records
-   */
+  /** Perform cleanup of expired records */
   private void performCleanup() {
     Instant now = Instant.now();
     Instant cutoff = now.minus(detectionWindow);
@@ -460,17 +417,18 @@ public class DuplicateDetectionRule {
     emailIndex.entrySet().removeIf(entry -> entry.getValue().timestamp.isBefore(cutoff));
 
     // Clean name index
-    nameIndex.entrySet().removeIf(entry -> {
-      entry.getValue().removeIf(record -> record.timestamp.isBefore(cutoff));
-      return entry.getValue().isEmpty();
-    });
+    nameIndex
+        .entrySet()
+        .removeIf(
+            entry -> {
+              entry.getValue().removeIf(record -> record.timestamp.isBefore(cutoff));
+              return entry.getValue().isEmpty();
+            });
 
     lastCleanup = now;
   }
 
-  /**
-   * Get detection metrics
-   */
+  /** Get detection metrics */
   public DuplicateDetectionMetrics getMetrics() {
     return new DuplicateDetectionMetrics(
         totalProcessed,
@@ -481,17 +439,14 @@ public class DuplicateDetectionRule {
         calculateDuplicateRate(),
         ssnIndex.size(),
         emailIndex.size(),
-        nameIndex.size()
-    );
+        nameIndex.size());
   }
 
   private double calculateDuplicateRate() {
     return totalProcessed > 0 ? (double) duplicatesDetected / totalProcessed : 0.0;
   }
 
-  /**
-   * Reset metrics
-   */
+  /** Reset metrics */
   public void resetMetrics() {
     totalProcessed = 0;
     duplicatesDetected = 0;
@@ -500,9 +455,7 @@ public class DuplicateDetectionRule {
     nameSimilarityMatches = 0;
   }
 
-  /**
-   * Clear all detection indices
-   */
+  /** Clear all detection indices */
   public void clearIndices() {
     ssnIndex.clear();
     emailIndex.clear();
@@ -512,9 +465,7 @@ public class DuplicateDetectionRule {
 
   // Data classes
 
-  /**
-   * Employee record for duplicate detection
-   */
+  /** Employee record for duplicate detection */
   private static class EmployeeRecord {
     final Integer employeeId;
     final String firstName;
@@ -533,9 +484,7 @@ public class DuplicateDetectionRule {
     }
   }
 
-  /**
-   * Duplicate match result
-   */
+  /** Duplicate match result */
   private static class DuplicateMatch {
     final EmployeeRecord originalRecord;
     final DuplicateType type;
@@ -543,8 +492,12 @@ public class DuplicateDetectionRule {
     final String reason;
     final String resolutionGuidance;
 
-    DuplicateMatch(EmployeeRecord originalRecord, DuplicateType type, double confidence,
-                   String reason, String resolutionGuidance) {
+    DuplicateMatch(
+        EmployeeRecord originalRecord,
+        DuplicateType type,
+        double confidence,
+        String reason,
+        String resolutionGuidance) {
       this.originalRecord = originalRecord;
       this.type = type;
       this.confidence = confidence;
@@ -553,9 +506,7 @@ public class DuplicateDetectionRule {
     }
   }
 
-  /**
-   * Duplicate type enumeration
-   */
+  /** Duplicate type enumeration */
   public enum DuplicateType {
     SSN_DUPLICATE,
     EMAIL_DUPLICATE,
@@ -563,9 +514,7 @@ public class DuplicateDetectionRule {
     EXACT_MATCH
   }
 
-  /**
-   * Metrics data class
-   */
+  /** Metrics data class */
   public static class DuplicateDetectionMetrics {
     private final long totalProcessed;
     private final long duplicatesDetected;
@@ -577,10 +526,16 @@ public class DuplicateDetectionRule {
     private final int emailIndexSize;
     private final int nameIndexSize;
 
-    public DuplicateDetectionMetrics(long totalProcessed, long duplicatesDetected,
-                                   long ssnDuplicates, long emailDuplicates,
-                                   long nameSimilarityMatches, double duplicateRate,
-                                   int ssnIndexSize, int emailIndexSize, int nameIndexSize) {
+    public DuplicateDetectionMetrics(
+        long totalProcessed,
+        long duplicatesDetected,
+        long ssnDuplicates,
+        long emailDuplicates,
+        long nameSimilarityMatches,
+        double duplicateRate,
+        int ssnIndexSize,
+        int emailIndexSize,
+        int nameIndexSize) {
       this.totalProcessed = totalProcessed;
       this.duplicatesDetected = duplicatesDetected;
       this.ssnDuplicates = ssnDuplicates;
@@ -593,21 +548,52 @@ public class DuplicateDetectionRule {
     }
 
     // Getters
-    public long getTotalProcessed() { return totalProcessed; }
-    public long getDuplicatesDetected() { return duplicatesDetected; }
-    public long getSsnDuplicates() { return ssnDuplicates; }
-    public long getEmailDuplicates() { return emailDuplicates; }
-    public long getNameSimilarityMatches() { return nameSimilarityMatches; }
-    public double getDuplicateRate() { return duplicateRate; }
-    public int getSsnIndexSize() { return ssnIndexSize; }
-    public int getEmailIndexSize() { return emailIndexSize; }
-    public int getNameIndexSize() { return nameIndexSize; }
+    public long getTotalProcessed() {
+      return totalProcessed;
+    }
+
+    public long getDuplicatesDetected() {
+      return duplicatesDetected;
+    }
+
+    public long getSsnDuplicates() {
+      return ssnDuplicates;
+    }
+
+    public long getEmailDuplicates() {
+      return emailDuplicates;
+    }
+
+    public long getNameSimilarityMatches() {
+      return nameSimilarityMatches;
+    }
+
+    public double getDuplicateRate() {
+      return duplicateRate;
+    }
+
+    public int getSsnIndexSize() {
+      return ssnIndexSize;
+    }
+
+    public int getEmailIndexSize() {
+      return emailIndexSize;
+    }
+
+    public int getNameIndexSize() {
+      return nameIndexSize;
+    }
 
     @Override
     public String toString() {
       return String.format(
           "DuplicateDetectionMetrics{processed=%d, duplicates=%d, rate=%.4f, indices=[ssn=%d, email=%d, name=%d]}",
-          totalProcessed, duplicatesDetected, duplicateRate, ssnIndexSize, emailIndexSize, nameIndexSize);
+          totalProcessed,
+          duplicatesDetected,
+          duplicateRate,
+          ssnIndexSize,
+          emailIndexSize,
+          nameIndexSize);
     }
   }
 }

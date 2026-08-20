@@ -3,8 +3,6 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for handling invalid SSN format scenarios in the payroll pipeline.
- * Tests end-to-end processing of employees with invalid SSN formats, including
- * validation, error handling, HR workflow routing, and compliance reporting.
+ * Integration test for handling invalid SSN format scenarios in the payroll pipeline. Tests
+ * end-to-end processing of employees with invalid SSN formats, including validation, error
+ * handling, HR workflow routing, and compliance reporting.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("Invalid SSN Format Handling Integration Tests")
 class InvalidSSNHandlingTest {
@@ -73,16 +72,17 @@ class InvalidSSNHandlingTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldRejectEmployeesWithCompletelyInvalidSSNFormat() throws Exception {
     // Employee with completely malformed SSN
-    PayrollEmployee invalidEmployee = PayrollEmployee.builder()
-        .employeeId(2001)
-        .firstName("Invalid")
-        .lastName("SSN")
-        .age(30)
-        .ssn("INVALID-SSN-FORMAT")
-        .hourlyRateFromDollars(25.00)
-        .gender("male")
-        .email("invalid.ssn@company.com")
-        .build();
+    PayrollEmployee invalidEmployee =
+        PayrollEmployee.builder()
+            .employeeId(2001)
+            .firstName("Invalid")
+            .lastName("SSN")
+            .age(30)
+            .ssn("INVALID-SSN-FORMAT")
+            .hourlyRateFromDollars(25.00)
+            .gender("male")
+            .email("invalid.ssn@company.com")
+            .build();
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -112,7 +112,8 @@ class InvalidSSNHandlingTest {
 
     // For now, verify test data
     assertEquals("INVALID-SSN-FORMAT", invalidEmployee.getSsn(), "Should have invalid SSN format");
-    assertFalse(invalidEmployee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
+    assertFalse(
+        invalidEmployee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
         "SSN should not match valid format");
   }
 
@@ -120,14 +121,15 @@ class InvalidSSNHandlingTest {
   @DisplayName("Should handle SSN with wrong number of digits")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleSSNWithWrongNumberOfDigits() throws Exception {
-    List<PayrollEmployee> wrongDigitEmployees = Arrays.asList(
-        // Too few digits
-        createEmployeeWithSSN(2002, "12-34-567"),   // 7 digits instead of 9
-        createEmployeeWithSSN(2003, "1-23-4567"),   // 8 digits instead of 9
-        // Too many digits
-        createEmployeeWithSSN(2004, "1234-56-7890"), // 10 digits instead of 9
-        createEmployeeWithSSN(2005, "123-456-7890")  // 10 digits instead of 9
-    );
+    List<PayrollEmployee> wrongDigitEmployees =
+        Arrays.asList(
+            // Too few digits
+            createEmployeeWithSSN(2002, "12-34-567"), // 7 digits instead of 9
+            createEmployeeWithSSN(2003, "1-23-4567"), // 8 digits instead of 9
+            // Too many digits
+            createEmployeeWithSSN(2004, "1234-56-7890"), // 10 digits instead of 9
+            createEmployeeWithSSN(2005, "123-456-7890") // 10 digits instead of 9
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -156,7 +158,8 @@ class InvalidSSNHandlingTest {
     // For now, verify test data
     assertEquals(4, wrongDigitEmployees.size(), "Should have 4 employees with wrong digit count");
     for (PayrollEmployee employee : wrongDigitEmployees) {
-      assertFalse(employee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
+      assertFalse(
+          employee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
           "Employee SSN should not match valid format: " + employee.getSsn());
     }
   }
@@ -165,14 +168,15 @@ class InvalidSSNHandlingTest {
   @DisplayName("Should handle SSN with missing or incorrect separators")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleSSNWithMissingOrIncorrectSeparators() throws Exception {
-    List<PayrollEmployee> incorrectSeparatorEmployees = Arrays.asList(
-        createEmployeeWithSSN(2006, "123456789"),    // No separators
-        createEmployeeWithSSN(2007, "123.45.6789"),  // Dots instead of hyphens
-        createEmployeeWithSSN(2008, "123/45/6789"),  // Slashes instead of hyphens
-        createEmployeeWithSSN(2009, "123_45_6789"),  // Underscores instead of hyphens
-        createEmployeeWithSSN(2010, "123-456789"),   // Missing second separator
-        createEmployeeWithSSN(2011, "12345-6789")    // Missing first separator
-    );
+    List<PayrollEmployee> incorrectSeparatorEmployees =
+        Arrays.asList(
+            createEmployeeWithSSN(2006, "123456789"), // No separators
+            createEmployeeWithSSN(2007, "123.45.6789"), // Dots instead of hyphens
+            createEmployeeWithSSN(2008, "123/45/6789"), // Slashes instead of hyphens
+            createEmployeeWithSSN(2009, "123_45_6789"), // Underscores instead of hyphens
+            createEmployeeWithSSN(2010, "123-456789"), // Missing second separator
+            createEmployeeWithSSN(2011, "12345-6789") // Missing first separator
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -199,9 +203,11 @@ class InvalidSSNHandlingTest {
     // }
 
     // For now, verify test data
-    assertEquals(6, incorrectSeparatorEmployees.size(), "Should have 6 employees with incorrect separators");
+    assertEquals(
+        6, incorrectSeparatorEmployees.size(), "Should have 6 employees with incorrect separators");
     for (PayrollEmployee employee : incorrectSeparatorEmployees) {
-      assertFalse(employee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
+      assertFalse(
+          employee.getSsn().matches("^\\d{3}-\\d{2}-\\d{4}$"),
           "Employee SSN should not match valid format: " + employee.getSsn());
     }
   }
@@ -210,14 +216,15 @@ class InvalidSSNHandlingTest {
   @DisplayName("Should handle SSN with non-numeric characters")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleSSNWithNonNumericCharacters() throws Exception {
-    List<PayrollEmployee> nonNumericEmployees = Arrays.asList(
-        createEmployeeWithSSN(2012, "ABC-45-6789"),  // Letters in first section
-        createEmployeeWithSSN(2013, "123-XY-6789"),  // Letters in middle section
-        createEmployeeWithSSN(2014, "123-45-WXYZ"),  // Letters in last section
-        createEmployeeWithSSN(2015, "1A3-45-6789"),  // Mixed letters and numbers
-        createEmployeeWithSSN(2016, "123-4#-6789"),  // Special characters
-        createEmployeeWithSSN(2017, "123-45-67@9")   // Special characters at end
-    );
+    List<PayrollEmployee> nonNumericEmployees =
+        Arrays.asList(
+            createEmployeeWithSSN(2012, "ABC-45-6789"), // Letters in first section
+            createEmployeeWithSSN(2013, "123-XY-6789"), // Letters in middle section
+            createEmployeeWithSSN(2014, "123-45-WXYZ"), // Letters in last section
+            createEmployeeWithSSN(2015, "1A3-45-6789"), // Mixed letters and numbers
+            createEmployeeWithSSN(2016, "123-4#-6789"), // Special characters
+            createEmployeeWithSSN(2017, "123-45-67@9") // Special characters at end
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -246,7 +253,8 @@ class InvalidSSNHandlingTest {
     // For now, verify test data
     assertEquals(6, nonNumericEmployees.size(), "Should have 6 employees with non-numeric SSN");
     for (PayrollEmployee employee : nonNumericEmployees) {
-      assertTrue(employee.getSsn().matches(".*[^0-9\\-].*"),
+      assertTrue(
+          employee.getSsn().matches(".*[^0-9\\-].*"),
           "Employee SSN should contain non-numeric characters: " + employee.getSsn());
     }
   }
@@ -255,12 +263,13 @@ class InvalidSSNHandlingTest {
   @DisplayName("Should handle null or empty SSN values")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleNullOrEmptySSNValues() throws Exception {
-    List<PayrollEmployee> nullEmptySSNEmployees = Arrays.asList(
-        createEmployeeWithSSN(2018, null),     // Null SSN
-        createEmployeeWithSSN(2019, ""),       // Empty SSN
-        createEmployeeWithSSN(2020, "   "),    // Whitespace only SSN
-        createEmployeeWithSSN(2021, "\t\n")    // Tab/newline only SSN
-    );
+    List<PayrollEmployee> nullEmptySSNEmployees =
+        Arrays.asList(
+            createEmployeeWithSSN(2018, null), // Null SSN
+            createEmployeeWithSSN(2019, ""), // Empty SSN
+            createEmployeeWithSSN(2020, "   "), // Whitespace only SSN
+            createEmployeeWithSSN(2021, "\t\n") // Tab/newline only SSN
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -327,12 +336,13 @@ class InvalidSSNHandlingTest {
   @DisplayName("Should generate actionable HR correction messages for invalid SSN")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldGenerateActionableHRCorrectionMessagesForInvalidSSN() throws Exception {
-    List<PayrollEmployee> variousInvalidEmployees = Arrays.asList(
-        createEmployeeWithSSN(2023, "123456789"),    // Missing separators
-        createEmployeeWithSSN(2024, "ABC-45-6789"),  // Non-numeric
-        createEmployeeWithSSN(2025, "12-34-567"),    // Wrong digit count
-        createEmployeeWithSSN(2026, null)            // Null SSN
-    );
+    List<PayrollEmployee> variousInvalidEmployees =
+        Arrays.asList(
+            createEmployeeWithSSN(2023, "123456789"), // Missing separators
+            createEmployeeWithSSN(2024, "ABC-45-6789"), // Non-numeric
+            createEmployeeWithSSN(2025, "12-34-567"), // Wrong digit count
+            createEmployeeWithSSN(2026, null) // Null SSN
+            );
 
     // TODO: This assertion will fail until HR message generation is implemented
     // pipeline.start();
@@ -360,10 +370,10 @@ class InvalidSSNHandlingTest {
 
     // For now, verify correction message concepts
     String[] expectedInstructions = {
-        "Format SSN as XXX-XX-XXXX",
-        "Use only numeric digits",
-        "Ensure exactly 9 digits",
-        "SSN is required field"
+      "Format SSN as XXX-XX-XXXX",
+      "Use only numeric digits",
+      "Ensure exactly 9 digits",
+      "SSN is required field"
     };
     assertEquals(4, expectedInstructions.length, "Should have specific correction instructions");
   }
@@ -433,13 +443,13 @@ class InvalidSSNHandlingTest {
     //     "Failed record should match original employee");
 
     // For now, verify exactly-once concepts
-    assertEquals("DUPLICATE-TEST", invalidEmployee.getSsn(),
+    assertEquals(
+        "DUPLICATE-TEST",
+        invalidEmployee.getSsn(),
         "Should use consistent test SSN for duplicate testing");
   }
 
-  /**
-   * Helper method to create employee with specific SSN
-   */
+  /** Helper method to create employee with specific SSN */
   private PayrollEmployee createEmployeeWithSSN(int employeeId, String ssn) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
@@ -453,29 +463,21 @@ class InvalidSSNHandlingTest {
         .build();
   }
 
-  /**
-   * Helper method to create test data with various invalid SSN formats
-   */
+  /** Helper method to create test data with various invalid SSN formats */
   private void createInvalidSSNTestData() {
-    invalidSSNEmployees = Arrays.asList(
-        createEmployeeWithSSN(3001, "INVALID-FORMAT"),
-        createEmployeeWithSSN(3002, "123456789"),
-        createEmployeeWithSSN(3003, "ABC-45-6789"),
-        createEmployeeWithSSN(3004, "12-34-567"),
-        createEmployeeWithSSN(3005, null)
-    );
+    invalidSSNEmployees =
+        Arrays.asList(
+            createEmployeeWithSSN(3001, "INVALID-FORMAT"),
+            createEmployeeWithSSN(3002, "123456789"),
+            createEmployeeWithSSN(3003, "ABC-45-6789"),
+            createEmployeeWithSSN(3004, "12-34-567"),
+            createEmployeeWithSSN(3005, null));
   }
 
-  /**
-   * Helper method to generate large batch of invalid SSN employees
-   */
+  /** Helper method to generate large batch of invalid SSN employees */
   private List<PayrollEmployee> generateInvalidSSNBatch(int size) {
     String[] invalidFormats = {
-        "INVALID-FORMAT",
-        "123456789",
-        "ABC-45-6789",
-        "12-34-567",
-        "123.45.6789"
+      "INVALID-FORMAT", "123456789", "ABC-45-6789", "12-34-567", "123.45.6789"
     };
 
     List<PayrollEmployee> batch = new java.util.ArrayList<>();
@@ -486,9 +488,7 @@ class InvalidSSNHandlingTest {
     return batch;
   }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

@@ -19,7 +19,7 @@ git clone <repository>
 cd flink-pipeline
 
 # Start local infrastructure
-docker-compose up -d kafka zookeeper schema-registry localstack
+docker-compose up -d kafka zookeeper schema-registry minio mc
 
 # Wait for services to be ready (30-60 seconds)
 ./scripts/wait-for-services.sh

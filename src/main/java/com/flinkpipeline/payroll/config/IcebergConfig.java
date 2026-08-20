@@ -12,6 +12,11 @@ public class IcebergConfig {
   private final String restUri;
   private final String restCredentialsKey;
   private final String restCredentialsToken;
+  private final String s3Endpoint;
+  private final boolean pathStyleAccess;
+  private final String s3AccessKey;
+  private final String s3SecretKey;
+  private final String s3Region;
 
   public IcebergConfig(
       String warehousePath,
@@ -21,7 +26,12 @@ public class IcebergConfig {
       Duration compactionInterval,
       String restUri,
       String restCredentialsKey,
-      String restCredentialsToken) {
+      String restCredentialsToken,
+      String s3Endpoint,
+      boolean pathStyleAccess,
+      String s3AccessKey,
+      String s3SecretKey,
+      String s3Region) {
     this.warehousePath = warehousePath;
     this.auditWarehousePath = auditWarehousePath;
     this.catalogName = catalogName;
@@ -30,6 +40,11 @@ public class IcebergConfig {
     this.restUri = restUri;
     this.restCredentialsKey = restCredentialsKey;
     this.restCredentialsToken = restCredentialsToken;
+    this.s3Endpoint = s3Endpoint;
+    this.pathStyleAccess = pathStyleAccess;
+    this.s3AccessKey = s3AccessKey;
+    this.s3SecretKey = s3SecretKey;
+    this.s3Region = s3Region;
   }
 
   public String getWarehousePath() {
@@ -62,5 +77,25 @@ public class IcebergConfig {
 
   public String getRestCredentialsToken() {
     return restCredentialsToken;
+  }
+
+  public String getS3Endpoint() {
+    return s3Endpoint;
+  }
+
+  public boolean isPathStyleAccess() {
+    return pathStyleAccess;
+  }
+
+  public String getS3AccessKey() {
+    return s3AccessKey;
+  }
+
+  public String getS3SecretKey() {
+    return s3SecretKey;
+  }
+
+  public String getS3Region() {
+    return s3Region;
   }
 }

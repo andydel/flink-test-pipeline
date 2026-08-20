@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Zookeeper for Kafka
   zookeeper:
@@ -62,36 +60,17 @@ services:
       timeout: 10s
       retries: 5
 
-  # LocalStack for S3 simulation
-  localstack:
-    image: localstack/localstack:3.0
-    container_name: payroll-localstack
-    ports:
-      - "4566:4566"
-    environment:
-      - SERVICES=s3
-      - DEBUG=1
-      - DATA_DIR=/tmp/localstack/data
-      - PERSISTENCE=1
-      - AWS_DEFAULT_REGION=us-east-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
-    volumes:
-      - localstack-data:/tmp/localstack
-      - /var/run/docker.sock:/var/run/docker.sock
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
   # Flink Job Manager
   flink-jobmanager:
     image: flink:1.18.1-scala_2.12-java17
     container_name: payroll-flink-jobmanager
     ports:
-      - "8080:8080"
+      - "8085:8080"
+      - "8090:8090"
     command: jobmanager
+    networks:
+      - default
+      - iceberg_net
     environment:
       - |
         FLINK_PROPERTIES=
@@ -107,11 +86,19 @@ services:
         restart-strategy: fixed-delay
         restart-strategy.fixed-delay.attempts: 3
         restart-strategy.fixed-delay.delay: 10s
+        rest.address: 0.0.0.0
+        rest.port: 8080
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL_S3=http://minio:9000
+      - AWS_S3_FORCE_PATH_STYLE=true
     volumes:
       - flink-checkpoints:/checkpoints
       - flink-savepoints:/savepoints
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/taskmanagers"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -119,39 +106,29 @@ services:
   # Flink Task Manager
   flink-taskmanager:
     image: flink:1.18.1-scala_2.12-java17
-    container_name: payroll-flink-taskmanager
     depends_on:
       - flink-jobmanager
     command: taskmanager
-    scale: 2
+    networks:
+      - default
+      - iceberg_net
+    deploy:
+      replicas: 2
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.memory.process.size: 1728m
         taskmanager.numberOfTaskSlots: 4
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ENDPOINT_URL_S3=http://minio:9000
+      - AWS_S3_FORCE_PATH_STYLE=true
     volumes:
       - flink-checkpoints:/checkpoints
       - flink-savepoints:/savepoints
-
-  # PostgreSQL for Iceberg Catalog
-  postgres:
-    image: postgres:15
-    container_name: payroll-postgres
-    environment:
-      POSTGRES_DB: icebergdb
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-      - ./scripts/init-iceberg-catalog.sql:/docker-entrypoint-initdb.d/init-iceberg-catalog.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   # Kafka UI for debugging
   kafka-ui:
@@ -168,25 +145,79 @@ services:
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
       DYNAMIC_CONFIG_ENABLED: 'true'
 
-  # MinIO for S3-compatible storage (alternative to LocalStack)
-  minio:
-    image: minio/minio:latest
-    container_name: payroll-minio
-    ports:
-      - "9000:9000"
-      - "9001:9001"
-    environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: password
-      MINIO_DEFAULT_BUCKETS: payroll-data-lake
-    command: server /data --console-address ":9001"
+
+  # Optional Spark/Jupyter environment for exploring the Iceberg warehouse.
+  # Not required by the Flink pipeline itself - start with:
+  #   docker-compose --profile notebooks up -d spark-iceberg
+  spark-iceberg:
+    image: tabulario/spark-iceberg
+    container_name: spark-iceberg
+    depends_on:
+      - rest
+      - minio
     volumes:
-      - minio-data:/data
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+      - ./warehouse:/home/iceberg/warehouse
+      - ./notebooks:/home/iceberg/notebooks/notebooks
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    ports:
+      - 8888:8888
+      - 8079:8080
+    links:
+      - rest:rest
+      - minio:minio
+    profiles:
+      - notebooks
+  rest:
+    image: tabulario/iceberg-rest:0.1.0
+    ports:
+      - 8181:8181
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - AWS_S3_FORCE_PATH_STYLE=true
+      - CATALOG_WAREHOUSE=s3a://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+      - CATALOG_S3_ACCESS_KEY_ID=admin
+      - CATALOG_S3_SECRET_ACCESS_KEY=password
+      - CATALOG_S3_REGION=us-east-1
+      - CATALOG_S3_PATH_STYLE_ACCESS=true
+      - CATALOG_S3_BUCKET_CREATION_ENABLED=true
+      - CATALOG_PROPERTIES__s3.path-style-access=true
+      - CATALOG_PROPERTIES__s3.bucket-creation-enabled=true
+      - CATALOG_HTTP__CONFIG__DEFAULTS__s3.endpoint=http://minio:9000
+      - CATALOG_HTTP__CONFIG__DEFAULTS__s3.path-style-access=true
+  minio:
+    image: minio/minio
+    container_name: minio
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+    ports:
+      - 9001:9001
+      - 9000:9000
+    command: [ "server", "/data", "--console-address", ":9001" ]
+  mc:
+    depends_on:
+      - minio
+    image: minio/mc
+    container_name: mc
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
+      /usr/bin/mc rm -r --force minio/warehouse;
+      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc anonymous set public minio/warehouse;
+      tail -f /dev/null
+      "
 
   # Payroll data generator for testing
   payroll-data-generator:
@@ -242,14 +273,13 @@ volumes:
   zookeeper-data:
   zookeeper-logs:
   kafka-data:
-  localstack-data:
   flink-checkpoints:
   flink-savepoints:
   minio-data:
-  postgres-data:
   prometheus-data:
   grafana-data:
 
 networks:
   default:
     name: payroll-network
+  iceberg_net:

@@ -7,9 +7,9 @@ import com.flinkpipeline.payroll.models.FieldValidationResult.RuleType;
 import com.flinkpipeline.payroll.models.FieldValidationResult.Severity;
 
 /**
- * Age range employment eligibility validation rule implementation (DQ-004).
- * Validates employee age according to employment eligibility requirements (16-75 years).
- * Enforces federal employment law compliance.
+ * Age range employment eligibility validation rule implementation (DQ-004). Validates employee age
+ * according to employment eligibility requirements (16-75 years). Enforces federal employment law
+ * compliance.
  */
 public class AgeRangeValidationRule {
 
@@ -21,30 +21,39 @@ public class AgeRangeValidationRule {
   private static final int MINIMUM_EMPLOYMENT_AGE = 16;
   private static final int MAXIMUM_EMPLOYMENT_AGE = 75;
 
-  /**
-   * Validates age against employment eligibility requirements
-   */
+  /** Validates age against employment eligibility requirements */
   public FieldValidationResult validate(Integer age) {
     long startTime = System.nanoTime();
 
     try {
       // Check for null age
       if (age == null) {
-        return createFailureResult("Age is required and cannot be null",
-            "Enter a valid age between " + MINIMUM_EMPLOYMENT_AGE + " and " + MAXIMUM_EMPLOYMENT_AGE + " years",
+        return createFailureResult(
+            "Age is required and cannot be null",
+            "Enter a valid age between "
+                + MINIMUM_EMPLOYMENT_AGE
+                + " and "
+                + MAXIMUM_EMPLOYMENT_AGE
+                + " years",
             "AGE_REQUIRED");
       }
 
       // Check for negative age
       if (age < 0) {
-        return createFailureResult("Age " + age + " is invalid - cannot be negative",
-            "Enter a valid positive age between " + MINIMUM_EMPLOYMENT_AGE + " and " + MAXIMUM_EMPLOYMENT_AGE + " years",
+        return createFailureResult(
+            "Age " + age + " is invalid - cannot be negative",
+            "Enter a valid positive age between "
+                + MINIMUM_EMPLOYMENT_AGE
+                + " and "
+                + MAXIMUM_EMPLOYMENT_AGE
+                + " years",
             "AGE_NEGATIVE");
       }
 
       // Check for unrealistic age
       if (age > 150) {
-        return createFailureResult("Age " + age + " is unrealistic",
+        return createFailureResult(
+            "Age " + age + " is unrealistic",
             "Verify age is correct and within reasonable range",
             "AGE_UNREALISTIC");
       }
@@ -52,7 +61,13 @@ public class AgeRangeValidationRule {
       // Check minimum employment age
       if (age < MINIMUM_EMPLOYMENT_AGE) {
         return createFailureResult(
-            "Age " + age + " is outside employment eligibility range (" + MINIMUM_EMPLOYMENT_AGE + "-" + MAXIMUM_EMPLOYMENT_AGE + " years)",
+            "Age "
+                + age
+                + " is outside employment eligibility range ("
+                + MINIMUM_EMPLOYMENT_AGE
+                + "-"
+                + MAXIMUM_EMPLOYMENT_AGE
+                + " years)",
             "Verify employee age is correct and within legal employment range",
             "AGE_BELOW_MINIMUM");
       }
@@ -60,7 +75,13 @@ public class AgeRangeValidationRule {
       // Check maximum employment age
       if (age > MAXIMUM_EMPLOYMENT_AGE) {
         return createFailureResult(
-            "Age " + age + " is outside employment eligibility range (" + MINIMUM_EMPLOYMENT_AGE + "-" + MAXIMUM_EMPLOYMENT_AGE + " years)",
+            "Age "
+                + age
+                + " is outside employment eligibility range ("
+                + MINIMUM_EMPLOYMENT_AGE
+                + "-"
+                + MAXIMUM_EMPLOYMENT_AGE
+                + " years)",
             "Verify employee age is correct and within legal employment range",
             "AGE_ABOVE_MAXIMUM");
       }
@@ -85,13 +106,16 @@ public class AgeRangeValidationRule {
     }
   }
 
-  /**
-   * Validates age from string input with type conversion
-   */
+  /** Validates age from string input with type conversion */
   public FieldValidationResult validateFromString(String ageString) {
     if (ageString == null || ageString.trim().isEmpty()) {
-      return createFailureResult("Age is required and cannot be empty",
-          "Enter a valid age between " + MINIMUM_EMPLOYMENT_AGE + " and " + MAXIMUM_EMPLOYMENT_AGE + " years",
+      return createFailureResult(
+          "Age is required and cannot be empty",
+          "Enter a valid age between "
+              + MINIMUM_EMPLOYMENT_AGE
+              + " and "
+              + MAXIMUM_EMPLOYMENT_AGE
+              + " years",
           "AGE_REQUIRED");
     }
 
@@ -99,39 +123,35 @@ public class AgeRangeValidationRule {
       Integer age = Integer.parseInt(ageString.trim());
       return validate(age);
     } catch (NumberFormatException e) {
-      return createFailureResult("Age '" + ageString + "' is not a valid number",
-          "Enter a numeric age between " + MINIMUM_EMPLOYMENT_AGE + " and " + MAXIMUM_EMPLOYMENT_AGE + " years",
+      return createFailureResult(
+          "Age '" + ageString + "' is not a valid number",
+          "Enter a numeric age between "
+              + MINIMUM_EMPLOYMENT_AGE
+              + " and "
+              + MAXIMUM_EMPLOYMENT_AGE
+              + " years",
           "AGE_FORMAT_INVALID");
     }
   }
 
-  /**
-   * Checks if age meets minimum employment requirements
-   */
+  /** Checks if age meets minimum employment requirements */
   public boolean meetsMinimumAge(Integer age) {
     return age != null && age >= MINIMUM_EMPLOYMENT_AGE;
   }
 
-  /**
-   * Checks if age is within maximum employment limit
-   */
+  /** Checks if age is within maximum employment limit */
   public boolean withinMaximumAge(Integer age) {
     return age != null && age <= MAXIMUM_EMPLOYMENT_AGE;
   }
 
-  /**
-   * Checks if age is within full employment eligibility range
-   */
+  /** Checks if age is within full employment eligibility range */
   public boolean isEmploymentEligible(Integer age) {
     return age != null && age >= MINIMUM_EMPLOYMENT_AGE && age <= MAXIMUM_EMPLOYMENT_AGE;
   }
 
-  /**
-   * Creates a failure validation result
-   */
-  private FieldValidationResult createFailureResult(String errorMessage,
-                                                   String suggestedCorrection,
-                                                   String errorCode) {
+  /** Creates a failure validation result */
+  private FieldValidationResult createFailureResult(
+      String errorMessage, String suggestedCorrection, String errorCode) {
     return FieldValidationResult.builder()
         .fieldName(FIELD_NAME)
         .ruleName(RULE_NAME)
@@ -145,9 +165,7 @@ public class AgeRangeValidationRule {
         .build();
   }
 
-  /**
-   * Gets the rule configuration details
-   */
+  /** Gets the rule configuration details */
   public String getRuleId() {
     return RULE_ID;
   }
@@ -168,9 +186,7 @@ public class AgeRangeValidationRule {
     return ComplianceLevel.REGULATORY;
   }
 
-  /**
-   * Gets employment age range
-   */
+  /** Gets employment age range */
   public int getMinimumEmploymentAge() {
     return MINIMUM_EMPLOYMENT_AGE;
   }
@@ -179,9 +195,7 @@ public class AgeRangeValidationRule {
     return MAXIMUM_EMPLOYMENT_AGE;
   }
 
-  /**
-   * Validates against specific employment law categories
-   */
+  /** Validates against specific employment law categories */
   public FieldValidationResult validateEmploymentCategory(Integer age) {
     if (age == null) {
       return validate(age);

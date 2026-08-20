@@ -5,13 +5,14 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Immutable compliance audit log entry for regulatory and operational auditing.
- * Provides comprehensive audit trail for all payroll data processing operations,
- * PII access events, and compliance-related activities with tamper-evident features.
+ * Immutable compliance audit log entry for regulatory and operational auditing. Provides
+ * comprehensive audit trail for all payroll data processing operations, PII access events, and
+ * compliance-related activities with tamper-evident features.
  */
 public class ComplianceAuditLog {
 
@@ -51,21 +52,21 @@ public class ComplianceAuditLog {
   }
 
   public enum ComplianceStatus {
-    COMPLIANT,           // Operation meets all compliance requirements
-    VIOLATION,          // Compliance violation detected
-    REVIEW_REQUIRED,    // Manual review needed for compliance assessment
+    COMPLIANT, // Operation meets all compliance requirements
+    VIOLATION, // Compliance violation detected
+    REVIEW_REQUIRED, // Manual review needed for compliance assessment
     PENDING_VALIDATION, // Awaiting compliance validation
-    EXCEPTION_APPROVED  // Approved exception to compliance rule
+    EXCEPTION_APPROVED // Approved exception to compliance rule
   }
 
   public enum DataClassification {
-    PUBLIC,              // No sensitivity restrictions
-    INTERNAL,           // Internal company use only
-    CONFIDENTIAL,       // Confidential business information
-    RESTRICTED,         // Highly sensitive, limited access
-    PII,                // Personally Identifiable Information
-    PHI,                // Protected Health Information
-    FINANCIAL           // Financial and payroll data
+    PUBLIC, // No sensitivity restrictions
+    INTERNAL, // Internal company use only
+    CONFIDENTIAL, // Confidential business information
+    RESTRICTED, // Highly sensitive, limited access
+    PII, // Personally Identifiable Information
+    PHI, // Protected Health Information
+    FINANCIAL // Financial and payroll data
   }
 
   // Core audit information (immutable)
@@ -125,8 +126,10 @@ public class ComplianceAuditLog {
     this.systemComponent = builder.systemComponent;
     this.sourceIPAddress = builder.sourceIPAddress;
     this.userAgent = builder.userAgent;
-    this.piiFieldsAccessed = builder.piiFieldsAccessed != null ?
-        new ArrayList<>(builder.piiFieldsAccessed) : new ArrayList<>();
+    this.piiFieldsAccessed =
+        builder.piiFieldsAccessed != null
+            ? new ArrayList<>(builder.piiFieldsAccessed)
+            : new ArrayList<>();
     this.dataClassification = builder.dataClassification;
     this.accessPurpose = builder.accessPurpose;
     this.accessJustification = builder.accessJustification;
@@ -134,8 +137,10 @@ public class ComplianceAuditLog {
     this.complianceFramework = builder.complianceFramework;
     this.riskLevel = builder.riskLevel;
     this.businessJustification = builder.businessJustification;
-    this.complianceFlags = builder.complianceFlags != null ?
-        new ArrayList<>(builder.complianceFlags) : new ArrayList<>();
+    this.complianceFlags =
+        builder.complianceFlags != null
+            ? new ArrayList<>(builder.complianceFlags)
+            : new ArrayList<>();
     this.retentionExpires = builder.retentionExpires;
     this.retentionPolicy = builder.retentionPolicy;
     this.immutableRecord = builder.immutableRecord;
@@ -149,8 +154,8 @@ public class ComplianceAuditLog {
   }
 
   // Static factory methods for common audit scenarios
-  public static ComplianceAuditLog createPayrollProcessingAudit(Integer employeeId, String userId,
-                                                               String operationDetails) {
+  public static ComplianceAuditLog createPayrollProcessingAudit(
+      Integer employeeId, String userId, String operationDetails) {
     return new Builder()
         .employeeId(employeeId)
         .auditType(AuditType.PAYROLL_RECORD_PROCESSED)
@@ -163,8 +168,8 @@ public class ComplianceAuditLog {
         .build();
   }
 
-  public static ComplianceAuditLog createPIIAccessAudit(Integer employeeId, String userId,
-                                                       List<String> piiFields, String purpose) {
+  public static ComplianceAuditLog createPIIAccessAudit(
+      Integer employeeId, String userId, List<String> piiFields, String purpose) {
     return new Builder()
         .employeeId(employeeId)
         .auditType(AuditType.PII_FIELD_ACCESSED)
@@ -180,15 +185,20 @@ public class ComplianceAuditLog {
         .build();
   }
 
-  public static ComplianceAuditLog createComplianceViolationAudit(Integer employeeId, String violationType,
-                                                                 String violationDetails) {
+  public static ComplianceAuditLog createComplianceViolationAudit(
+      Integer employeeId, String violationType, String violationDetails) {
+    return createComplianceViolationAudit(employeeId, violationType, violationDetails, "HIGH");
+  }
+
+  public static ComplianceAuditLog createComplianceViolationAudit(
+      Integer employeeId, String violationType, String violationDetails, String severity) {
     return new Builder()
         .employeeId(employeeId)
         .auditType(AuditType.COMPLIANCE_VIOLATION_DETECTED)
         .userId("SYSTEM")
         .operationDetails("Compliance violation detected: " + violationDetails)
         .complianceStatus(ComplianceStatus.VIOLATION)
-        .riskLevel("HIGH")
+        .riskLevel(severity != null ? severity : "HIGH")
         .dataClassification(DataClassification.RESTRICTED)
         .systemComponent("ComplianceAuditor")
         .complianceFlag(violationType)
@@ -196,8 +206,37 @@ public class ComplianceAuditLog {
         .build();
   }
 
-  public static ComplianceAuditLog createHRWorkflowAudit(Integer employeeId, String userId,
-                                                        String hrAction, String workflowId) {
+  public static ComplianceAuditLog createSystemErrorAudit(
+      Integer employeeId, String component, String errorMessage, Map<String, String> metadata) {
+    return new Builder()
+        .employeeId(employeeId)
+        .auditType(AuditType.AUDIT_LOG_CREATED)
+        .userId("SYSTEM")
+        .operationDetails(buildOperationDetails(errorMessage, metadata))
+        .systemComponent(component)
+        .complianceStatus(ComplianceStatus.VIOLATION)
+        .riskLevel("HIGH")
+        .authorizedAccess(false)
+        .dataClassification(DataClassification.INTERNAL)
+        .build();
+  }
+
+  public static ComplianceAuditLog createDataProcessingAudit(
+      Integer employeeId, String component, String description, Map<String, ?> metadata) {
+    return new Builder()
+        .employeeId(employeeId)
+        .auditType(AuditType.AUDIT_LOG_CREATED)
+        .userId("SYSTEM")
+        .operationDetails(buildOperationDetails(description, metadata))
+        .systemComponent(component)
+        .complianceStatus(ComplianceStatus.COMPLIANT)
+        .dataClassification(DataClassification.INTERNAL)
+        .authorizedAccess(true)
+        .build();
+  }
+
+  public static ComplianceAuditLog createHRWorkflowAudit(
+      Integer employeeId, String userId, String hrAction, String workflowId) {
     return new Builder()
         .employeeId(employeeId)
         .auditType(AuditType.HR_TICKET_CREATED)
@@ -211,37 +250,148 @@ public class ComplianceAuditLog {
         .build();
   }
 
+  public static ComplianceAuditLog createValidationAudit(
+      Integer employeeId,
+      String operation,
+      String status,
+      List<FieldValidationResult> fieldResults) {
+    String details =
+        String.format(
+            "Validation %s: %d fields checked",
+            status, fieldResults != null ? fieldResults.size() : 0);
+    return new Builder()
+        .employeeId(employeeId)
+        .auditType(AuditType.PAYROLL_RECORD_VALIDATED)
+        .userId("SYSTEM")
+        .operationDetails(details)
+        .complianceStatus(
+            status.equals("PASSED") ? ComplianceStatus.COMPLIANT : ComplianceStatus.VIOLATION)
+        .dataClassification(DataClassification.FINANCIAL)
+        .systemComponent(operation)
+        .authorizedAccess(true)
+        .build();
+  }
+
   // Getters (all immutable)
-  public String getAuditId() { return auditId; }
-  public Integer getEmployeeId() { return employeeId; }
-  public Instant getAuditTimestamp() { return auditTimestamp; }
-  public AuditType getAuditType() { return auditType; }
-  public ComplianceStatus getComplianceStatus() { return complianceStatus; }
-  public String getUserId() { return userId; }
-  public String getSessionId() { return sessionId; }
-  public String getOperationDetails() { return operationDetails; }
-  public String getSystemComponent() { return systemComponent; }
-  public String getSourceIPAddress() { return sourceIPAddress; }
-  public String getUserAgent() { return userAgent; }
-  public List<String> getPiiFieldsAccessed() { return new ArrayList<>(piiFieldsAccessed); }
-  public DataClassification getDataClassification() { return dataClassification; }
-  public String getAccessPurpose() { return accessPurpose; }
-  public String getAccessJustification() { return accessJustification; }
-  public boolean isAuthorizedAccess() { return authorizedAccess; }
-  public String getComplianceFramework() { return complianceFramework; }
-  public String getRiskLevel() { return riskLevel; }
-  public String getBusinessJustification() { return businessJustification; }
-  public List<String> getComplianceFlags() { return new ArrayList<>(complianceFlags); }
-  public Instant getRetentionExpires() { return retentionExpires; }
-  public String getRetentionPolicy() { return retentionPolicy; }
-  public boolean isImmutableRecord() { return immutableRecord; }
-  public String getAuditHash() { return auditHash; }
-  public String getDigitalSignature() { return digitalSignature; }
-  public String getPreviousAuditHash() { return previousAuditHash; }
-  public String getPipelineVersion() { return pipelineVersion; }
-  public String getCorrelationId() { return correlationId; }
-  public String getTransactionId() { return transactionId; }
-  public long getProcessingLatencyMs() { return processingLatencyMs; }
+  public String getAuditId() {
+    return auditId;
+  }
+
+  public Integer getEmployeeId() {
+    return employeeId;
+  }
+
+  public Instant getAuditTimestamp() {
+    return auditTimestamp;
+  }
+
+  public AuditType getAuditType() {
+    return auditType;
+  }
+
+  public ComplianceStatus getComplianceStatus() {
+    return complianceStatus;
+  }
+
+  public String getUserId() {
+    return userId;
+  }
+
+  public String getSessionId() {
+    return sessionId;
+  }
+
+  public String getOperationDetails() {
+    return operationDetails;
+  }
+
+  public String getSystemComponent() {
+    return systemComponent;
+  }
+
+  public String getSourceIPAddress() {
+    return sourceIPAddress;
+  }
+
+  public String getUserAgent() {
+    return userAgent;
+  }
+
+  public List<String> getPiiFieldsAccessed() {
+    return new ArrayList<>(piiFieldsAccessed);
+  }
+
+  public DataClassification getDataClassification() {
+    return dataClassification;
+  }
+
+  public String getAccessPurpose() {
+    return accessPurpose;
+  }
+
+  public String getAccessJustification() {
+    return accessJustification;
+  }
+
+  public boolean isAuthorizedAccess() {
+    return authorizedAccess;
+  }
+
+  public String getComplianceFramework() {
+    return complianceFramework;
+  }
+
+  public String getRiskLevel() {
+    return riskLevel;
+  }
+
+  public String getBusinessJustification() {
+    return businessJustification;
+  }
+
+  public List<String> getComplianceFlags() {
+    return new ArrayList<>(complianceFlags);
+  }
+
+  public Instant getRetentionExpires() {
+    return retentionExpires;
+  }
+
+  public String getRetentionPolicy() {
+    return retentionPolicy;
+  }
+
+  public boolean isImmutableRecord() {
+    return immutableRecord;
+  }
+
+  public String getAuditHash() {
+    return auditHash;
+  }
+
+  public String getDigitalSignature() {
+    return digitalSignature;
+  }
+
+  public String getPreviousAuditHash() {
+    return previousAuditHash;
+  }
+
+  public String getPipelineVersion() {
+    return pipelineVersion;
+  }
+
+  public String getCorrelationId() {
+    return correlationId;
+  }
+
+  public String getTransactionId() {
+    return transactionId;
+  }
+
+  public long getProcessingLatencyMs() {
+    return processingLatencyMs;
+  }
 
   // Business logic methods
   public boolean isViolation() {
@@ -291,6 +441,13 @@ public class ComplianceAuditLog {
     }
   }
 
+  private static String buildOperationDetails(String description, Map<String, ?> metadata) {
+    if (metadata == null || metadata.isEmpty()) {
+      return description;
+    }
+    return description + " | metadata=" + metadata;
+  }
+
   // Builder pattern
   public static class Builder {
     private String auditId = UUID.randomUUID().toString();
@@ -313,7 +470,8 @@ public class ComplianceAuditLog {
     private String riskLevel = "MEDIUM";
     private String businessJustification;
     private List<String> complianceFlags = new ArrayList<>();
-    private Instant retentionExpires = Instant.now().plus(java.time.Duration.ofDays(7 * 365)); // 7 years default
+    private Instant retentionExpires =
+        Instant.now().plus(java.time.Duration.ofDays(7 * 365)); // 7 years default
     private String retentionPolicy = "STANDARD_PAYROLL_RETENTION";
     private boolean immutableRecord = true;
     private String auditHash;
@@ -324,37 +482,160 @@ public class ComplianceAuditLog {
     private String transactionId;
     private long processingLatencyMs;
 
-    public Builder auditId(String auditId) { this.auditId = auditId; return this; }
-    public Builder employeeId(Integer employeeId) { this.employeeId = employeeId; return this; }
-    public Builder auditTimestamp(Instant auditTimestamp) { this.auditTimestamp = auditTimestamp; return this; }
-    public Builder auditType(AuditType auditType) { this.auditType = auditType; return this; }
-    public Builder complianceStatus(ComplianceStatus complianceStatus) { this.complianceStatus = complianceStatus; return this; }
-    public Builder userId(String userId) { this.userId = userId; return this; }
-    public Builder sessionId(String sessionId) { this.sessionId = sessionId; return this; }
-    public Builder operationDetails(String operationDetails) { this.operationDetails = operationDetails; return this; }
-    public Builder systemComponent(String systemComponent) { this.systemComponent = systemComponent; return this; }
-    public Builder sourceIPAddress(String sourceIPAddress) { this.sourceIPAddress = sourceIPAddress; return this; }
-    public Builder userAgent(String userAgent) { this.userAgent = userAgent; return this; }
-    public Builder piiFieldsAccessed(List<String> piiFieldsAccessed) { this.piiFieldsAccessed = piiFieldsAccessed; return this; }
-    public Builder dataClassification(DataClassification dataClassification) { this.dataClassification = dataClassification; return this; }
-    public Builder accessPurpose(String accessPurpose) { this.accessPurpose = accessPurpose; return this; }
-    public Builder accessJustification(String accessJustification) { this.accessJustification = accessJustification; return this; }
-    public Builder authorizedAccess(boolean authorizedAccess) { this.authorizedAccess = authorizedAccess; return this; }
-    public Builder complianceFramework(String complianceFramework) { this.complianceFramework = complianceFramework; return this; }
-    public Builder riskLevel(String riskLevel) { this.riskLevel = riskLevel; return this; }
-    public Builder businessJustification(String businessJustification) { this.businessJustification = businessJustification; return this; }
-    public Builder complianceFlags(List<String> complianceFlags) { this.complianceFlags = complianceFlags; return this; }
-    public Builder complianceFlag(String flag) { this.complianceFlags.add(flag); return this; }
-    public Builder retentionExpires(Instant retentionExpires) { this.retentionExpires = retentionExpires; return this; }
-    public Builder retentionPolicy(String retentionPolicy) { this.retentionPolicy = retentionPolicy; return this; }
-    public Builder immutableRecord(boolean immutableRecord) { this.immutableRecord = immutableRecord; return this; }
-    public Builder auditHash(String auditHash) { this.auditHash = auditHash; return this; }
-    public Builder digitalSignature(String digitalSignature) { this.digitalSignature = digitalSignature; return this; }
-    public Builder previousAuditHash(String previousAuditHash) { this.previousAuditHash = previousAuditHash; return this; }
-    public Builder pipelineVersion(String pipelineVersion) { this.pipelineVersion = pipelineVersion; return this; }
-    public Builder correlationId(String correlationId) { this.correlationId = correlationId; return this; }
-    public Builder transactionId(String transactionId) { this.transactionId = transactionId; return this; }
-    public Builder processingLatencyMs(long processingLatencyMs) { this.processingLatencyMs = processingLatencyMs; return this; }
+    public Builder auditId(String auditId) {
+      this.auditId = auditId;
+      return this;
+    }
+
+    public Builder employeeId(Integer employeeId) {
+      this.employeeId = employeeId;
+      return this;
+    }
+
+    public Builder auditTimestamp(Instant auditTimestamp) {
+      this.auditTimestamp = auditTimestamp;
+      return this;
+    }
+
+    public Builder auditType(AuditType auditType) {
+      this.auditType = auditType;
+      return this;
+    }
+
+    public Builder complianceStatus(ComplianceStatus complianceStatus) {
+      this.complianceStatus = complianceStatus;
+      return this;
+    }
+
+    public Builder userId(String userId) {
+      this.userId = userId;
+      return this;
+    }
+
+    public Builder sessionId(String sessionId) {
+      this.sessionId = sessionId;
+      return this;
+    }
+
+    public Builder operationDetails(String operationDetails) {
+      this.operationDetails = operationDetails;
+      return this;
+    }
+
+    public Builder systemComponent(String systemComponent) {
+      this.systemComponent = systemComponent;
+      return this;
+    }
+
+    public Builder sourceIPAddress(String sourceIPAddress) {
+      this.sourceIPAddress = sourceIPAddress;
+      return this;
+    }
+
+    public Builder userAgent(String userAgent) {
+      this.userAgent = userAgent;
+      return this;
+    }
+
+    public Builder piiFieldsAccessed(List<String> piiFieldsAccessed) {
+      this.piiFieldsAccessed = piiFieldsAccessed;
+      return this;
+    }
+
+    public Builder dataClassification(DataClassification dataClassification) {
+      this.dataClassification = dataClassification;
+      return this;
+    }
+
+    public Builder accessPurpose(String accessPurpose) {
+      this.accessPurpose = accessPurpose;
+      return this;
+    }
+
+    public Builder accessJustification(String accessJustification) {
+      this.accessJustification = accessJustification;
+      return this;
+    }
+
+    public Builder authorizedAccess(boolean authorizedAccess) {
+      this.authorizedAccess = authorizedAccess;
+      return this;
+    }
+
+    public Builder complianceFramework(String complianceFramework) {
+      this.complianceFramework = complianceFramework;
+      return this;
+    }
+
+    public Builder riskLevel(String riskLevel) {
+      this.riskLevel = riskLevel;
+      return this;
+    }
+
+    public Builder businessJustification(String businessJustification) {
+      this.businessJustification = businessJustification;
+      return this;
+    }
+
+    public Builder complianceFlags(List<String> complianceFlags) {
+      this.complianceFlags = complianceFlags;
+      return this;
+    }
+
+    public Builder complianceFlag(String flag) {
+      this.complianceFlags.add(flag);
+      return this;
+    }
+
+    public Builder retentionExpires(Instant retentionExpires) {
+      this.retentionExpires = retentionExpires;
+      return this;
+    }
+
+    public Builder retentionPolicy(String retentionPolicy) {
+      this.retentionPolicy = retentionPolicy;
+      return this;
+    }
+
+    public Builder immutableRecord(boolean immutableRecord) {
+      this.immutableRecord = immutableRecord;
+      return this;
+    }
+
+    public Builder auditHash(String auditHash) {
+      this.auditHash = auditHash;
+      return this;
+    }
+
+    public Builder digitalSignature(String digitalSignature) {
+      this.digitalSignature = digitalSignature;
+      return this;
+    }
+
+    public Builder previousAuditHash(String previousAuditHash) {
+      this.previousAuditHash = previousAuditHash;
+      return this;
+    }
+
+    public Builder pipelineVersion(String pipelineVersion) {
+      this.pipelineVersion = pipelineVersion;
+      return this;
+    }
+
+    public Builder correlationId(String correlationId) {
+      this.correlationId = correlationId;
+      return this;
+    }
+
+    public Builder transactionId(String transactionId) {
+      this.transactionId = transactionId;
+      return this;
+    }
+
+    public Builder processingLatencyMs(long processingLatencyMs) {
+      this.processingLatencyMs = processingLatencyMs;
+      return this;
+    }
 
     public ComplianceAuditLog build() {
       Objects.requireNonNull(auditType, "Audit type is required");
@@ -386,13 +667,21 @@ public class ComplianceAuditLog {
 
   @Override
   public String toString() {
-    return "ComplianceAuditLog{" +
-           "auditId='" + auditId + '\'' +
-           ", employeeId=" + employeeId +
-           ", auditType=" + auditType +
-           ", complianceStatus=" + complianceStatus +
-           ", userId='" + userId + '\'' +
-           ", timestamp=" + auditTimestamp +
-           '}';
+    return "ComplianceAuditLog{"
+        + "auditId='"
+        + auditId
+        + '\''
+        + ", employeeId="
+        + employeeId
+        + ", auditType="
+        + auditType
+        + ", complianceStatus="
+        + complianceStatus
+        + ", userId='"
+        + userId
+        + '\''
+        + ", timestamp="
+        + auditTimestamp
+        + '}';
   }
 }

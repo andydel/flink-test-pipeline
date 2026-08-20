@@ -7,10 +7,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Integration test for valid employee record processing through the complete pipeline.
- * Tests the end-to-end flow from Kafka input to Iceberg output.
+ * Integration test for valid employee record processing through the complete pipeline. Tests the
+ * end-to-end flow from Kafka input to Iceberg output.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollDataQualityPipeline is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollDataQualityPipeline is
+ * implemented.
  */
 @DisplayName("Valid Employee Record Processing Integration Tests")
 class ValidEmployeeProcessingTest {
@@ -83,7 +84,8 @@ class ValidEmployeeProcessingTest {
     // LocalDateTime now = LocalDateTime.now();
     // String expectedPartition = String.format("year=%d/month=%d/day=%d/hour=%d",
     //     now.getYear(), now.getMonthValue(), now.getDayOfMonth(), now.getHour());
-    // assertTrue(icebergConsumer.verifyPartition(expectedPartition), "Record should be in correct partition");
+    // assertTrue(icebergConsumer.verifyPartition(expectedPartition), "Record should be in correct
+    // partition");
 
     // For now, verify encryption concept
     String testSSN = "123-45-6789";
@@ -102,7 +104,8 @@ class ValidEmployeeProcessingTest {
     // long processingTimeMs = (System.nanoTime() - startTime) / 1_000_000;
 
     // assertNotNull(result, "Employee should be processed");
-    // assertTrue(processingTimeMs < 50, "Processing should be under 50ms, was: " + processingTimeMs + "ms");
+    // assertTrue(processingTimeMs < 50, "Processing should be under 50ms, was: " + processingTimeMs
+    // + "ms");
 
     // For now, verify latency requirement
     int maxLatencyMs = 50;
@@ -142,12 +145,14 @@ class ValidEmployeeProcessingTest {
     //     kafkaProducer.send("payroll-employees", employee);
     // }
 
-    // List<PayrollEmployee> processedEmployees = icebergConsumer.waitForRecords(recordCount, 30000);
+    // List<PayrollEmployee> processedEmployees = icebergConsumer.waitForRecords(recordCount,
+    // 30000);
     // long totalTime = System.currentTimeMillis() - startTime;
 
     // assertEquals(recordCount, processedEmployees.size(), "All records should be processed");
     // double recordsPerSecond = (recordCount * 1000.0) / totalTime;
-    // assertTrue(recordsPerSecond >= 100, "Should process at least 100 records/second, was: " + recordsPerSecond);
+    // assertTrue(recordsPerSecond >= 100, "Should process at least 100 records/second, was: " +
+    // recordsPerSecond);
 
     // For now, verify throughput concept
     double targetThroughput = 100.0; // records/second

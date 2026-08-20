@@ -4,7 +4,6 @@ import com.flinkpipeline.payroll.models.PayrollEmployee;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.Map;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericDatumReader;
 import org.apache.avro.generic.GenericRecord;
@@ -13,14 +12,14 @@ import org.apache.avro.io.DatumReader;
 import org.apache.avro.io.DecoderFactory;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.util.Collector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Flink deserializer for converting Avro-serialized payroll employee records into PayrollEmployee objects.
- * Handles schema evolution, validation, and error recovery for streaming payroll data processing.
- * Integrates with Confluent Schema Registry for schema management and version compatibility.
+ * Flink deserializer for converting Avro-serialized payroll employee records into PayrollEmployee
+ * objects. Handles schema evolution, validation, and error recovery for streaming payroll data
+ * processing. Integrates with Confluent Schema Registry for schema management and version
+ * compatibility.
  */
 public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmployee> {
 
@@ -52,9 +51,12 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     this(schemaRegistryUrl, schemaSubject, true, true, true);
   }
 
-  public PayrollAvroDeserializer(String schemaRegistryUrl, String schemaSubject,
-                                boolean useLatestVersion, boolean strictValidation,
-                                boolean enableSchemaEvolution) {
+  public PayrollAvroDeserializer(
+      String schemaRegistryUrl,
+      String schemaSubject,
+      boolean useLatestVersion,
+      boolean strictValidation,
+      boolean enableSchemaEvolution) {
     this.schemaRegistryUrl = schemaRegistryUrl;
     this.schemaSubject = schemaSubject;
     this.useLatestVersion = useLatestVersion;
@@ -65,8 +67,10 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
 
   @Override
   public void open(InitializationContext context) throws Exception {
-    LOG.info("Initializing PayrollAvroDeserializer with schema registry: {}, subject: {}",
-             schemaRegistryUrl, schemaSubject);
+    LOG.info(
+        "Initializing PayrollAvroDeserializer with schema registry: {}, subject: {}",
+        schemaRegistryUrl,
+        schemaSubject);
 
     try {
       // Initialize schema manager
@@ -75,16 +79,18 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
       // Load schemas
       if (useLatestVersion) {
         this.writerSchema = schemaManager.getLatestSchema(schemaSubject);
-        LOG.info("Loaded latest schema version {} for subject {}",
-                 schemaManager.getLatestSchemaVersion(schemaSubject), schemaSubject);
+        LOG.info(
+            "Loaded latest schema version {} for subject {}",
+            schemaManager.getLatestSchemaVersion(schemaSubject),
+            schemaSubject);
       } else {
         this.writerSchema = schemaManager.getSchema(schemaSubject, 1); // Use version 1 as default
         LOG.info("Loaded schema version 1 for subject {}", schemaSubject);
       }
 
       // Set reader schema (for schema evolution)
-      this.readerSchema = enableSchemaEvolution ?
-          schemaManager.getPayrollEmployeeReaderSchema() : writerSchema;
+      this.readerSchema =
+          enableSchemaEvolution ? schemaManager.getPayrollEmployeeReaderSchema() : writerSchema;
 
       // Initialize datum reader
       this.datumReader = new GenericDatumReader<>(writerSchema, readerSchema);
@@ -118,9 +124,10 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
 
     } catch (Exception e) {
       totalDeserializationErrors++;
-      String errorMessage = String.format(
-          "Failed to deserialize payroll record (total processed: %d, errors: %d): %s",
-          totalRecordsProcessed, totalDeserializationErrors, e.getMessage());
+      String errorMessage =
+          String.format(
+              "Failed to deserialize payroll record (total processed: %d, errors: %d): %s",
+              totalRecordsProcessed, totalDeserializationErrors, e.getMessage());
 
       if (strictValidation) {
         LOG.error(errorMessage, e);
@@ -134,22 +141,28 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Deserialize message with Confluent Schema Registry wire format
-   */
+  /** Deserialize message with Confluent Schema Registry wire format */
   private PayrollEmployee deserializeWithSchemaRegistry(byte[] message) throws IOException {
     try {
       // Extract schema ID from wire format
       int schemaId = extractSchemaId(message);
 
-      // Get schema for this specific version
-      Schema specificWriterSchema = schemaManager.getSchemaById(schemaId);
+      Schema specificWriterSchema;
+      try {
+        // Get schema for this specific version
+        specificWriterSchema = schemaManager.getSchemaById(schemaId);
+      } catch (IOException e) {
+        LOG.warn(
+            "Failed to fetch schema for ID {} from registry. Falling back to latest schema.",
+            schemaId,
+            e);
+        specificWriterSchema = schemaManager.getLatestSchema(schemaSubject);
+      }
 
       // Check if schema evolution is needed
       if (!specificWriterSchema.equals(writerSchema)) {
         totalSchemaEvolutionEvents++;
-        LOG.debug("Schema evolution detected: writer schema ID {} differs from expected",
-                 schemaId);
+        LOG.debug("Schema evolution detected: writer schema ID {} differs from expected", schemaId);
 
         // Create new datum reader for this schema version
         GenericDatumReader<GenericRecord> evolutionReader =
@@ -165,21 +178,18 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Deserialize message without Schema Registry format (plain Avro)
-   */
+  /** Deserialize message without Schema Registry format (plain Avro) */
   private PayrollEmployee deserializeWithoutSchemaRegistry(byte[] message) throws IOException {
     return deserializeWithReader(message, 0, datumReader);
   }
 
-  /**
-   * Perform actual deserialization with given reader and offset
-   */
-  private PayrollEmployee deserializeWithReader(byte[] message, int offset,
-                                               DatumReader<GenericRecord> reader) throws IOException {
+  /** Perform actual deserialization with given reader and offset */
+  private PayrollEmployee deserializeWithReader(
+      byte[] message, int offset, DatumReader<GenericRecord> reader) throws IOException {
     try {
       // Create binary decoder
-      ByteArrayInputStream inputStream = new ByteArrayInputStream(message, offset, message.length - offset);
+      ByteArrayInputStream inputStream =
+          new ByteArrayInputStream(message, offset, message.length - offset);
       BinaryDecoder decoder = DecoderFactory.get().binaryDecoder(inputStream, null);
 
       // Deserialize to GenericRecord
@@ -193,27 +203,27 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Convert Avro GenericRecord to PayrollEmployee domain object
-   */
+  /** Convert Avro GenericRecord to PayrollEmployee domain object */
   private PayrollEmployee convertToPayrollEmployee(GenericRecord record) {
     try {
       PayrollEmployee.Builder builder = PayrollEmployee.builder();
 
       // Extract fields with null-safe conversion
-      builder.employeeId(getIntegerField(record, "employee_id"))
-             .firstName(getStringField(record, "first_name"))
-             .lastName(getStringField(record, "last_name"))
-             .age(getIntegerField(record, "age"))
-             .ssn(getStringField(record, "ssn"))
-             .hourlyRate(getIntegerField(record, "hourly_rate_cents"))
-             .gender(getStringField(record, "gender"))
-             .email(getStringField(record, "email"));
+      builder
+          .employeeId(getIntegerField(record, "employee_id"))
+          .firstName(getStringField(record, "first_name"))
+          .lastName(getStringField(record, "last_name"))
+          .age(getIntegerField(record, "age"))
+          .ssn(getStringField(record, "ssn"))
+          .hourlyRate(getIntegerField(record, "hourly_rate_cents"))
+          .gender(getStringField(record, "gender"))
+          .email(getStringField(record, "email"));
 
       // Add processing metadata
-      builder.ingestionTimestamp(Instant.now())
-             .sourceSystem(getStringField(record, "source_system", "KAFKA_AVRO"))
-             .pipelineVersion("1.0.0");
+      builder
+          .ingestionTimestamp(Instant.now().toEpochMilli())
+          .sourceSystem(getStringField(record, "source_system", "KAFKA_AVRO"))
+          .pipelineVersion("1.0.0");
 
       return builder.build();
 
@@ -222,22 +232,18 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Extract schema ID from Confluent wire format
-   */
+  /** Extract schema ID from Confluent wire format */
   private int extractSchemaId(byte[] message) {
     if (message.length < 5) {
       throw new IllegalArgumentException("Message too short for Schema Registry format");
     }
-    return ((message[1] & 0xFF) << 24) |
-           ((message[2] & 0xFF) << 16) |
-           ((message[3] & 0xFF) << 8) |
-           (message[4] & 0xFF);
+    return ((message[1] & 0xFF) << 24)
+        | ((message[2] & 0xFF) << 16)
+        | ((message[3] & 0xFF) << 8)
+        | (message[4] & 0xFF);
   }
 
-  /**
-   * Null-safe field extraction helpers
-   */
+  /** Null-safe field extraction helpers */
   private String getStringField(GenericRecord record, String fieldName) {
     Object value = record.get(fieldName);
     return value != null ? value.toString() : null;
@@ -272,35 +278,29 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     return TypeInformation.of(PayrollEmployee.class);
   }
 
-  /**
-   * Collect deserialization metrics
-   */
+  /** Collect deserialization metrics */
   public DeserializationMetrics getMetrics() {
     return new DeserializationMetrics(
         totalRecordsProcessed,
         totalDeserializationErrors,
         totalSchemaEvolutionEvents,
-        calculateErrorRate()
-    );
+        calculateErrorRate());
   }
 
   private double calculateErrorRate() {
-    return totalRecordsProcessed > 0 ?
-        (double) totalDeserializationErrors / totalRecordsProcessed : 0.0;
+    return totalRecordsProcessed > 0
+        ? (double) totalDeserializationErrors / totalRecordsProcessed
+        : 0.0;
   }
 
-  /**
-   * Reset metrics counters
-   */
+  /** Reset metrics counters */
   public void resetMetrics() {
     totalRecordsProcessed = 0;
     totalDeserializationErrors = 0;
     totalSchemaEvolutionEvents = 0;
   }
 
-  /**
-   * Validate record against business rules (optional)
-   */
+  /** Validate record against business rules (optional) */
   private void validateRecord(PayrollEmployee employee) throws IOException {
     if (!strictValidation) return;
 
@@ -320,14 +320,15 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     // Additional validations can be added here
   }
 
-  /**
-   * Handle schema evolution compatibility issues
-   */
-  private void handleSchemaEvolution(GenericRecord record, Schema writerSchema, Schema readerSchema) {
+  /** Handle schema evolution compatibility issues */
+  private void handleSchemaEvolution(
+      GenericRecord record, Schema writerSchema, Schema readerSchema) {
     // Log schema differences for monitoring
     if (!writerSchema.equals(readerSchema)) {
-      LOG.debug("Schema evolution detected - writer: {}, reader: {}",
-               writerSchema.getFullName(), readerSchema.getFullName());
+      LOG.debug(
+          "Schema evolution detected - writer: {}, reader: {}",
+          writerSchema.getFullName(),
+          readerSchema.getFullName());
     }
 
     // Handle missing fields with defaults
@@ -338,27 +339,36 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Metrics data class
-   */
+  /** Metrics data class */
   public static class DeserializationMetrics {
     private final long totalRecords;
     private final long totalErrors;
     private final long schemaEvolutions;
     private final double errorRate;
 
-    public DeserializationMetrics(long totalRecords, long totalErrors,
-                                 long schemaEvolutions, double errorRate) {
+    public DeserializationMetrics(
+        long totalRecords, long totalErrors, long schemaEvolutions, double errorRate) {
       this.totalRecords = totalRecords;
       this.totalErrors = totalErrors;
       this.schemaEvolutions = schemaEvolutions;
       this.errorRate = errorRate;
     }
 
-    public long getTotalRecords() { return totalRecords; }
-    public long getTotalErrors() { return totalErrors; }
-    public long getSchemaEvolutions() { return schemaEvolutions; }
-    public double getErrorRate() { return errorRate; }
+    public long getTotalRecords() {
+      return totalRecords;
+    }
+
+    public long getTotalErrors() {
+      return totalErrors;
+    }
+
+    public long getSchemaEvolutions() {
+      return schemaEvolutions;
+    }
+
+    public double getErrorRate() {
+      return errorRate;
+    }
 
     @Override
     public String toString() {
@@ -368,9 +378,7 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
     }
   }
 
-  /**
-   * Configuration builder for deserializer
-   */
+  /** Configuration builder for deserializer */
   public static class Builder {
     private String schemaRegistryUrl;
     private String schemaSubject = "payroll-employee-value";
@@ -413,8 +421,12 @@ public class PayrollAvroDeserializer implements DeserializationSchema<PayrollEmp
       if (schemaRegistryUrl == null || schemaRegistryUrl.trim().isEmpty()) {
         throw new IllegalArgumentException("Schema Registry URL is required");
       }
-      return new PayrollAvroDeserializer(schemaRegistryUrl, schemaSubject,
-                                        useLatestVersion, strictValidation, enableSchemaEvolution);
+      return new PayrollAvroDeserializer(
+          schemaRegistryUrl,
+          schemaSubject,
+          useLatestVersion,
+          strictValidation,
+          enableSchemaEvolution);
     }
   }
 }

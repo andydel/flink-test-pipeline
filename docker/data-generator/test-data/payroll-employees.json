@@ -1,0 +1,44 @@
+[
+  {
+    "employee_id": 1001,
+    "first_name": "John",
+    "last_name": "Doe",
+    "age": 32,
+    "ssn": "123-45-6789",
+    "hourly_rate": 3200,
+    "hourly_rate_cents": 3200,
+    "gender": "male",
+    "email": "john.doe@example.com",
+    "source_system": "PAYROLL_TEST",
+    "ingestion_timestamp": null,
+    "pipeline_version": "1.0.0"
+  },
+  {
+    "employee_id": 1002,
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "age": 28,
+    "ssn": "987-65-4321",
+    "hourly_rate": 3550,
+    "hourly_rate_cents": 3550,
+    "gender": "female",
+    "email": "jane.smith@example.com",
+    "source_system": "PAYROLL_TEST",
+    "ingestion_timestamp": null,
+    "pipeline_version": "1.0.0"
+  },
+  {
+    "employee_id": 1003,
+    "first_name": "Alex",
+    "last_name": "Johnson",
+    "age": 41,
+    "ssn": "555-11-2222",
+    "hourly_rate": 4100,
+    "hourly_rate_cents": 4100,
+    "gender": "non-binary",
+    "email": "alex.johnson@example.com",
+    "source_system": "PAYROLL_TEST",
+    "ingestion_timestamp": null,
+    "pipeline_version": "1.0.0"
+  }
+]

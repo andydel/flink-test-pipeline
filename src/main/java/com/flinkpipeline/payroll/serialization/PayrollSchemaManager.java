@@ -2,7 +2,6 @@ package com.flinkpipeline.payroll.serialization;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -11,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Schema manager for Apache Avro schemas used in payroll data processing.
- * Manages schema registration, versioning, evolution, and compatibility checking
- * with Confluent Schema Registry for payroll employee records.
+ * Schema manager for Apache Avro schemas used in payroll data processing. Manages schema
+ * registration, versioning, evolution, and compatibility checking with Confluent Schema Registry
+ * for payroll employee records.
  */
 public class PayrollSchemaManager {
 
@@ -34,7 +33,8 @@ public class PayrollSchemaManager {
   private final Map<String, Long> cacheTimestamps = new ConcurrentHashMap<>();
 
   // Built-in schemas
-  private static final String PAYROLL_EMPLOYEE_SCHEMA_V1 = """
+  private static final String PAYROLL_EMPLOYEE_SCHEMA_V1 =
+      """
       {
         "type": "record",
         "name": "PayrollEmployee",
@@ -55,13 +55,14 @@ public class PayrollSchemaManager {
       }
       """;
 
-  private static final String FAILED_PAYROLL_RECORD_SCHEMA_V1 = """
+  private static final String FAILED_PAYROLL_RECORD_SCHEMA_V1 =
+      """
       {
         "type": "record",
         "name": "FailedPayrollRecord",
         "namespace": "com.flinkpipeline.payroll.avro",
         "fields": [
-          {"name": "original_record", "type": "PayrollEmployee", "doc": "Original employee record"},
+          {"name": "original_record", "type": "com.flinkpipeline.payroll.avro.PayrollEmployee", "doc": "Original employee record"},
           {"name": "failure_timestamp", "type": "long", "doc": "Failure timestamp"},
           {"name": "hr_workflow_id", "type": "string", "doc": "HR workflow identifier"},
           {"name": "validation_errors", "type": {"type": "array", "items": "string"}, "doc": "List of validation errors"},
@@ -79,8 +80,8 @@ public class PayrollSchemaManager {
     this(schemaRegistryUrl, 30000, 30000, TimeUnit.HOURS.toMillis(1));
   }
 
-  public PayrollSchemaManager(String schemaRegistryUrl, int connectionTimeoutMs,
-                             int readTimeoutMs, long cacheExpiryMs) {
+  public PayrollSchemaManager(
+      String schemaRegistryUrl, int connectionTimeoutMs, int readTimeoutMs, long cacheExpiryMs) {
     this.schemaRegistryUrl = schemaRegistryUrl;
     this.connectionTimeoutMs = connectionTimeoutMs;
     this.readTimeoutMs = readTimeoutMs;
@@ -90,20 +91,20 @@ public class PayrollSchemaManager {
     initializeBuiltInSchemas();
   }
 
-  /**
-   * Initialize built-in schemas for offline/testing scenarios
-   */
+  /** Initialize built-in schemas for offline/testing scenarios */
   private void initializeBuiltInSchemas() {
     try {
-      // Parse and cache built-in schemas
-      Schema payrollEmployeeSchema = new Schema.Parser().parse(PAYROLL_EMPLOYEE_SCHEMA_V1);
-      Schema failedRecordSchema = new Schema.Parser().parse(FAILED_PAYROLL_RECORD_SCHEMA_V1);
+      // Parse and cache built-in schemas using a shared parser so referenced
+      // types (e.g., PayrollEmployee) are visible to dependent schemas.
+      Schema.Parser parser = new Schema.Parser();
+      Schema payrollEmployeeSchema = parser.parse(PAYROLL_EMPLOYEE_SCHEMA_V1);
+      Schema failedRecordSchema = parser.parse(FAILED_PAYROLL_RECORD_SCHEMA_V1);
 
       schemaCache.put("payroll-employee-value", payrollEmployeeSchema);
       schemaCache.put("failed-payroll-record-value", failedRecordSchema);
 
       // Cache with artificial IDs for built-in schemas
-      schemaIdCache.put(1001, payrollEmployeeSchema);
+      schemaIdCache.put(1, payrollEmployeeSchema);
       schemaIdCache.put(1002, failedRecordSchema);
 
       LOG.info("Initialized built-in schemas for offline operation");
@@ -114,9 +115,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Get schema by subject name (latest version)
-   */
+  /** Get schema by subject name (latest version) */
   public Schema getLatestSchema(String subject) throws IOException {
     String cacheKey = subject + ":latest";
 
@@ -150,9 +149,7 @@ public class PayrollSchemaManager {
     throw new IOException("Schema not found for subject: " + subject);
   }
 
-  /**
-   * Get schema by subject and version
-   */
+  /** Get schema by subject and version */
   public Schema getSchema(String subject, int version) throws IOException {
     String cacheKey = subject + ":" + version;
 
@@ -173,8 +170,11 @@ public class PayrollSchemaManager {
         return schema;
       }
     } catch (Exception e) {
-      LOG.warn("Failed to fetch schema from registry for subject {} version {}: {}",
-               subject, version, e.getMessage());
+      LOG.warn(
+          "Failed to fetch schema from registry for subject {} version {}: {}",
+          subject,
+          version,
+          e.getMessage());
     }
 
     // Fallback to built-in schemas for version 1
@@ -189,9 +189,7 @@ public class PayrollSchemaManager {
     throw new IOException("Schema not found for subject: " + subject + ", version: " + version);
   }
 
-  /**
-   * Get schema by schema ID
-   */
+  /** Get schema by schema ID */
   public Schema getSchemaById(int schemaId) throws IOException {
     // Check cache first
     Schema cached = schemaIdCache.get(schemaId);
@@ -211,25 +209,32 @@ public class PayrollSchemaManager {
       LOG.warn("Failed to fetch schema from registry for ID {}: {}", schemaId, e.getMessage());
     }
 
+    if (schemaId == 1) {
+      Schema builtIn = schemaCache.get("payroll-employee-value");
+      if (builtIn != null) {
+        LOG.info("Using built-in schema for ID {}", schemaId);
+        schemaIdCache.put(schemaId, builtIn);
+        return builtIn;
+      }
+    }
+
     throw new IOException("Schema not found for ID: " + schemaId);
   }
 
-  /**
-   * Get latest schema version number
-   */
+  /** Get latest schema version number */
   public int getLatestSchemaVersion(String subject) throws IOException {
     try {
       return fetchLatestVersionFromRegistry(subject);
     } catch (Exception e) {
-      LOG.warn("Failed to fetch latest version from registry for subject {}: {}",
-               subject, e.getMessage());
+      LOG.warn(
+          "Failed to fetch latest version from registry for subject {}: {}",
+          subject,
+          e.getMessage());
       return 1; // Default to version 1 for built-in schemas
     }
   }
 
-  /**
-   * Register new schema version
-   */
+  /** Register new schema version */
   public int registerSchema(String subject, Schema schema) throws IOException {
     try {
       int schemaId = registerSchemaInRegistry(subject, schema);
@@ -248,15 +253,13 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Check schema compatibility
-   */
+  /** Check schema compatibility */
   public boolean isCompatible(String subject, Schema schema) {
     try {
       return checkCompatibilityInRegistry(subject, schema);
     } catch (Exception e) {
-      LOG.warn("Failed to check compatibility in registry for subject {}: {}",
-               subject, e.getMessage());
+      LOG.warn(
+          "Failed to check compatibility in registry for subject {}: {}", subject, e.getMessage());
 
       // Fallback to basic compatibility check
       try {
@@ -269,9 +272,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Get PayrollEmployee reader schema for schema evolution
-   */
+  /** Get PayrollEmployee reader schema for schema evolution */
   public Schema getPayrollEmployeeReaderSchema() {
     try {
       return getLatestSchema("payroll-employee-value");
@@ -281,9 +282,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Get FailedPayrollRecord schema
-   */
+  /** Get FailedPayrollRecord schema */
   public Schema getFailedPayrollRecordSchema() {
     try {
       return getLatestSchema("failed-payroll-record-value");
@@ -293,9 +292,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Load schema from classpath resource
-   */
+  /** Load schema from classpath resource */
   public Schema loadSchemaFromResource(String resourcePath) throws IOException {
     try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
       if (inputStream == null) {
@@ -314,9 +311,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Clear schema caches
-   */
+  /** Clear schema caches */
   public void clearCache() {
     schemaCache.clear();
     schemaIdCache.clear();
@@ -325,16 +320,13 @@ public class PayrollSchemaManager {
     LOG.info("Cleared all schema caches");
   }
 
-  /**
-   * Get cache statistics
-   */
+  /** Get cache statistics */
   public CacheStatistics getCacheStatistics() {
     return new CacheStatistics(
         schemaCache.size(),
         schemaIdCache.size(),
         subjectVersionCache.size(),
-        cacheTimestamps.size()
-    );
+        cacheTimestamps.size());
   }
 
   // Private helper methods
@@ -360,7 +352,8 @@ public class PayrollSchemaManager {
 
   private Schema fetchSchemaFromRegistry(String subject, int version) throws IOException {
     // Simulate Schema Registry interaction
-    LOG.debug("Attempting to fetch schema for subject {} version {} from registry", subject, version);
+    LOG.debug(
+        "Attempting to fetch schema for subject {} version {} from registry", subject, version);
 
     // For testing/demo purposes, return null to trigger fallback
     return null;
@@ -422,27 +415,36 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Cache statistics data class
-   */
+  /** Cache statistics data class */
   public static class CacheStatistics {
     private final int schemaCacheSize;
     private final int schemaIdCacheSize;
     private final int versionCacheSize;
     private final int timestampCacheSize;
 
-    public CacheStatistics(int schemaCacheSize, int schemaIdCacheSize,
-                          int versionCacheSize, int timestampCacheSize) {
+    public CacheStatistics(
+        int schemaCacheSize, int schemaIdCacheSize, int versionCacheSize, int timestampCacheSize) {
       this.schemaCacheSize = schemaCacheSize;
       this.schemaIdCacheSize = schemaIdCacheSize;
       this.versionCacheSize = versionCacheSize;
       this.timestampCacheSize = timestampCacheSize;
     }
 
-    public int getSchemaCacheSize() { return schemaCacheSize; }
-    public int getSchemaIdCacheSize() { return schemaIdCacheSize; }
-    public int getVersionCacheSize() { return versionCacheSize; }
-    public int getTimestampCacheSize() { return timestampCacheSize; }
+    public int getSchemaCacheSize() {
+      return schemaCacheSize;
+    }
+
+    public int getSchemaIdCacheSize() {
+      return schemaIdCacheSize;
+    }
+
+    public int getVersionCacheSize() {
+      return versionCacheSize;
+    }
+
+    public int getTimestampCacheSize() {
+      return timestampCacheSize;
+    }
 
     @Override
     public String toString() {
@@ -452,9 +454,7 @@ public class PayrollSchemaManager {
     }
   }
 
-  /**
-   * Builder for PayrollSchemaManager configuration
-   */
+  /** Builder for PayrollSchemaManager configuration */
   public static class Builder {
     private String schemaRegistryUrl;
     private int connectionTimeoutMs = 30000;
@@ -485,7 +485,8 @@ public class PayrollSchemaManager {
       if (schemaRegistryUrl == null || schemaRegistryUrl.trim().isEmpty()) {
         throw new IllegalArgumentException("Schema Registry URL is required");
       }
-      return new PayrollSchemaManager(schemaRegistryUrl, connectionTimeoutMs, readTimeoutMs, cacheExpiryMs);
+      return new PayrollSchemaManager(
+          schemaRegistryUrl, connectionTimeoutMs, readTimeoutMs, cacheExpiryMs);
     }
   }
 }

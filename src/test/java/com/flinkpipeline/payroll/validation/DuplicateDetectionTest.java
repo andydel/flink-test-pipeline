@@ -3,19 +3,18 @@ package com.flinkpipeline.payroll.validation;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test class for validating employee duplicate detection functionality.
- * Tests detection of duplicate employees based on SSN, email, and combination rules.
+ * Test class for validating employee duplicate detection functionality. Tests detection of
+ * duplicate employees based on SSN, email, and combination rules.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until duplicate detection is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until duplicate detection is
+ * implemented.
  */
 @DisplayName("Employee Duplicate Detection Tests")
 class DuplicateDetectionTest {
@@ -37,38 +36,41 @@ class DuplicateDetectionTest {
     // duplicateDetectionService = new DuplicateDetectionService(employeeRepository);
 
     // Create test employees for duplicate detection scenarios
-    employee1 = PayrollEmployee.builder()
-        .employeeId(1001)
-        .firstName("John")
-        .lastName("Doe")
-        .age(30)
-        .ssn("123-45-6789")
-        .hourlyRateFromDollars(25.00)
-        .gender("male")
-        .email("john.doe@company.com")
-        .build();
+    employee1 =
+        PayrollEmployee.builder()
+            .employeeId(1001)
+            .firstName("John")
+            .lastName("Doe")
+            .age(30)
+            .ssn("123-45-6789")
+            .hourlyRateFromDollars(25.00)
+            .gender("male")
+            .email("john.doe@company.com")
+            .build();
 
-    employee2 = PayrollEmployee.builder()
-        .employeeId(1002)
-        .firstName("Jane")
-        .lastName("Smith")
-        .age(28)
-        .ssn("987-65-4321")
-        .hourlyRateFromDollars(30.00)
-        .gender("female")
-        .email("jane.smith@company.com")
-        .build();
+    employee2 =
+        PayrollEmployee.builder()
+            .employeeId(1002)
+            .firstName("Jane")
+            .lastName("Smith")
+            .age(28)
+            .ssn("987-65-4321")
+            .hourlyRateFromDollars(30.00)
+            .gender("female")
+            .email("jane.smith@company.com")
+            .build();
 
-    employee3 = PayrollEmployee.builder()
-        .employeeId(1003)
-        .firstName("John")
-        .lastName("Doe")
-        .age(30)
-        .ssn("123-45-6789") // Same SSN as employee1
-        .hourlyRateFromDollars(25.00)
-        .gender("male")
-        .email("john.doe2@company.com") // Different email
-        .build();
+    employee3 =
+        PayrollEmployee.builder()
+            .employeeId(1003)
+            .firstName("John")
+            .lastName("Doe")
+            .age(30)
+            .ssn("123-45-6789") // Same SSN as employee1
+            .hourlyRateFromDollars(25.00)
+            .gender("male")
+            .email("john.doe2@company.com") // Different email
+            .build();
   }
 
   @Test
@@ -80,7 +82,8 @@ class DuplicateDetectionTest {
     // TODO: This assertion will fail until duplicate detection is implemented
     // List<PayrollEmployee> employees = Arrays.asList(employee1, employee2, employee3);
     // Set<String> duplicateSSNs = duplicateDetectionService.findDuplicateSSNs(employees);
-    // assertTrue(duplicateSSNs.contains(duplicateSSN), "Should detect duplicate SSN: " + duplicateSSN);
+    // assertTrue(duplicateSSNs.contains(duplicateSSN), "Should detect duplicate SSN: " +
+    // duplicateSSN);
 
     // For now, verify test data setup
     assertEquals(duplicateSSN, employee1.getSsn(), "Employee1 should have test SSN");
@@ -92,84 +95,98 @@ class DuplicateDetectionTest {
   @DisplayName("Should detect duplicate email addresses")
   void shouldDetectDuplicateEmailAddresses() {
     // Create employees with duplicate email
-    PayrollEmployee duplicateEmailEmployee = PayrollEmployee.builder()
-        .employeeId(1004)
-        .firstName("Johnny")
-        .lastName("Doe")
-        .age(31)
-        .ssn("111-22-3333")
-        .hourlyRateFromDollars(27.00)
-        .gender("male")
-        .email("john.doe@company.com") // Same email as employee1
-        .build();
+    PayrollEmployee duplicateEmailEmployee =
+        PayrollEmployee.builder()
+            .employeeId(1004)
+            .firstName("Johnny")
+            .lastName("Doe")
+            .age(31)
+            .ssn("111-22-3333")
+            .hourlyRateFromDollars(27.00)
+            .gender("male")
+            .email("john.doe@company.com") // Same email as employee1
+            .build();
 
     // TODO: This assertion will fail until duplicate email detection is implemented
-    // List<PayrollEmployee> employees = Arrays.asList(employee1, employee2, duplicateEmailEmployee);
+    // List<PayrollEmployee> employees = Arrays.asList(employee1, employee2,
+    // duplicateEmailEmployee);
     // Set<String> duplicateEmails = duplicateDetectionService.findDuplicateEmails(employees);
-    // assertTrue(duplicateEmails.contains("john.doe@company.com"), "Should detect duplicate email");
+    // assertTrue(duplicateEmails.contains("john.doe@company.com"), "Should detect duplicate
+    // email");
 
     // For now, verify test data setup
-    assertEquals(employee1.getEmail(), duplicateEmailEmployee.getEmail(), "Should have duplicate email");
-    assertNotEquals(employee1.getEmail(), employee2.getEmail(), "Employee2 should have different email");
+    assertEquals(
+        employee1.getEmail(), duplicateEmailEmployee.getEmail(), "Should have duplicate email");
+    assertNotEquals(
+        employee1.getEmail(), employee2.getEmail(), "Employee2 should have different email");
   }
 
   @Test
   @DisplayName("Should detect exact duplicate employees (same SSN and email)")
   void shouldDetectExactDuplicateEmployees() {
     // Create exact duplicate of employee1
-    PayrollEmployee exactDuplicate = PayrollEmployee.builder()
-        .employeeId(1005) // Different ID but same personal info
-        .firstName("John")
-        .lastName("Doe")
-        .age(30)
-        .ssn("123-45-6789") // Same SSN
-        .hourlyRateFromDollars(25.00)
-        .gender("male")
-        .email("john.doe@company.com") // Same email
-        .build();
+    PayrollEmployee exactDuplicate =
+        PayrollEmployee.builder()
+            .employeeId(1005) // Different ID but same personal info
+            .firstName("John")
+            .lastName("Doe")
+            .age(30)
+            .ssn("123-45-6789") // Same SSN
+            .hourlyRateFromDollars(25.00)
+            .gender("male")
+            .email("john.doe@company.com") // Same email
+            .build();
 
     // TODO: This assertion will fail until exact duplicate detection is implemented
     // List<PayrollEmployee> employees = Arrays.asList(employee1, employee2, exactDuplicate);
-    // List<List<PayrollEmployee>> duplicateGroups = duplicateDetectionService.findExactDuplicates(employees);
+    // List<List<PayrollEmployee>> duplicateGroups =
+    // duplicateDetectionService.findExactDuplicates(employees);
     // assertEquals(1, duplicateGroups.size(), "Should find one duplicate group");
     // assertEquals(2, duplicateGroups.get(0).size(), "Duplicate group should contain 2 employees");
 
     // For now, verify test data setup
     assertEquals(employee1.getSsn(), exactDuplicate.getSsn(), "Should have same SSN");
     assertEquals(employee1.getEmail(), exactDuplicate.getEmail(), "Should have same email");
-    assertNotEquals(employee1.getEmployeeId(), exactDuplicate.getEmployeeId(), "Should have different employee IDs");
+    assertNotEquals(
+        employee1.getEmployeeId(),
+        exactDuplicate.getEmployeeId(),
+        "Should have different employee IDs");
   }
 
   @Test
   @DisplayName("Should detect potential duplicates by name similarity")
   void shouldDetectPotentialDuplicatesByNameSimilarity() {
     // Create employees with similar names
-    PayrollEmployee similarName1 = PayrollEmployee.builder()
-        .employeeId(1006)
-        .firstName("Jon") // Similar to "John"
-        .lastName("Doe")
-        .age(29)
-        .ssn("222-33-4444")
-        .hourlyRateFromDollars(26.00)
-        .gender("male")
-        .email("jon.doe@company.com")
-        .build();
+    PayrollEmployee similarName1 =
+        PayrollEmployee.builder()
+            .employeeId(1006)
+            .firstName("Jon") // Similar to "John"
+            .lastName("Doe")
+            .age(29)
+            .ssn("222-33-4444")
+            .hourlyRateFromDollars(26.00)
+            .gender("male")
+            .email("jon.doe@company.com")
+            .build();
 
-    PayrollEmployee similarName2 = PayrollEmployee.builder()
-        .employeeId(1007)
-        .firstName("John")
-        .lastName("Doh") // Similar to "Doe"
-        .age(31)
-        .ssn("333-44-5555")
-        .hourlyRateFromDollars(24.00)
-        .gender("male")
-        .email("john.doh@company.com")
-        .build();
+    PayrollEmployee similarName2 =
+        PayrollEmployee.builder()
+            .employeeId(1007)
+            .firstName("John")
+            .lastName("Doh") // Similar to "Doe"
+            .age(31)
+            .ssn("333-44-5555")
+            .hourlyRateFromDollars(24.00)
+            .gender("male")
+            .email("john.doh@company.com")
+            .build();
 
     // TODO: This assertion will fail until name similarity detection is implemented
     // List<PayrollEmployee> employees = Arrays.asList(employee1, similarName1, similarName2);
-    // List<List<PayrollEmployee>> potentialDuplicates = duplicateDetectionService.findPotentialDuplicatesByName(employees);
-    // assertFalse(potentialDuplicates.isEmpty(), "Should find potential duplicates by name similarity");
+    // List<List<PayrollEmployee>> potentialDuplicates =
+    // duplicateDetectionService.findPotentialDuplicatesByName(employees);
+    // assertFalse(potentialDuplicates.isEmpty(), "Should find potential duplicates by name
+    // similarity");
 
     // For now, verify test data setup
     assertTrue(isNameSimilar("John", "Jon"), "Names should be considered similar");
@@ -184,14 +201,17 @@ class DuplicateDetectionTest {
     int duplicateCount = 50;
 
     // TODO: This test will fail until large dataset handling is implemented
-    // List<PayrollEmployee> largeDataset = generateLargeEmployeeDataset(datasetSize, duplicateCount);
+    // List<PayrollEmployee> largeDataset = generateLargeEmployeeDataset(datasetSize,
+    // duplicateCount);
     // long startTime = System.currentTimeMillis();
     // DuplicateDetectionResult result = duplicateDetectionService.detectDuplicates(largeDataset);
     // long processingTime = System.currentTimeMillis() - startTime;
 
     // Performance requirements
-    // assertTrue(processingTime < 5000, "Large dataset duplicate detection should complete within 5 seconds");
-    // assertEquals(duplicateCount, result.getDuplicateCount(), "Should detect expected number of duplicates");
+    // assertTrue(processingTime < 5000, "Large dataset duplicate detection should complete within 5
+    // seconds");
+    // assertEquals(duplicateCount, result.getDuplicateCount(), "Should detect expected number of
+    // duplicates");
 
     // For now, verify performance concepts
     assertTrue(datasetSize > 100, "Should test with large dataset");
@@ -212,38 +232,42 @@ class DuplicateDetectionTest {
     // assertEquals(expectedRuleId, duplicateRule.getRuleId(), "Rule ID should match");
     // assertEquals(expectedRuleName, duplicateRule.getRuleName(), "Rule name should match");
     // assertEquals(expectedRuleType, duplicateRule.getRuleType(), "Rule type should match");
-    // assertEquals(expectedComplianceLevel, duplicateRule.getComplianceLevel(), "Compliance level should match");
+    // assertEquals(expectedComplianceLevel, duplicateRule.getComplianceLevel(), "Compliance level
+    // should match");
 
     // For now, verify configuration concepts
     assertEquals("DQ-008", expectedRuleId, "Duplicate detection should be rule DQ-008");
-    assertEquals("DUPLICATE_DETECTION", expectedRuleType, "Should use duplicate detection rule type");
+    assertEquals(
+        "DUPLICATE_DETECTION", expectedRuleType, "Should use duplicate detection rule type");
   }
 
   @Test
   @DisplayName("Should handle duplicate detection with missing data")
   void shouldHandleDuplicateDetectionWithMissingData() {
     // Create employees with missing SSN or email
-    PayrollEmployee missingSSN = PayrollEmployee.builder()
-        .employeeId(1008)
-        .firstName("Missing")
-        .lastName("SSN")
-        .age(25)
-        .ssn(null) // Missing SSN
-        .hourlyRateFromDollars(20.00)
-        .gender("female")
-        .email("missing.ssn@company.com")
-        .build();
+    PayrollEmployee missingSSN =
+        PayrollEmployee.builder()
+            .employeeId(1008)
+            .firstName("Missing")
+            .lastName("SSN")
+            .age(25)
+            .ssn(null) // Missing SSN
+            .hourlyRateFromDollars(20.00)
+            .gender("female")
+            .email("missing.ssn@company.com")
+            .build();
 
-    PayrollEmployee missingEmail = PayrollEmployee.builder()
-        .employeeId(1009)
-        .firstName("Missing")
-        .lastName("Email")
-        .age(27)
-        .ssn("444-55-6666")
-        .hourlyRateFromDollars(22.00)
-        .gender("male")
-        .email(null) // Missing email
-        .build();
+    PayrollEmployee missingEmail =
+        PayrollEmployee.builder()
+            .employeeId(1009)
+            .firstName("Missing")
+            .lastName("Email")
+            .age(27)
+            .ssn("444-55-6666")
+            .hourlyRateFromDollars(22.00)
+            .gender("male")
+            .email(null) // Missing email
+            .build();
 
     // TODO: This assertion will fail until missing data handling is implemented
     // List<PayrollEmployee> employees = Arrays.asList(employee1, missingSSN, missingEmail);
@@ -264,7 +288,8 @@ class DuplicateDetectionTest {
 
     // TODO: This assertion will fail until recommendation generation is implemented
     // DuplicateDetectionResult result = duplicateDetectionService.detectDuplicates(employees);
-    // List<DuplicateResolutionRecommendation> recommendations = result.getResolutionRecommendations();
+    // List<DuplicateResolutionRecommendation> recommendations =
+    // result.getResolutionRecommendations();
 
     // assertFalse(recommendations.isEmpty(), "Should generate resolution recommendations");
     // for (DuplicateResolutionRecommendation recommendation : recommendations) {
@@ -296,7 +321,8 @@ class DuplicateDetectionTest {
     // DuplicateDetectionAlert alert = streamingDetector.addEmployee(employee3);
     // assertNotNull(alert, "Should generate duplicate alert for streaming data");
     // assertEquals("SSN_DUPLICATE", alert.getDuplicateType(), "Should identify SSN duplicate");
-    // assertEquals(employee1.getEmployeeId(), alert.getOriginalEmployeeId(), "Should identify original employee");
+    // assertEquals(employee1.getEmployeeId(), alert.getOriginalEmployeeId(), "Should identify
+    // original employee");
 
     // For now, verify streaming concepts
     assertTrue(true, "Should support real-time duplicate detection for Flink streaming");
@@ -329,13 +355,11 @@ class DuplicateDetectionTest {
     assertTrue(true, "Should maintain state across Flink checkpoints for fault tolerance");
   }
 
-  /**
-   * Helper method to check name similarity (will be used by actual implementation)
-   */
+  /** Helper method to check name similarity (will be used by actual implementation) */
   private boolean isNameSimilar(String name1, String name2) {
     if (name1 == null || name2 == null) return false;
     // Simple similarity check for testing (real implementation would use Levenshtein distance)
-    return Math.abs(name1.length() - name2.length()) <= 1 &&
-        name1.toLowerCase().charAt(0) == name2.toLowerCase().charAt(0);
+    return Math.abs(name1.length() - name2.length()) <= 1
+        && name1.toLowerCase().charAt(0) == name2.toLowerCase().charAt(0);
   }
 }

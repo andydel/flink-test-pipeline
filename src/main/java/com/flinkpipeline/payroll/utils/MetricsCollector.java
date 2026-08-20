@@ -17,16 +17,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Comprehensive metrics collection and monitoring system for the payroll data quality pipeline.
- * Provides real-time metrics aggregation, performance monitoring, SLA tracking,
- * and integration with external monitoring systems (Prometheus, Grafana, DataDog).
+ * Provides real-time metrics aggregation, performance monitoring, SLA tracking, and integration
+ * with external monitoring systems (Prometheus, Grafana, DataDog).
  *
- * Metrics Categories:
- * - Throughput metrics (records/second, bytes/second)
- * - Latency metrics (processing time, end-to-end latency)
- * - Error metrics (error rates, failure counts by category)
- * - Business metrics (validation success rates, compliance violations)
- * - System metrics (resource utilization, checkpoint performance)
- * - SLA metrics (processing deadlines, quality thresholds)
+ * <p>Metrics Categories: - Throughput metrics (records/second, bytes/second) - Latency metrics
+ * (processing time, end-to-end latency) - Error metrics (error rates, failure counts by category) -
+ * Business metrics (validation success rates, compliance violations) - System metrics (resource
+ * utilization, checkpoint performance) - SLA metrics (processing deadlines, quality thresholds)
  */
 public class MetricsCollector {
 
@@ -61,17 +58,17 @@ public class MetricsCollector {
     this.enabled = config.isEnabled();
 
     if (enabled) {
-      LOG.info("Initializing MetricsCollector with reporter: {}, interval: {}",
-               config.getReporter(), config.getInterval());
+      LOG.info(
+          "Initializing MetricsCollector with reporter: {}, interval: {}",
+          config.getReporter(),
+          config.getInterval());
       initializeMetrics();
     } else {
       LOG.info("Metrics collection disabled");
     }
   }
 
-  /**
-   * Start metrics collection and reporting
-   */
+  /** Start metrics collection and reporting */
   public void start() {
     if (!enabled) {
       return;
@@ -84,23 +81,19 @@ public class MetricsCollector {
         this::reportMetrics,
         config.getInterval().toSeconds(),
         config.getInterval().toSeconds(),
-        TimeUnit.SECONDS
-    );
+        TimeUnit.SECONDS);
 
     // Schedule metrics aggregation
     scheduler.scheduleAtFixedRate(
         this::aggregateMetrics,
         10, // Start after 10 seconds
         30, // Every 30 seconds
-        TimeUnit.SECONDS
-    );
+        TimeUnit.SECONDS);
 
     LOG.info("Metrics collection started successfully");
   }
 
-  /**
-   * Stop metrics collection
-   */
+  /** Stop metrics collection */
   public void stop() {
     if (!enabled) {
       return;
@@ -125,9 +118,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Initialize core metrics
-   */
+  /** Initialize core metrics */
   private void initializeMetrics() {
     // Counter metrics
     registerCounter("records_processed_total");
@@ -154,48 +145,36 @@ public class MetricsCollector {
     LOG.info("Core metrics initialized");
   }
 
-  /**
-   * Register a counter metric
-   */
+  /** Register a counter metric */
   public void registerCounter(String name) {
     counters.putIfAbsent(name, new AtomicLong(0));
     LOG.debug("Registered counter: {}", name);
   }
 
-  /**
-   * Register a gauge metric
-   */
+  /** Register a gauge metric */
   public void registerGauge(String name) {
     gauges.putIfAbsent(name, new DoubleAdder());
     LOG.debug("Registered gauge: {}", name);
   }
 
-  /**
-   * Register a histogram metric
-   */
+  /** Register a histogram metric */
   public void registerHistogram(String name) {
     histograms.putIfAbsent(name, new HistogramMetric());
     LOG.debug("Registered histogram: {}", name);
   }
 
-  /**
-   * Register external metric source
-   */
+  /** Register external metric source */
   public void registerMetricSource(String name, Supplier<Object> supplier) {
     metricSources.put(name, supplier);
     LOG.debug("Registered metric source: {}", name);
   }
 
-  /**
-   * Increment a counter
-   */
+  /** Increment a counter */
   public void incrementCounter(String name) {
     incrementCounter(name, 1);
   }
 
-  /**
-   * Increment a counter by specific amount
-   */
+  /** Increment a counter by specific amount */
   public void incrementCounter(String name, long amount) {
     if (!enabled) return;
 
@@ -207,9 +186,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Set gauge value
-   */
+  /** Set gauge value */
   public void setGauge(String name, double value) {
     if (!enabled) return;
 
@@ -222,9 +199,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Record histogram value
-   */
+  /** Record histogram value */
   public void recordHistogram(String name, double value) {
     if (!enabled) return;
 
@@ -236,10 +211,9 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Record processing metrics
-   */
-  public void recordProcessing(long processingTimeMs, boolean validationSuccess, boolean complianceViolation) {
+  /** Record processing metrics */
+  public void recordProcessing(
+      long processingTimeMs, boolean validationSuccess, boolean complianceViolation) {
     if (!enabled) return;
 
     recordsProcessed.incrementAndGet();
@@ -259,9 +233,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Record validation metrics
-   */
+  /** Record validation metrics */
   public void recordValidation(long validationTimeMs, int rulesPassed, int rulesFailed) {
     if (!enabled) return;
 
@@ -272,9 +244,7 @@ public class MetricsCollector {
     incrementCounter("validation_rules_failed_total", rulesFailed);
   }
 
-  /**
-   * Record SLA violation
-   */
+  /** Record SLA violation */
   public void recordSlaViolation(String slaType, Duration violationAmount) {
     if (!enabled) return;
 
@@ -285,9 +255,7 @@ public class MetricsCollector {
     recordHistogram("sla_violation_amount_ms", violationAmount.toMillis());
   }
 
-  /**
-   * Record error metrics
-   */
+  /** Record error metrics */
   public void recordError(String errorType, String errorCategory) {
     if (!enabled) return;
 
@@ -296,9 +264,7 @@ public class MetricsCollector {
     incrementCounter("errors_category_" + errorCategory.toLowerCase());
   }
 
-  /**
-   * Aggregate and calculate derived metrics
-   */
+  /** Aggregate and calculate derived metrics */
   private void aggregateMetrics() {
     if (!enabled) return;
 
@@ -308,12 +274,14 @@ public class MetricsCollector {
 
       // Calculate throughput metrics
       long totalRecords = recordsProcessed.get();
-      double recordsPerSecond = totalRecords / Math.max(1, Duration.between(startTime, now).getSeconds());
+      double recordsPerSecond =
+          totalRecords / Math.max(1, Duration.between(startTime, now).getSeconds());
       setGauge("records_per_second", recordsPerSecond);
 
       // Calculate success rates
       long totalFailures = validationFailures.get();
-      double successRate = totalRecords > 0 ? (double) (totalRecords - totalFailures) / totalRecords * 100 : 100.0;
+      double successRate =
+          totalRecords > 0 ? (double) (totalRecords - totalFailures) / totalRecords * 100 : 100.0;
       setGauge("validation_success_rate", successRate);
 
       // Calculate average latencies
@@ -336,9 +304,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Calculate overall system health score (0-100)
-   */
+  /** Calculate overall system health score (0-100) */
   private double calculateSystemHealthScore() {
     double score = 100.0;
 
@@ -363,25 +329,22 @@ public class MetricsCollector {
     return Math.max(0, score);
   }
 
-  /**
-   * Update metrics from external sources
-   */
+  /** Update metrics from external sources */
   private void updateExternalMetrics() {
-    metricSources.forEach((name, supplier) -> {
-      try {
-        Object value = supplier.get();
-        if (value instanceof Number) {
-          setGauge("external_" + name, ((Number) value).doubleValue());
-        }
-      } catch (Exception e) {
-        LOG.warn("Failed to update external metric: {}", name, e);
-      }
-    });
+    metricSources.forEach(
+        (name, supplier) -> {
+          try {
+            Object value = supplier.get();
+            if (value instanceof Number) {
+              setGauge("external_" + name, ((Number) value).doubleValue());
+            }
+          } catch (Exception e) {
+            LOG.warn("Failed to update external metric: {}", name, e);
+          }
+        });
   }
 
-  /**
-   * Report all metrics
-   */
+  /** Report all metrics */
   private void reportMetrics() {
     if (!enabled) return;
 
@@ -411,9 +374,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Get all current metrics
-   */
+  /** Get all current metrics */
   public Map<String, Object> getAllMetrics() {
     Map<String, Object> allMetrics = new HashMap<>();
 
@@ -424,10 +385,11 @@ public class MetricsCollector {
     gauges.forEach((name, gauge) -> allMetrics.put(name, gauge.sum()));
 
     // Add histogram summaries
-    histograms.forEach((name, histogram) -> {
-      Map<String, Double> histogramData = histogram.getSummary();
-      histogramData.forEach((metric, value) -> allMetrics.put(name + "_" + metric, value));
-    });
+    histograms.forEach(
+        (name, histogram) -> {
+          Map<String, Double> histogramData = histogram.getSummary();
+          histogramData.forEach((metric, value) -> allMetrics.put(name + "_" + metric, value));
+        });
 
     // Add derived metrics
     allMetrics.put("uptime_seconds", Duration.between(startTime, Instant.now()).getSeconds());
@@ -439,63 +401,66 @@ public class MetricsCollector {
     return allMetrics;
   }
 
-  /**
-   * Report metrics to SLF4J logger
-   */
+  /** Report metrics to SLF4J logger */
   private void reportToSlf4j(Map<String, Object> metrics) {
     StringBuilder report = new StringBuilder("\n=== Payroll Pipeline Metrics ===\n");
 
     // Business metrics
     report.append("Business Metrics:\n");
     report.append(String.format("  Records Processed: %d\n", recordsProcessed.get()));
-    report.append(String.format("  Validation Success Rate: %.2f%%\n", gauges.get("validation_success_rate").sum()));
+    report.append(
+        String.format(
+            "  Validation Success Rate: %.2f%%\n", gauges.get("validation_success_rate").sum()));
     report.append(String.format("  Compliance Violations: %d\n", complianceViolations.get()));
     report.append(String.format("  SLA Violations: %d\n", slaViolations.get()));
 
     // Performance metrics
     report.append("Performance Metrics:\n");
-    report.append(String.format("  Records/Second: %.2f\n", gauges.get("records_per_second").sum()));
-    report.append(String.format("  Avg Processing Latency: %.2f ms\n", gauges.get("avg_processing_latency_ms").sum()));
-    report.append(String.format("  System Health Score: %.1f\n", gauges.get("system_health_score").sum()));
+    report.append(
+        String.format("  Records/Second: %.2f\n", gauges.get("records_per_second").sum()));
+    report.append(
+        String.format(
+            "  Avg Processing Latency: %.2f ms\n", gauges.get("avg_processing_latency_ms").sum()));
+    report.append(
+        String.format("  System Health Score: %.1f\n", gauges.get("system_health_score").sum()));
 
     // Error metrics
     report.append("Error Metrics:\n");
-    report.append(String.format("  Total Errors: %d\n", counters.getOrDefault("errors_total", new AtomicLong(0)).get()));
-    report.append(String.format("  Retries Attempted: %d\n", counters.getOrDefault("retries_total", new AtomicLong(0)).get()));
+    report.append(
+        String.format(
+            "  Total Errors: %d\n",
+            counters.getOrDefault("errors_total", new AtomicLong(0)).get()));
+    report.append(
+        String.format(
+            "  Retries Attempted: %d\n",
+            counters.getOrDefault("retries_total", new AtomicLong(0)).get()));
 
     report.append("================================");
 
     LOG.info(report.toString());
   }
 
-  /**
-   * Report metrics to Prometheus (placeholder implementation)
-   */
+  /** Report metrics to Prometheus (placeholder implementation) */
   private void reportToPrometheus(Map<String, Object> metrics) {
     // In real implementation, would push to Prometheus pushgateway or expose endpoint
-    LOG.debug("Reporting {} metrics to Prometheus endpoint: {}", metrics.size(), config.getEndpoint());
+    LOG.debug(
+        "Reporting {} metrics to Prometheus endpoint: {}", metrics.size(), config.getEndpoint());
   }
 
-  /**
-   * Report metrics to DataDog (placeholder implementation)
-   */
+  /** Report metrics to DataDog (placeholder implementation) */
   private void reportToDatadog(Map<String, Object> metrics) {
     // In real implementation, would use DataDog client
     LOG.debug("Reporting {} metrics to DataDog", metrics.size());
   }
 
-  /**
-   * Report metrics to console
-   */
+  /** Report metrics to console */
   private void reportToConsole(Map<String, Object> metrics) {
     System.out.println("\n=== Payroll Pipeline Metrics ===");
     metrics.forEach((key, value) -> System.out.printf("%s: %s%n", key, value));
     System.out.println("================================\n");
   }
 
-  /**
-   * Get overall metrics summary
-   */
+  /** Get overall metrics summary */
   public Object getOverallMetrics() {
     return new MetricsSummary(
         recordsProcessed.get(),
@@ -504,13 +469,10 @@ public class MetricsCollector {
         slaViolations.get(),
         gauges.get("validation_success_rate").sum(),
         gauges.get("system_health_score").sum(),
-        Duration.between(startTime, Instant.now())
-    );
+        Duration.between(startTime, Instant.now()));
   }
 
-  /**
-   * Reset all metrics (useful for testing)
-   */
+  /** Reset all metrics (useful for testing) */
   public void reset() {
     counters.values().forEach(counter -> counter.set(0));
     gauges.values().forEach(gauge -> gauge.reset());
@@ -527,9 +489,7 @@ public class MetricsCollector {
     lastReportTime = Instant.now();
   }
 
-  /**
-   * Histogram metric implementation
-   */
+  /** Histogram metric implementation */
   private static class HistogramMetric {
     private final AtomicLong count = new AtomicLong(0);
     private final DoubleAdder sum = new DoubleAdder();
@@ -564,9 +524,7 @@ public class MetricsCollector {
     }
   }
 
-  /**
-   * Metrics summary data class
-   */
+  /** Metrics summary data class */
   public static class MetricsSummary {
     private final long totalRecords;
     private final long validationFailures;
@@ -576,8 +534,14 @@ public class MetricsCollector {
     private final double healthScore;
     private final Duration uptime;
 
-    public MetricsSummary(long totalRecords, long validationFailures, long complianceViolations,
-                         long slaViolations, double successRate, double healthScore, Duration uptime) {
+    public MetricsSummary(
+        long totalRecords,
+        long validationFailures,
+        long complianceViolations,
+        long slaViolations,
+        double successRate,
+        double healthScore,
+        Duration uptime) {
       this.totalRecords = totalRecords;
       this.validationFailures = validationFailures;
       this.complianceViolations = complianceViolations;
@@ -587,19 +551,45 @@ public class MetricsCollector {
       this.uptime = uptime;
     }
 
-    public long getTotalRecords() { return totalRecords; }
-    public long getValidationFailures() { return validationFailures; }
-    public long getComplianceViolations() { return complianceViolations; }
-    public long getSlaViolations() { return slaViolations; }
-    public double getSuccessRate() { return successRate; }
-    public double getHealthScore() { return healthScore; }
-    public Duration getUptime() { return uptime; }
+    public long getTotalRecords() {
+      return totalRecords;
+    }
+
+    public long getValidationFailures() {
+      return validationFailures;
+    }
+
+    public long getComplianceViolations() {
+      return complianceViolations;
+    }
+
+    public long getSlaViolations() {
+      return slaViolations;
+    }
+
+    public double getSuccessRate() {
+      return successRate;
+    }
+
+    public double getHealthScore() {
+      return healthScore;
+    }
+
+    public Duration getUptime() {
+      return uptime;
+    }
 
     @Override
     public String toString() {
       return String.format(
           "MetricsSummary{records=%d, failures=%d, violations=%d, slaViolations=%d, successRate=%.2f%%, healthScore=%.1f, uptime=%s}",
-          totalRecords, validationFailures, complianceViolations, slaViolations, successRate, healthScore, uptime);
+          totalRecords,
+          validationFailures,
+          complianceViolations,
+          slaViolations,
+          successRate,
+          healthScore,
+          uptime);
     }
   }
 }

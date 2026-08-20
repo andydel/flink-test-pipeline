@@ -6,8 +6,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Represents the detailed outcome of payroll record validation.
- * Contains validation status, field-level results, and processing metadata.
+ * Represents the detailed outcome of payroll record validation. Contains validation status,
+ * field-level results, and processing metadata.
  */
 public class PayrollValidationResult {
 
@@ -92,9 +92,7 @@ public class PayrollValidationResult {
 
   // Utility methods
 
-  /**
-   * Adds a field validation result
-   */
+  /** Adds a field validation result */
   public void addFieldResult(FieldValidationResult fieldResult) {
     if (this.fieldResults == null) {
       this.fieldResults = new ArrayList<>();
@@ -102,9 +100,7 @@ public class PayrollValidationResult {
     this.fieldResults.add(fieldResult);
   }
 
-  /**
-   * Adds a compliance flag
-   */
+  /** Adds a compliance flag */
   public void addComplianceFlag(ComplianceFlag flag) {
     if (this.complianceFlags == null) {
       this.complianceFlags = new ArrayList<>();
@@ -112,72 +108,86 @@ public class PayrollValidationResult {
     this.complianceFlags.add(flag);
   }
 
-  /**
-   * Checks if validation was successful (no failures)
-   */
+  /** Checks if validation was successful (no failures) */
   public boolean isValid() {
     return overallStatus == ValidationStatus.VALID;
   }
 
-  /**
-   * Checks if there are any validation errors
-   */
+  /** Checks if there are any validation errors */
   public boolean hasErrors() {
-    return fieldResults != null && fieldResults.stream()
-        .anyMatch(result -> result.getStatus() == FieldStatus.FAILED);
+    return fieldResults != null
+        && fieldResults.stream()
+            .anyMatch(result -> result.getStatus() == FieldValidationResult.FieldStatus.FAILED);
   }
 
-  /**
-   * Checks if there are any compliance violations
-   */
+  /** Checks if there are any compliance violations */
   public boolean hasComplianceViolations() {
-    return overallStatus == ValidationStatus.COMPLIANCE_VIOLATION ||
-           (complianceFlags != null && !complianceFlags.isEmpty());
+    return overallStatus == ValidationStatus.COMPLIANCE_VIOLATION
+        || (complianceFlags != null && !complianceFlags.isEmpty());
   }
 
-  /**
-   * Gets all error messages from failed field validations
-   */
+  /** Gets all error messages from failed field validations */
   public List<String> getErrorMessages() {
     List<String> errors = new ArrayList<>();
     if (fieldResults != null) {
       fieldResults.stream()
-          .filter(result -> result.getStatus() == FieldStatus.FAILED)
+          .filter(result -> result.getStatus() == FieldValidationResult.FieldStatus.FAILED)
           .forEach(result -> errors.add(result.getErrorMessage()));
     }
     return errors;
   }
 
-  /**
-   * Gets count of failed validations
-   */
+  /** Gets count of failed validations */
   public int getFailureCount() {
     if (fieldResults == null) return 0;
-    return (int) fieldResults.stream()
-        .filter(result -> result.getStatus() == FieldStatus.FAILED)
-        .count();
+    return (int)
+        fieldResults.stream()
+            .filter(result -> result.getStatus() == FieldValidationResult.FieldStatus.FAILED)
+            .count();
   }
 
-  /**
-   * Gets count of successful validations
-   */
+  /** Gets count of successful validations */
   public int getSuccessCount() {
     if (fieldResults == null) return 0;
-    return (int) fieldResults.stream()
-        .filter(result -> result.getStatus() == FieldStatus.PASSED)
-        .count();
+    return (int)
+        fieldResults.stream()
+            .filter(result -> result.getStatus() == FieldValidationResult.FieldStatus.PASSED)
+            .count();
   }
 
-  /**
-   * Checks if processing met the 50ms SLA requirement
-   */
+  /** Gets count of failed fields for HR workflow */
+  public int getFailedFieldsCount() {
+    return getFailureCount();
+  }
+
+  /** Checks if there are regulatory violations */
+  public boolean hasRegulatoryViolations() {
+    return fieldResults != null
+        && fieldResults.stream()
+            .anyMatch(
+                result ->
+                    result.isFailed()
+                        && result.getComplianceLevel()
+                            == FieldValidationResult.ComplianceLevel.REGULATORY);
+  }
+
+  /** Checks if there are business rule violations */
+  public boolean hasBusinessViolations() {
+    return fieldResults != null
+        && fieldResults.stream()
+            .anyMatch(
+                result ->
+                    result.isFailed()
+                        && result.getComplianceLevel()
+                            == FieldValidationResult.ComplianceLevel.BUSINESS);
+  }
+
+  /** Checks if processing met the 50ms SLA requirement */
   public boolean meetsLatencySLA() {
     return processingLatencyMs != null && processingLatencyMs <= 50;
   }
 
-  /**
-   * Updates overall status based on field results
-   */
+  /** Updates overall status based on field results */
   public void updateOverallStatus() {
     if (hasErrors()) {
       if (hasComplianceViolations()) {
@@ -195,46 +205,56 @@ public class PayrollValidationResult {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     PayrollValidationResult that = (PayrollValidationResult) obj;
-    return Objects.equals(employeeId, that.employeeId) &&
-           Objects.equals(validationTimestamp, that.validationTimestamp) &&
-           overallStatus == that.overallStatus &&
-           Objects.equals(fieldResults, that.fieldResults) &&
-           Objects.equals(complianceFlags, that.complianceFlags) &&
-           Objects.equals(processingLatencyMs, that.processingLatencyMs) &&
-           Objects.equals(ruleVersion, that.ruleVersion);
+    return Objects.equals(employeeId, that.employeeId)
+        && Objects.equals(validationTimestamp, that.validationTimestamp)
+        && overallStatus == that.overallStatus
+        && Objects.equals(fieldResults, that.fieldResults)
+        && Objects.equals(complianceFlags, that.complianceFlags)
+        && Objects.equals(processingLatencyMs, that.processingLatencyMs)
+        && Objects.equals(ruleVersion, that.ruleVersion);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(employeeId, validationTimestamp, overallStatus,
-        fieldResults, complianceFlags, processingLatencyMs, ruleVersion);
+    return Objects.hash(
+        employeeId,
+        validationTimestamp,
+        overallStatus,
+        fieldResults,
+        complianceFlags,
+        processingLatencyMs,
+        ruleVersion);
   }
 
   @Override
   public String toString() {
-    return "PayrollValidationResult{" +
-           "employeeId=" + employeeId +
-           ", validationTimestamp=" + validationTimestamp +
-           ", overallStatus=" + overallStatus +
-           ", fieldResults=" + fieldResults +
-           ", complianceFlags=" + complianceFlags +
-           ", processingLatencyMs=" + processingLatencyMs +
-           ", ruleVersion='" + ruleVersion + '\'' +
-           '}';
+    return "PayrollValidationResult{"
+        + "employeeId="
+        + employeeId
+        + ", validationTimestamp="
+        + validationTimestamp
+        + ", overallStatus="
+        + overallStatus
+        + ", fieldResults="
+        + fieldResults
+        + ", complianceFlags="
+        + complianceFlags
+        + ", processingLatencyMs="
+        + processingLatencyMs
+        + ", ruleVersion='"
+        + ruleVersion
+        + '\''
+        + '}';
   }
 
-  /**
-   * Validation status enumeration
-   */
+  /** Validation status enumeration */
   public enum ValidationStatus {
     VALID,
     INVALID,
     COMPLIANCE_VIOLATION
   }
 
-  /**
-   * Compliance flag enumeration
-   */
+  /** Compliance flag enumeration */
   public enum ComplianceFlag {
     PII_ENCRYPTION_REQUIRED,
     REGULATORY_VIOLATION,
@@ -242,33 +262,50 @@ public class PayrollValidationResult {
     REVIEW_REQUIRED
   }
 
-  /**
-   * Field validation status enumeration
-   */
+  /** Field validation status enumeration */
   public enum FieldStatus {
     PASSED,
     FAILED,
     WARNING
   }
 
-  /**
-   * Builder pattern for creating PayrollValidationResult instances
-   */
+  /** Builder pattern for creating PayrollValidationResult instances */
   public static class Builder {
     private Integer employeeId;
+    private Instant validationTimestamp;
     private ValidationStatus overallStatus;
     private List<FieldValidationResult> fieldResults = new ArrayList<>();
     private List<ComplianceFlag> complianceFlags = new ArrayList<>();
     private Long processingLatencyMs;
     private String ruleVersion;
 
+    public Builder employee(PayrollEmployee employee) {
+      this.employeeId = employee != null ? employee.getEmployeeId() : null;
+      return this;
+    }
+
     public Builder employeeId(Integer employeeId) {
       this.employeeId = employeeId;
       return this;
     }
 
+    public Builder validationTimestamp(Instant timestamp) {
+      this.validationTimestamp = timestamp;
+      return this;
+    }
+
     public Builder overallStatus(ValidationStatus status) {
       this.overallStatus = status;
+      return this;
+    }
+
+    public Builder overallResult(ValidationStatus status) {
+      this.overallStatus = status;
+      return this;
+    }
+
+    public Builder fieldResults(List<FieldValidationResult> results) {
+      this.fieldResults = new ArrayList<>(results);
       return this;
     }
 
@@ -294,6 +331,10 @@ public class PayrollValidationResult {
 
     public PayrollValidationResult build() {
       PayrollValidationResult result = new PayrollValidationResult(employeeId);
+      result.setValidationTimestamp(
+          validationTimestamp != null
+              ? validationTimestamp.toEpochMilli()
+              : Instant.now().toEpochMilli());
       result.setOverallStatus(overallStatus);
       result.setFieldResults(fieldResults);
       result.setComplianceFlags(complianceFlags);

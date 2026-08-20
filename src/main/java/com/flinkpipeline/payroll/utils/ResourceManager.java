@@ -15,18 +15,15 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Comprehensive resource management and auto-scaling system for the payroll data quality pipeline.
- * Monitors resource utilization, implements auto-scaling policies, and optimizes resource allocation
- * based on workload patterns, SLA requirements, and business priorities.
+ * Monitors resource utilization, implements auto-scaling policies, and optimizes resource
+ * allocation based on workload patterns, SLA requirements, and business priorities.
  *
- * Features:
- * - Dynamic parallelism adjustment based on throughput and latency
- * - Memory and CPU utilization monitoring with threshold-based scaling
- * - Business-aware scaling (payroll deadlines, peak processing times)
- * - Cost optimization with scale-down policies during low activity
- * - Integration with cluster managers (Kubernetes, YARN, Docker Swarm)
- * - Resource quotas and limits enforcement
- * - Performance prediction and proactive scaling
- * - Multi-zone and multi-region deployment support
+ * <p>Features: - Dynamic parallelism adjustment based on throughput and latency - Memory and CPU
+ * utilization monitoring with threshold-based scaling - Business-aware scaling (payroll deadlines,
+ * peak processing times) - Cost optimization with scale-down policies during low activity -
+ * Integration with cluster managers (Kubernetes, YARN, Docker Swarm) - Resource quotas and limits
+ * enforcement - Performance prediction and proactive scaling - Multi-zone and multi-region
+ * deployment support
  */
 public class ResourceManager {
 
@@ -72,10 +69,14 @@ public class ResourceManager {
     this(1, 16, 0.7, 0.3, Duration.ofMinutes(5), Duration.ofMinutes(10), true);
   }
 
-  public ResourceManager(int minParallelism, int maxParallelism,
-                        double scaleUpThreshold, double scaleDownThreshold,
-                        Duration scaleUpCooldown, Duration scaleDownCooldown,
-                        boolean enableAutoScaling) {
+  public ResourceManager(
+      int minParallelism,
+      int maxParallelism,
+      double scaleUpThreshold,
+      double scaleDownThreshold,
+      Duration scaleUpCooldown,
+      Duration scaleDownCooldown,
+      boolean enableAutoScaling) {
     this.minParallelism = minParallelism;
     this.maxParallelism = maxParallelism;
     this.scaleUpThreshold = scaleUpThreshold;
@@ -84,15 +85,16 @@ public class ResourceManager {
     this.scaleDownCooldown = scaleDownCooldown;
     this.enableAutoScaling = enableAutoScaling;
 
-    LOG.info("Initialized ResourceManager - min: {}, max: {}, autoScaling: {}",
-             minParallelism, maxParallelism, enableAutoScaling);
+    LOG.info(
+        "Initialized ResourceManager - min: {}, max: {}, autoScaling: {}",
+        minParallelism,
+        maxParallelism,
+        enableAutoScaling);
 
     initializeBusinessPeriods();
   }
 
-  /**
-   * Start resource monitoring and auto-scaling
-   */
+  /** Start resource monitoring and auto-scaling */
   public void start() {
     if (!enableAutoScaling) {
       LOG.info("Auto-scaling is disabled");
@@ -106,23 +108,19 @@ public class ResourceManager {
         this::monitorResources,
         30, // Initial delay
         30, // Period
-        TimeUnit.SECONDS
-    );
+        TimeUnit.SECONDS);
 
     // Schedule scaling decisions
     monitoringScheduler.scheduleAtFixedRate(
         this::evaluateScalingDecision,
         60, // Initial delay
         60, // Period
-        TimeUnit.SECONDS
-    );
+        TimeUnit.SECONDS);
 
     LOG.info("Resource monitoring started successfully");
   }
 
-  /**
-   * Stop resource monitoring
-   */
+  /** Stop resource monitoring */
   public void stop() {
     LOG.info("Stopping resource monitoring");
 
@@ -137,36 +135,38 @@ public class ResourceManager {
     }
   }
 
-  /**
-   * Update resource metrics for a component
-   */
-  public void updateComponentMetrics(String componentName, double cpuUsage, double memoryUsage,
-                                   double throughput, double latency) {
-    ResourceMetrics metrics = new ResourceMetrics(
-        componentName, cpuUsage, memoryUsage, throughput, latency, Instant.now()
-    );
+  /** Update resource metrics for a component */
+  public void updateComponentMetrics(
+      String componentName,
+      double cpuUsage,
+      double memoryUsage,
+      double throughput,
+      double latency) {
+    ResourceMetrics metrics =
+        new ResourceMetrics(
+            componentName, cpuUsage, memoryUsage, throughput, latency, Instant.now());
 
     componentMetrics.put(componentName, metrics);
 
-    LOG.debug("Updated metrics for {}: CPU={:.2f}%, Memory={:.2f}%, Throughput={:.2f}, Latency={:.2f}ms",
-             componentName, cpuUsage, memoryUsage, throughput, latency);
+    LOG.debug(
+        "Updated metrics for {}: CPU={:.2f}%, Memory={:.2f}%, Throughput={:.2f}, Latency={:.2f}ms",
+        componentName, cpuUsage, memoryUsage, throughput, latency);
   }
 
-  /**
-   * Update overall pipeline metrics
-   */
+  /** Update overall pipeline metrics */
   public void updatePipelineMetrics(long recordsProcessed, double throughput, double latency) {
     this.totalRecordsProcessed.set(recordsProcessed);
     this.currentThroughput = throughput;
     this.averageLatency = latency;
 
-    LOG.debug("Updated pipeline metrics: records={}, throughput={:.2f}/s, latency={:.2f}ms",
-             recordsProcessed, throughput, latency);
+    LOG.debug(
+        "Updated pipeline metrics: records={}, throughput={:.2f}/s, latency={:.2f}ms",
+        recordsProcessed,
+        throughput,
+        latency);
   }
 
-  /**
-   * Monitor system resources
-   */
+  /** Monitor system resources */
   private void monitorResources() {
     try {
       // Get JVM metrics
@@ -182,17 +182,16 @@ public class ResourceManager {
       // Check for business critical periods
       updateBusinessCriticalPeriod();
 
-      LOG.debug("Resource monitoring - CPU: {:.2f}%, Memory: {:.2f}%, Business Critical: {}",
-               cpuUtilization * 100, memoryUtilization * 100, isBusinessCriticalPeriod);
+      LOG.debug(
+          "Resource monitoring - CPU: {:.2f}%, Memory: {:.2f}%, Business Critical: {}",
+          cpuUtilization * 100, memoryUtilization * 100, isBusinessCriticalPeriod);
 
     } catch (Exception e) {
       LOG.error("Error monitoring resources", e);
     }
   }
 
-  /**
-   * Evaluate scaling decision based on current metrics
-   */
+  /** Evaluate scaling decision based on current metrics */
   private void evaluateScalingDecision() {
     if (!enableAutoScaling) {
       return;
@@ -210,16 +209,16 @@ public class ResourceManager {
     }
   }
 
-  /**
-   * Make scaling decision based on current metrics and business context
-   */
+  /** Make scaling decision based on current metrics and business context */
   private ScalingDecision makeScalingDecision() {
     int current = currentParallelism.get();
     Instant now = Instant.now();
 
     // Check cooldown periods
-    boolean scaleUpCooldownExpired = Duration.between(lastScaleUpTime, now).compareTo(scaleUpCooldown) > 0;
-    boolean scaleDownCooldownExpired = Duration.between(lastScaleDownTime, now).compareTo(scaleDownCooldown) > 0;
+    boolean scaleUpCooldownExpired =
+        Duration.between(lastScaleUpTime, now).compareTo(scaleUpCooldown) > 0;
+    boolean scaleDownCooldownExpired =
+        Duration.between(lastScaleDownTime, now).compareTo(scaleDownCooldown) > 0;
 
     // Calculate overall resource utilization
     double overallUtilization = Math.max(cpuUtilization, memoryUtilization);
@@ -234,22 +233,32 @@ public class ResourceManager {
     boolean lowThroughput = currentThroughput < 100; // records/second threshold
 
     // Scale up conditions
-    if (current < maxParallelism && scaleUpCooldownExpired &&
-        (overallUtilization > adjustedScaleUpThreshold || highLatency || isBusinessCriticalPeriod)) {
+    if (current < maxParallelism
+        && scaleUpCooldownExpired
+        && (overallUtilization > adjustedScaleUpThreshold
+            || highLatency
+            || isBusinessCriticalPeriod)) {
 
       int targetParallelism = calculateTargetParallelism(current, true);
-      String reason = String.format("High utilization (%.2f%%) or latency (%.2fms) or business critical period",
-                                   overallUtilization * 100, averageLatency);
+      String reason =
+          String.format(
+              "High utilization (%.2f%%) or latency (%.2fms) or business critical period",
+              overallUtilization * 100, averageLatency);
 
       return new ScalingDecision(ScalingAction.SCALE_UP, targetParallelism, reason);
     }
 
     // Scale down conditions
-    if (current > minParallelism && scaleDownCooldownExpired && !isBusinessCriticalPeriod &&
-        overallUtilization < adjustedScaleDownThreshold && !highLatency && !lowThroughput) {
+    if (current > minParallelism
+        && scaleDownCooldownExpired
+        && !isBusinessCriticalPeriod
+        && overallUtilization < adjustedScaleDownThreshold
+        && !highLatency
+        && !lowThroughput) {
 
       int targetParallelism = calculateTargetParallelism(current, false);
-      String reason = String.format("Low utilization (%.2f%%) and good performance", overallUtilization * 100);
+      String reason =
+          String.format("Low utilization (%.2f%%) and good performance", overallUtilization * 100);
 
       return new ScalingDecision(ScalingAction.SCALE_DOWN, targetParallelism, reason);
     }
@@ -257,15 +266,17 @@ public class ResourceManager {
     return new ScalingDecision(ScalingAction.NO_ACTION, current, "No scaling needed");
   }
 
-  /**
-   * Execute scaling decision
-   */
+  /** Execute scaling decision */
   private void executeScalingDecision(ScalingDecision decision) {
     int oldParallelism = currentParallelism.get();
     int newParallelism = decision.getTargetParallelism();
 
-    LOG.info("Executing scaling decision: {} from {} to {} - Reason: {}",
-             decision.getAction(), oldParallelism, newParallelism, decision.getReason());
+    LOG.info(
+        "Executing scaling decision: {} from {} to {} - Reason: {}",
+        decision.getAction(),
+        oldParallelism,
+        newParallelism,
+        decision.getReason());
 
     // Update parallelism
     currentParallelism.set(newParallelism);
@@ -282,12 +293,13 @@ public class ResourceManager {
     // In real implementation, would trigger Flink job rescaling
     triggerFlinkRescaling(newParallelism);
 
-    LOG.info("Scaling completed successfully: parallelism changed from {} to {}", oldParallelism, newParallelism);
+    LOG.info(
+        "Scaling completed successfully: parallelism changed from {} to {}",
+        oldParallelism,
+        newParallelism);
   }
 
-  /**
-   * Calculate target parallelism for scaling
-   */
+  /** Calculate target parallelism for scaling */
   private int calculateTargetParallelism(int current, boolean scaleUp) {
     if (scaleUp) {
       // Conservative scale-up: increase by 25-50%
@@ -300,9 +312,7 @@ public class ResourceManager {
     }
   }
 
-  /**
-   * Calculate business scaling factor based on current time and business periods
-   */
+  /** Calculate business scaling factor based on current time and business periods */
   private double calculateBusinessScalingFactor() {
     if (isBusinessCriticalPeriod) {
       return 0.8; // Lower threshold during critical periods (easier to scale up)
@@ -319,12 +329,11 @@ public class ResourceManager {
     return 1.0; // Normal scaling factor
   }
 
-  /**
-   * Update business critical period status
-   */
+  /** Update business critical period status */
   private void updateBusinessCriticalPeriod() {
     int hour = Instant.now().atZone(java.time.ZoneId.systemDefault()).getHour();
-    int dayOfWeek = Instant.now().atZone(java.time.ZoneId.systemDefault()).getDayOfWeek().getValue();
+    int dayOfWeek =
+        Instant.now().atZone(java.time.ZoneId.systemDefault()).getDayOfWeek().getValue();
 
     // Payroll processing typically happens during business hours on weekdays
     boolean isBusinessHours = hour >= 8 && hour <= 18 && dayOfWeek <= 5;
@@ -337,9 +346,7 @@ public class ResourceManager {
     isBusinessCriticalPeriod = isBusinessHours && (isEndOfMonth || isEndOfWeek);
   }
 
-  /**
-   * Initialize business periods with scaling factors
-   */
+  /** Initialize business periods with scaling factors */
   private void initializeBusinessPeriods() {
     // Morning rush (8-10 AM): Higher activity
     businessPeriods.put(8, new BusinessPeriod("Morning Rush", 0.7));
@@ -361,9 +368,7 @@ public class ResourceManager {
     }
   }
 
-  /**
-   * Trigger Flink job rescaling (placeholder implementation)
-   */
+  /** Trigger Flink job rescaling (placeholder implementation) */
   private void triggerFlinkRescaling(int newParallelism) {
     // In real implementation, would use Flink's JobManager API or Kubernetes scaling
     LOG.info("Triggering Flink job rescaling to parallelism: {}", newParallelism);
@@ -372,9 +377,7 @@ public class ResourceManager {
     updateResourceAllocation(newParallelism);
   }
 
-  /**
-   * Update resource allocation based on new parallelism
-   */
+  /** Update resource allocation based on new parallelism */
   private void updateResourceAllocation(int parallelism) {
     // Estimate memory per task slot (simplified)
     long memoryPerSlot = totalMemoryMB.get() / Math.max(1, parallelism);
@@ -382,13 +385,14 @@ public class ResourceManager {
     // Estimate CPU cores per task slot
     double cpuPerSlot = (double) totalCpuCores.get() / parallelism;
 
-    LOG.info("Updated resource allocation - Parallelism: {}, Memory per slot: {}MB, CPU per slot: {:.2f}",
-             parallelism, memoryPerSlot, cpuPerSlot);
+    LOG.info(
+        "Updated resource allocation - Parallelism: {}, Memory per slot: {}MB, CPU per slot: {:.2f}",
+        parallelism,
+        memoryPerSlot,
+        cpuPerSlot);
   }
 
-  /**
-   * Estimate CPU utilization (simplified implementation)
-   */
+  /** Estimate CPU utilization (simplified implementation) */
   private double estimateCpuUtilization() {
     // In real implementation, would use JMX or system metrics
     // For now, estimate based on throughput and processing complexity
@@ -407,9 +411,7 @@ public class ResourceManager {
     return Math.min(1.0, baseUtilization);
   }
 
-  /**
-   * Get current resource status
-   */
+  /** Get current resource status */
   public ResourceStatus getResourceStatus() {
     return new ResourceStatus(
         currentParallelism.get(),
@@ -420,13 +422,10 @@ public class ResourceManager {
         currentThroughput,
         averageLatency,
         isBusinessCriticalPeriod,
-        new HashMap<>(componentMetrics)
-    );
+        new HashMap<>(componentMetrics));
   }
 
-  /**
-   * Get scaling metrics
-   */
+  /** Get scaling metrics */
   public ScalingMetrics getScalingMetrics() {
     return new ScalingMetrics(
         scaleUpEvents.get(),
@@ -434,8 +433,7 @@ public class ResourceManager {
         lastScaleUpTime,
         lastScaleDownTime,
         Duration.between(lastScaleUpTime, Instant.now()),
-        Duration.between(lastScaleDownTime, Instant.now())
-    );
+        Duration.between(lastScaleDownTime, Instant.now()));
   }
 
   // Enums and data classes
@@ -461,14 +459,22 @@ public class ResourceManager {
       return action != ScalingAction.NO_ACTION;
     }
 
-    public ScalingAction getAction() { return action; }
-    public int getTargetParallelism() { return targetParallelism; }
-    public String getReason() { return reason; }
+    public ScalingAction getAction() {
+      return action;
+    }
+
+    public int getTargetParallelism() {
+      return targetParallelism;
+    }
+
+    public String getReason() {
+      return reason;
+    }
 
     @Override
     public String toString() {
-      return String.format("ScalingDecision{action=%s, target=%d, reason='%s'}",
-                          action, targetParallelism, reason);
+      return String.format(
+          "ScalingDecision{action=%s, target=%d, reason='%s'}", action, targetParallelism, reason);
     }
   }
 
@@ -480,8 +486,13 @@ public class ResourceManager {
     private final double latency;
     private final Instant timestamp;
 
-    public ResourceMetrics(String componentName, double cpuUsage, double memoryUsage,
-                          double throughput, double latency, Instant timestamp) {
+    public ResourceMetrics(
+        String componentName,
+        double cpuUsage,
+        double memoryUsage,
+        double throughput,
+        double latency,
+        Instant timestamp) {
       this.componentName = componentName;
       this.cpuUsage = cpuUsage;
       this.memoryUsage = memoryUsage;
@@ -490,17 +501,35 @@ public class ResourceManager {
       this.timestamp = timestamp;
     }
 
-    public String getComponentName() { return componentName; }
-    public double getCpuUsage() { return cpuUsage; }
-    public double getMemoryUsage() { return memoryUsage; }
-    public double getThroughput() { return throughput; }
-    public double getLatency() { return latency; }
-    public Instant getTimestamp() { return timestamp; }
+    public String getComponentName() {
+      return componentName;
+    }
+
+    public double getCpuUsage() {
+      return cpuUsage;
+    }
+
+    public double getMemoryUsage() {
+      return memoryUsage;
+    }
+
+    public double getThroughput() {
+      return throughput;
+    }
+
+    public double getLatency() {
+      return latency;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
 
     @Override
     public String toString() {
-      return String.format("ResourceMetrics{component='%s', cpu=%.2f%%, memory=%.2f%%, throughput=%.2f, latency=%.2f}",
-                          componentName, cpuUsage, memoryUsage, throughput, latency);
+      return String.format(
+          "ResourceMetrics{component='%s', cpu=%.2f%%, memory=%.2f%%, throughput=%.2f, latency=%.2f}",
+          componentName, cpuUsage, memoryUsage, throughput, latency);
     }
   }
 
@@ -513,8 +542,13 @@ public class ResourceManager {
       this.scalingFactor = scalingFactor;
     }
 
-    public String getName() { return name; }
-    public double getScalingFactor() { return scalingFactor; }
+    public String getName() {
+      return name;
+    }
+
+    public double getScalingFactor() {
+      return scalingFactor;
+    }
   }
 
   public static class ResourceStatus {
@@ -528,10 +562,16 @@ public class ResourceManager {
     private final boolean businessCriticalPeriod;
     private final Map<String, ResourceMetrics> componentMetrics;
 
-    public ResourceStatus(int currentParallelism, long totalMemoryMB, int totalCpuCores,
-                         double cpuUtilization, double memoryUtilization, double throughput,
-                         double latency, boolean businessCriticalPeriod,
-                         Map<String, ResourceMetrics> componentMetrics) {
+    public ResourceStatus(
+        int currentParallelism,
+        long totalMemoryMB,
+        int totalCpuCores,
+        double cpuUtilization,
+        double memoryUtilization,
+        double throughput,
+        double latency,
+        boolean businessCriticalPeriod,
+        Map<String, ResourceMetrics> componentMetrics) {
       this.currentParallelism = currentParallelism;
       this.totalMemoryMB = totalMemoryMB;
       this.totalCpuCores = totalCpuCores;
@@ -543,20 +583,51 @@ public class ResourceManager {
       this.componentMetrics = componentMetrics;
     }
 
-    public int getCurrentParallelism() { return currentParallelism; }
-    public long getTotalMemoryMB() { return totalMemoryMB; }
-    public int getTotalCpuCores() { return totalCpuCores; }
-    public double getCpuUtilization() { return cpuUtilization; }
-    public double getMemoryUtilization() { return memoryUtilization; }
-    public double getThroughput() { return throughput; }
-    public double getLatency() { return latency; }
-    public boolean isBusinessCriticalPeriod() { return businessCriticalPeriod; }
-    public Map<String, ResourceMetrics> getComponentMetrics() { return componentMetrics; }
+    public int getCurrentParallelism() {
+      return currentParallelism;
+    }
+
+    public long getTotalMemoryMB() {
+      return totalMemoryMB;
+    }
+
+    public int getTotalCpuCores() {
+      return totalCpuCores;
+    }
+
+    public double getCpuUtilization() {
+      return cpuUtilization;
+    }
+
+    public double getMemoryUtilization() {
+      return memoryUtilization;
+    }
+
+    public double getThroughput() {
+      return throughput;
+    }
+
+    public double getLatency() {
+      return latency;
+    }
+
+    public boolean isBusinessCriticalPeriod() {
+      return businessCriticalPeriod;
+    }
+
+    public Map<String, ResourceMetrics> getComponentMetrics() {
+      return componentMetrics;
+    }
 
     @Override
     public String toString() {
-      return String.format("ResourceStatus{parallelism=%d, cpu=%.2f%%, memory=%.2f%%, throughput=%.2f, critical=%s}",
-                          currentParallelism, cpuUtilization * 100, memoryUtilization * 100, throughput, businessCriticalPeriod);
+      return String.format(
+          "ResourceStatus{parallelism=%d, cpu=%.2f%%, memory=%.2f%%, throughput=%.2f, critical=%s}",
+          currentParallelism,
+          cpuUtilization * 100,
+          memoryUtilization * 100,
+          throughput,
+          businessCriticalPeriod);
     }
   }
 
@@ -568,9 +639,13 @@ public class ResourceManager {
     private final Duration timeSinceLastScaleUp;
     private final Duration timeSinceLastScaleDown;
 
-    public ScalingMetrics(long scaleUpEvents, long scaleDownEvents, Instant lastScaleUpTime,
-                         Instant lastScaleDownTime, Duration timeSinceLastScaleUp,
-                         Duration timeSinceLastScaleDown) {
+    public ScalingMetrics(
+        long scaleUpEvents,
+        long scaleDownEvents,
+        Instant lastScaleUpTime,
+        Instant lastScaleDownTime,
+        Duration timeSinceLastScaleUp,
+        Duration timeSinceLastScaleDown) {
       this.scaleUpEvents = scaleUpEvents;
       this.scaleDownEvents = scaleDownEvents;
       this.lastScaleUpTime = lastScaleUpTime;
@@ -579,17 +654,35 @@ public class ResourceManager {
       this.timeSinceLastScaleDown = timeSinceLastScaleDown;
     }
 
-    public long getScaleUpEvents() { return scaleUpEvents; }
-    public long getScaleDownEvents() { return scaleDownEvents; }
-    public Instant getLastScaleUpTime() { return lastScaleUpTime; }
-    public Instant getLastScaleDownTime() { return lastScaleDownTime; }
-    public Duration getTimeSinceLastScaleUp() { return timeSinceLastScaleUp; }
-    public Duration getTimeSinceLastScaleDown() { return timeSinceLastScaleDown; }
+    public long getScaleUpEvents() {
+      return scaleUpEvents;
+    }
+
+    public long getScaleDownEvents() {
+      return scaleDownEvents;
+    }
+
+    public Instant getLastScaleUpTime() {
+      return lastScaleUpTime;
+    }
+
+    public Instant getLastScaleDownTime() {
+      return lastScaleDownTime;
+    }
+
+    public Duration getTimeSinceLastScaleUp() {
+      return timeSinceLastScaleUp;
+    }
+
+    public Duration getTimeSinceLastScaleDown() {
+      return timeSinceLastScaleDown;
+    }
 
     @Override
     public String toString() {
-      return String.format("ScalingMetrics{scaleUp=%d, scaleDown=%d, lastScaleUp=%s, lastScaleDown=%s}",
-                          scaleUpEvents, scaleDownEvents, lastScaleUpTime, lastScaleDownTime);
+      return String.format(
+          "ScalingMetrics{scaleUp=%d, scaleDown=%d, lastScaleUp=%s, lastScaleDown=%s}",
+          scaleUpEvents, scaleDownEvents, lastScaleUpTime, lastScaleDownTime);
     }
   }
 }

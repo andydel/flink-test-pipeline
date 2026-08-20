@@ -1,7 +1,6 @@
 package com.flinkpipeline.payroll.utils;
 
 import com.flinkpipeline.payroll.config.StateConfig;
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -20,18 +19,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Comprehensive pipeline state management system for the payroll data quality pipeline.
- * Manages job lifecycle, state persistence, recovery procedures, and operational metadata.
- * Provides state coordination between pipeline components and external monitoring systems.
+ * Comprehensive pipeline state management system for the payroll data quality pipeline. Manages job
+ * lifecycle, state persistence, recovery procedures, and operational metadata. Provides state
+ * coordination between pipeline components and external monitoring systems.
  *
- * State Management Features:
- * - Job lifecycle tracking (starting, running, stopping, failed, recovered)
- * - Checkpoint coordination and recovery state
- * - Component health and operational status
- * - Performance metrics and SLA tracking
- * - State persistence for disaster recovery
- * - Integration with cluster management (K8s, YARN, Docker)
- * - Graceful shutdown and cleanup procedures
+ * <p>State Management Features: - Job lifecycle tracking (starting, running, stopping, failed,
+ * recovered) - Checkpoint coordination and recovery state - Component health and operational status
+ * - Performance metrics and SLA tracking - State persistence for disaster recovery - Integration
+ * with cluster management (K8s, YARN, Docker) - Graceful shutdown and cleanup procedures
  */
 public class PipelineStateManager {
 
@@ -89,9 +84,7 @@ public class PipelineStateManager {
     LOG.info("Initialized PipelineStateManager with storage path: {}", stateStoragePath);
   }
 
-  /**
-   * Initialize state management system
-   */
+  /** Initialize state management system */
   public void initialize() throws IOException {
     LOG.info("Initializing pipeline state management");
 
@@ -123,9 +116,7 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Transition pipeline to running state
-   */
+  /** Transition pipeline to running state */
   public void transitionToRunning() {
     if (currentState == PipelineState.STARTING || currentState == PipelineState.RECOVERING) {
       LOG.info("Pipeline transitioning to RUNNING state");
@@ -137,9 +128,7 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Transition pipeline to degraded state
-   */
+  /** Transition pipeline to degraded state */
   public void transitionToDegraded(String reason) {
     LOG.warn("Pipeline transitioning to DEGRADED state: {}", reason);
     updateState(PipelineState.DEGRADED);
@@ -147,26 +136,20 @@ public class PipelineStateManager {
     stateMetadata.put("degradation_time", Instant.now().toString());
   }
 
-  /**
-   * Transition pipeline to stopping state
-   */
+  /** Transition pipeline to stopping state */
   public void transitionToStopping() {
     LOG.info("Pipeline transitioning to STOPPING state");
     updateState(PipelineState.STOPPING);
   }
 
-  /**
-   * Transition pipeline to stopped state
-   */
+  /** Transition pipeline to stopped state */
   public void transitionToStopped() {
     LOG.info("Pipeline transitioning to STOPPED state");
     updateState(PipelineState.STOPPED);
     persistState();
   }
 
-  /**
-   * Transition pipeline to failed state
-   */
+  /** Transition pipeline to failed state */
   public void transitionToFailed(String error) {
     LOG.error("Pipeline transitioning to FAILED state: {}", error);
     updateState(PipelineState.FAILED);
@@ -176,9 +159,7 @@ public class PipelineStateManager {
     persistState();
   }
 
-  /**
-   * Transition pipeline to recovering state
-   */
+  /** Transition pipeline to recovering state */
   public void transitionToRecovering(String reason) {
     LOG.info("Pipeline transitioning to RECOVERING state: {}", reason);
     updateState(PipelineState.RECOVERING);
@@ -186,11 +167,11 @@ public class PipelineStateManager {
     stateMetadata.put("recovery_start_time", Instant.now().toString());
   }
 
-  /**
-   * Update component state
-   */
-  public void updateComponentState(String componentName, ComponentState.Status status, String message) {
-    ComponentState componentState = new ComponentState(componentName, status, message, Instant.now());
+  /** Update component state */
+  public void updateComponentState(
+      String componentName, ComponentState.Status status, String message) {
+    ComponentState componentState =
+        new ComponentState(componentName, status, message, Instant.now());
     componentStates.put(componentName, componentState);
 
     LOG.debug("Updated component state: {} -> {}: {}", componentName, status, message);
@@ -199,9 +180,7 @@ public class PipelineStateManager {
     evaluateOverallState();
   }
 
-  /**
-   * Record checkpoint completion
-   */
+  /** Record checkpoint completion */
   public void recordCheckpointCompleted(String checkpointPath, Duration checkpointDuration) {
     lastCheckpointTime = Instant.now();
     lastCheckpointDuration = checkpointDuration;
@@ -212,12 +191,11 @@ public class PipelineStateManager {
     stateMetadata.put("last_checkpoint_time", lastCheckpointTime.toString());
     stateMetadata.put("last_checkpoint_duration_ms", checkpointDuration.toMillis());
 
-    LOG.info("Recorded checkpoint completion: {} (duration: {})", checkpointPath, checkpointDuration);
+    LOG.info(
+        "Recorded checkpoint completion: {} (duration: {})", checkpointPath, checkpointDuration);
   }
 
-  /**
-   * Record processing metrics
-   */
+  /** Record processing metrics */
   public void recordProcessingMetrics(long recordsProcessed, double throughput) {
     this.totalRecordsProcessed = recordsProcessed;
     this.currentThroughput = throughput;
@@ -227,61 +205,49 @@ public class PipelineStateManager {
     stateMetadata.put("metrics_update_time", Instant.now().toString());
   }
 
-  /**
-   * Get current pipeline state
-   */
+  /** Get current pipeline state */
   public PipelineState getCurrentState() {
     return currentState;
   }
 
-  /**
-   * Get state change time
-   */
+  /** Get state change time */
   public Instant getStateChangeTime() {
     return stateChangeTime;
   }
 
-  /**
-   * Get time in current state
-   */
+  /** Get time in current state */
   public Duration getTimeInCurrentState() {
     return Duration.between(stateChangeTime, Instant.now());
   }
 
-  /**
-   * Get pipeline uptime
-   */
+  /** Get pipeline uptime */
   public Duration getPipelineUptime() {
-    return pipelineStartTime != null ? Duration.between(pipelineStartTime, Instant.now()) : Duration.ZERO;
+    return pipelineStartTime != null
+        ? Duration.between(pipelineStartTime, Instant.now())
+        : Duration.ZERO;
   }
 
-  /**
-   * Check if pipeline is healthy
-   */
+  /** Check if pipeline is healthy */
   public boolean isHealthy() {
-    return currentState == PipelineState.RUNNING &&
-           componentStates.values().stream().allMatch(cs ->
-               cs.getStatus() == ComponentState.Status.HEALTHY ||
-               cs.getStatus() == ComponentState.Status.DEGRADED);
+    return currentState == PipelineState.RUNNING
+        && componentStates.values().stream()
+            .allMatch(
+                cs ->
+                    cs.getStatus() == ComponentState.Status.HEALTHY
+                        || cs.getStatus() == ComponentState.Status.DEGRADED);
   }
 
-  /**
-   * Get component states
-   */
+  /** Get component states */
   public Map<String, ComponentState> getComponentStates() {
     return new HashMap<>(componentStates);
   }
 
-  /**
-   * Get state metadata
-   */
+  /** Get state metadata */
   public Map<String, Object> getStateMetadata() {
     return new HashMap<>(stateMetadata);
   }
 
-  /**
-   * Get comprehensive state summary
-   */
+  /** Get comprehensive state summary */
   public PipelineStateSummary getStateSummary() {
     return new PipelineStateSummary(
         currentState,
@@ -294,25 +260,19 @@ public class PipelineStateManager {
         totalRecordsProcessed,
         currentThroughput,
         lastCheckpointTime,
-        lastCheckpointDuration
-    );
+        lastCheckpointDuration);
   }
 
-  /**
-   * Get recovery information
-   */
+  /** Get recovery information */
   public RecoveryInfo getRecoveryInfo() {
     return new RecoveryInfo(
         lastSuccessfulCheckpointPath,
         lastSuccessfulCheckpointTime,
         new HashMap<>(recoveryMetadata),
-        currentState == PipelineState.FAILED || currentState == PipelineState.RECOVERING
-    );
+        currentState == PipelineState.FAILED || currentState == PipelineState.RECOVERING);
   }
 
-  /**
-   * Cleanup state management resources
-   */
+  /** Cleanup state management resources */
   public void cleanup() {
     LOG.info("Cleaning up pipeline state management");
 
@@ -333,9 +293,7 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Update pipeline state and metadata
-   */
+  /** Update pipeline state and metadata */
   private void updateState(PipelineState newState) {
     PipelineState oldState = currentState;
     currentState = newState;
@@ -348,19 +306,19 @@ public class PipelineStateManager {
     LOG.info("Pipeline state changed: {} -> {}", oldState, newState);
   }
 
-  /**
-   * Evaluate overall pipeline state based on component states
-   */
+  /** Evaluate overall pipeline state based on component states */
   private void evaluateOverallState() {
     if (currentState == PipelineState.STOPPING || currentState == PipelineState.STOPPED) {
       return; // Don't change state during shutdown
     }
 
-    boolean anyFailed = componentStates.values().stream()
-        .anyMatch(cs -> cs.getStatus() == ComponentState.Status.FAILED);
+    boolean anyFailed =
+        componentStates.values().stream()
+            .anyMatch(cs -> cs.getStatus() == ComponentState.Status.FAILED);
 
-    boolean anyDegraded = componentStates.values().stream()
-        .anyMatch(cs -> cs.getStatus() == ComponentState.Status.DEGRADED);
+    boolean anyDegraded =
+        componentStates.values().stream()
+            .anyMatch(cs -> cs.getStatus() == ComponentState.Status.DEGRADED);
 
     if (anyFailed && currentState == PipelineState.RUNNING) {
       transitionToFailed("Component failure detected");
@@ -371,18 +329,14 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Clear last error
-   */
+  /** Clear last error */
   private void clearLastError() {
     lastError = null;
     stateMetadata.remove("failure_reason");
     stateMetadata.remove("failure_time");
   }
 
-  /**
-   * Create state storage directory
-   */
+  /** Create state storage directory */
   private void createStateStorageDirectory() throws IOException {
     Path statePath = Paths.get(stateStoragePath);
     if (!Files.exists(statePath)) {
@@ -391,9 +345,7 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Load persisted state from storage
-   */
+  /** Load persisted state from storage */
   private void loadPersistedState() {
     try {
       Path stateFile = Paths.get(stateStoragePath, "pipeline-state.json");
@@ -406,40 +358,40 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Initialize component states
-   */
+  /** Initialize component states */
   private void initializeComponentStates() {
     String[] components = {
-        "kafka-source", "validation-operator", "routing-operator",
-        "iceberg-sink", "audit-sink", "metrics-collector", "health-check"
+      "kafka-source",
+      "validation-operator",
+      "routing-operator",
+      "iceberg-sink",
+      "audit-sink",
+      "metrics-collector",
+      "health-check"
     };
 
     for (String component : components) {
-      componentStates.put(component,
-          new ComponentState(component, ComponentState.Status.INITIALIZING, "Starting up", Instant.now()));
+      componentStates.put(
+          component,
+          new ComponentState(
+              component, ComponentState.Status.INITIALIZING, "Starting up", Instant.now()));
     }
 
     LOG.info("Initialized {} component states", components.length);
   }
 
-  /**
-   * Start state persistence scheduler
-   */
+  /** Start state persistence scheduler */
   private void startStatePersistence() {
     stateScheduler.scheduleAtFixedRate(
         this::persistState,
         statePersistInterval.toSeconds(),
         statePersistInterval.toSeconds(),
-        TimeUnit.SECONDS
-    );
+        TimeUnit.SECONDS);
 
     LOG.info("Started state persistence scheduler with interval: {}", statePersistInterval);
   }
 
-  /**
-   * Persist current state to storage
-   */
+  /** Persist current state to storage */
   private void persistState() {
     try {
       Path stateFile = Paths.get(stateStoragePath, "pipeline-state.json");
@@ -452,7 +404,9 @@ public class PipelineStateManager {
       json.append("  \"uptime_seconds\": ").append(getPipelineUptime().getSeconds()).append(",\n");
       json.append("  \"records_processed\": ").append(totalRecordsProcessed).append(",\n");
       json.append("  \"throughput\": ").append(currentThroughput).append(",\n");
-      json.append("  \"last_error\": ").append(lastError != null ? "\"" + lastError + "\"" : "null").append(",\n");
+      json.append("  \"last_error\": ")
+          .append(lastError != null ? "\"" + lastError + "\"" : "null")
+          .append(",\n");
       json.append("  \"component_count\": ").append(componentStates.size()).append(",\n");
       json.append("  \"timestamp\": \"").append(Instant.now()).append("\"\n");
       json.append("}");
@@ -468,9 +422,7 @@ public class PipelineStateManager {
     }
   }
 
-  /**
-   * Component state data class
-   */
+  /** Component state data class */
   public static class ComponentState {
     public enum Status {
       INITIALIZING,
@@ -493,21 +445,31 @@ public class PipelineStateManager {
       this.timestamp = timestamp;
     }
 
-    public String getName() { return name; }
-    public Status getStatus() { return status; }
-    public String getMessage() { return message; }
-    public Instant getTimestamp() { return timestamp; }
+    public String getName() {
+      return name;
+    }
+
+    public Status getStatus() {
+      return status;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
 
     @Override
     public String toString() {
-      return String.format("ComponentState{name='%s', status=%s, message='%s', timestamp=%s}",
-                          name, status, message, timestamp);
+      return String.format(
+          "ComponentState{name='%s', status=%s, message='%s', timestamp=%s}",
+          name, status, message, timestamp);
     }
   }
 
-  /**
-   * Pipeline state summary data class
-   */
+  /** Pipeline state summary data class */
   public static class PipelineStateSummary {
     private final PipelineState state;
     private final Instant stateChangeTime;
@@ -521,10 +483,18 @@ public class PipelineStateManager {
     private final Instant lastCheckpointTime;
     private final Duration lastCheckpointDuration;
 
-    public PipelineStateSummary(PipelineState state, Instant stateChangeTime, Duration timeInCurrentState,
-                               Duration uptime, String lastError, Map<String, ComponentState> componentStates,
-                               Map<String, Object> metadata, long totalRecordsProcessed, double currentThroughput,
-                               Instant lastCheckpointTime, Duration lastCheckpointDuration) {
+    public PipelineStateSummary(
+        PipelineState state,
+        Instant stateChangeTime,
+        Duration timeInCurrentState,
+        Duration uptime,
+        String lastError,
+        Map<String, ComponentState> componentStates,
+        Map<String, Object> metadata,
+        long totalRecordsProcessed,
+        double currentThroughput,
+        Instant lastCheckpointTime,
+        Duration lastCheckpointDuration) {
       this.state = state;
       this.stateChangeTime = stateChangeTime;
       this.timeInCurrentState = timeInCurrentState;
@@ -539,51 +509,97 @@ public class PipelineStateManager {
     }
 
     // Getters
-    public PipelineState getState() { return state; }
-    public Instant getStateChangeTime() { return stateChangeTime; }
-    public Duration getTimeInCurrentState() { return timeInCurrentState; }
-    public Duration getUptime() { return uptime; }
-    public String getLastError() { return lastError; }
-    public Map<String, ComponentState> getComponentStates() { return componentStates; }
-    public Map<String, Object> getMetadata() { return metadata; }
-    public long getTotalRecordsProcessed() { return totalRecordsProcessed; }
-    public double getCurrentThroughput() { return currentThroughput; }
-    public Instant getLastCheckpointTime() { return lastCheckpointTime; }
-    public Duration getLastCheckpointDuration() { return lastCheckpointDuration; }
+    public PipelineState getState() {
+      return state;
+    }
+
+    public Instant getStateChangeTime() {
+      return stateChangeTime;
+    }
+
+    public Duration getTimeInCurrentState() {
+      return timeInCurrentState;
+    }
+
+    public Duration getUptime() {
+      return uptime;
+    }
+
+    public String getLastError() {
+      return lastError;
+    }
+
+    public Map<String, ComponentState> getComponentStates() {
+      return componentStates;
+    }
+
+    public Map<String, Object> getMetadata() {
+      return metadata;
+    }
+
+    public long getTotalRecordsProcessed() {
+      return totalRecordsProcessed;
+    }
+
+    public double getCurrentThroughput() {
+      return currentThroughput;
+    }
+
+    public Instant getLastCheckpointTime() {
+      return lastCheckpointTime;
+    }
+
+    public Duration getLastCheckpointDuration() {
+      return lastCheckpointDuration;
+    }
 
     @Override
     public String toString() {
-      return String.format("PipelineStateSummary{state=%s, uptime=%s, records=%d, throughput=%.2f}",
-                          state, uptime, totalRecordsProcessed, currentThroughput);
+      return String.format(
+          "PipelineStateSummary{state=%s, uptime=%s, records=%d, throughput=%.2f}",
+          state, uptime, totalRecordsProcessed, currentThroughput);
     }
   }
 
-  /**
-   * Recovery information data class
-   */
+  /** Recovery information data class */
   public static class RecoveryInfo {
     private final String lastCheckpointPath;
     private final Instant lastCheckpointTime;
     private final Map<String, String> recoveryMetadata;
     private final boolean recoveryRequired;
 
-    public RecoveryInfo(String lastCheckpointPath, Instant lastCheckpointTime,
-                       Map<String, String> recoveryMetadata, boolean recoveryRequired) {
+    public RecoveryInfo(
+        String lastCheckpointPath,
+        Instant lastCheckpointTime,
+        Map<String, String> recoveryMetadata,
+        boolean recoveryRequired) {
       this.lastCheckpointPath = lastCheckpointPath;
       this.lastCheckpointTime = lastCheckpointTime;
       this.recoveryMetadata = recoveryMetadata;
       this.recoveryRequired = recoveryRequired;
     }
 
-    public String getLastCheckpointPath() { return lastCheckpointPath; }
-    public Instant getLastCheckpointTime() { return lastCheckpointTime; }
-    public Map<String, String> getRecoveryMetadata() { return recoveryMetadata; }
-    public boolean isRecoveryRequired() { return recoveryRequired; }
+    public String getLastCheckpointPath() {
+      return lastCheckpointPath;
+    }
+
+    public Instant getLastCheckpointTime() {
+      return lastCheckpointTime;
+    }
+
+    public Map<String, String> getRecoveryMetadata() {
+      return recoveryMetadata;
+    }
+
+    public boolean isRecoveryRequired() {
+      return recoveryRequired;
+    }
 
     @Override
     public String toString() {
-      return String.format("RecoveryInfo{checkpoint='%s', time=%s, recoveryRequired=%s}",
-                          lastCheckpointPath, lastCheckpointTime, recoveryRequired);
+      return String.format(
+          "RecoveryInfo{checkpoint='%s', time=%s, recoveryRequired=%s}",
+          lastCheckpointPath, lastCheckpointTime, recoveryRequired);
     }
   }
 }

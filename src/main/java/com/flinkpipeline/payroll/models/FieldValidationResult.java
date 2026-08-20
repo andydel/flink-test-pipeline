@@ -3,8 +3,8 @@ package com.flinkpipeline.payroll.models;
 import java.util.Objects;
 
 /**
- * Represents the validation outcome for an individual payroll field.
- * Contains detailed information about field-specific validation results.
+ * Represents the validation outcome for an individual payroll field. Contains detailed information
+ * about field-specific validation results.
  */
 public class FieldValidationResult {
 
@@ -104,62 +104,83 @@ public class FieldValidationResult {
 
   // Utility methods
 
-  /**
-   * Checks if this field validation passed
-   */
+  /** Checks if this field validation passed */
   public boolean isPassed() {
     return status == FieldStatus.PASSED;
   }
 
-  /**
-   * Checks if this field validation failed
-   */
+  /** Checks if this field validation failed */
   public boolean isFailed() {
     return status == FieldStatus.FAILED;
   }
 
-  /**
-   * Checks if this is a warning
-   */
+  /** Checks if this is a warning */
   public boolean isWarning() {
     return status == FieldStatus.WARNING;
   }
 
-  /**
-   * Checks if this is a regulatory compliance issue
-   */
+  /** Checks if this is a regulatory compliance issue */
   public boolean isRegulatoryViolation() {
     return complianceLevel == ComplianceLevel.REGULATORY && isFailed();
   }
 
-  /**
-   * Creates a successful validation result
-   */
+  /** Creates a successful validation result */
   public static FieldValidationResult success(String fieldName, String ruleName) {
-    FieldValidationResult result = new FieldValidationResult(fieldName, ruleName, FieldStatus.PASSED);
+    FieldValidationResult result =
+        new FieldValidationResult(fieldName, ruleName, FieldStatus.PASSED);
     result.setSeverity(Severity.INFO);
     return result;
   }
 
-  /**
-   * Creates a failed validation result with error details
-   */
-  public static FieldValidationResult failure(String fieldName, String ruleName,
-                                            String errorMessage, String suggestedCorrection) {
-    FieldValidationResult result = new FieldValidationResult(fieldName, ruleName, FieldStatus.FAILED);
+  /** Creates a failed validation result with error details */
+  public static FieldValidationResult failure(
+      String fieldName, String ruleName, String errorMessage, String suggestedCorrection) {
+    FieldValidationResult result =
+        new FieldValidationResult(fieldName, ruleName, FieldStatus.FAILED);
     result.setErrorMessage(errorMessage);
     result.setSuggestedCorrection(suggestedCorrection);
     result.setSeverity(Severity.CRITICAL);
     return result;
   }
 
-  /**
-   * Creates a warning validation result
-   */
+  /** Creates a failed validation result with error details and compliance level */
+  public static FieldValidationResult failure(
+      String fieldName,
+      String ruleName,
+      String errorMessage,
+      String suggestedCorrection,
+      ComplianceLevel complianceLevel) {
+    FieldValidationResult result =
+        new FieldValidationResult(fieldName, ruleName, FieldStatus.FAILED);
+    result.setErrorMessage(errorMessage);
+    result.setSuggestedCorrection(suggestedCorrection);
+    result.setSeverity(Severity.CRITICAL);
+    result.setComplianceLevel(complianceLevel);
+    return result;
+  }
+
+  /** Creates a warning validation result */
   public static FieldValidationResult warning(String fieldName, String ruleName, String message) {
-    FieldValidationResult result = new FieldValidationResult(fieldName, ruleName, FieldStatus.WARNING);
+    FieldValidationResult result =
+        new FieldValidationResult(fieldName, ruleName, FieldStatus.WARNING);
     result.setErrorMessage(message);
     result.setSeverity(Severity.WARNING);
+    return result;
+  }
+
+  /** Creates a warning validation result with additional parameters */
+  public static FieldValidationResult warning(
+      String fieldName,
+      String ruleName,
+      String message,
+      String suggestedCorrection,
+      ComplianceLevel complianceLevel) {
+    FieldValidationResult result =
+        new FieldValidationResult(fieldName, ruleName, FieldStatus.WARNING);
+    result.setErrorMessage(message);
+    result.setSuggestedCorrection(suggestedCorrection);
+    result.setSeverity(Severity.WARNING);
+    result.setComplianceLevel(complianceLevel);
     return result;
   }
 
@@ -168,82 +189,94 @@ public class FieldValidationResult {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     FieldValidationResult that = (FieldValidationResult) obj;
-    return Objects.equals(fieldName, that.fieldName) &&
-           Objects.equals(ruleName, that.ruleName) &&
-           ruleType == that.ruleType &&
-           status == that.status &&
-           Objects.equals(errorMessage, that.errorMessage) &&
-           severity == that.severity &&
-           Objects.equals(suggestedCorrection, that.suggestedCorrection) &&
-           Objects.equals(errorCode, that.errorCode) &&
-           complianceLevel == that.complianceLevel;
+    return Objects.equals(fieldName, that.fieldName)
+        && Objects.equals(ruleName, that.ruleName)
+        && ruleType == that.ruleType
+        && status == that.status
+        && Objects.equals(errorMessage, that.errorMessage)
+        && severity == that.severity
+        && Objects.equals(suggestedCorrection, that.suggestedCorrection)
+        && Objects.equals(errorCode, that.errorCode)
+        && complianceLevel == that.complianceLevel;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(fieldName, ruleName, ruleType, status, errorMessage,
-        severity, suggestedCorrection, errorCode, complianceLevel);
+    return Objects.hash(
+        fieldName,
+        ruleName,
+        ruleType,
+        status,
+        errorMessage,
+        severity,
+        suggestedCorrection,
+        errorCode,
+        complianceLevel);
   }
 
   @Override
   public String toString() {
-    return "FieldValidationResult{" +
-           "fieldName='" + fieldName + '\'' +
-           ", ruleName='" + ruleName + '\'' +
-           ", ruleType=" + ruleType +
-           ", status=" + status +
-           ", errorMessage='" + errorMessage + '\'' +
-           ", severity=" + severity +
-           ", suggestedCorrection='" + suggestedCorrection + '\'' +
-           ", errorCode='" + errorCode + '\'' +
-           ", complianceLevel=" + complianceLevel +
-           '}';
+    return "FieldValidationResult{"
+        + "fieldName='"
+        + fieldName
+        + '\''
+        + ", ruleName='"
+        + ruleName
+        + '\''
+        + ", ruleType="
+        + ruleType
+        + ", status="
+        + status
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
+        + ", severity="
+        + severity
+        + ", suggestedCorrection='"
+        + suggestedCorrection
+        + '\''
+        + ", errorCode='"
+        + errorCode
+        + '\''
+        + ", complianceLevel="
+        + complianceLevel
+        + '}';
   }
 
-  /**
-   * Rule type enumeration
-   */
+  /** Rule type enumeration */
   public enum RuleType {
-    FORMAT,        // Pattern/format validation (SSN, email)
-    RANGE,         // Numeric/date range validation (age, hourly rate)
-    COMPLIANCE,    // Regulatory/compliance validation
-    UNIQUENESS,    // Duplicate detection
-    COMPLETENESS   // Required field validation
+    FORMAT, // Pattern/format validation (SSN, email)
+    RANGE, // Numeric/date range validation (age, hourly rate)
+    COMPLIANCE, // Regulatory/compliance validation
+    UNIQUENESS, // Duplicate detection
+    COMPLETENESS // Required field validation
   }
 
-  /**
-   * Field validation status enumeration
-   */
+  /** Field validation status enumeration */
   public enum FieldStatus {
     PASSED,
     FAILED,
     WARNING
   }
 
-  /**
-   * Severity enumeration
-   */
+  /** Severity enumeration */
   public enum Severity {
-    CRITICAL,   // Blocks processing, requires immediate attention
-    HIGH,       // Important issue, should be resolved soon
-    MEDIUM,     // Moderate issue, can be addressed later
-    LOW,        // Minor issue, informational
-    WARNING,    // Warning, doesn't block processing
-    INFO        // Informational, no action required
+    CRITICAL, // Blocks processing, requires immediate attention
+    HIGH, // Important issue, should be resolved soon
+    MEDIUM, // Moderate issue, can be addressed later
+    LOW, // Minor issue, informational
+    WARNING, // Warning, doesn't block processing
+    INFO // Informational, no action required
   }
 
-  /**
-   * Compliance level enumeration
-   */
+  /** Compliance level enumeration */
   public enum ComplianceLevel {
-    REGULATORY,     // Violates regulatory requirements
-    BUSINESS,       // Violates business rules
-    INFORMATIONAL   // Informational only
+    REGULATORY, // Violates regulatory requirements
+    BUSINESS, // Violates business rules
+    INFORMATIONAL // Informational only
   }
 
-  /**
-   * Builder pattern for creating FieldValidationResult instances
-   */
+  /** Builder pattern for creating FieldValidationResult instances */
   public static class Builder {
     private String fieldName;
     private String ruleName;

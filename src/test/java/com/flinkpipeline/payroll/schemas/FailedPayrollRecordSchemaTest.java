@@ -16,10 +16,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test class for validating failed payroll record Avro schema.
- * Tests schema structure for HR workflow integration and error tracking.
+ * Test class for validating failed payroll record Avro schema. Tests schema structure for HR
+ * workflow integration and error tracking.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until FailedPayrollRecord model is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until FailedPayrollRecord model is
+ * implemented.
  */
 @DisplayName("Failed Payroll Record Schema Validation Tests")
 class FailedPayrollRecordSchemaTest {
@@ -32,7 +33,8 @@ class FailedPayrollRecordSchemaTest {
   void setUp() throws IOException {
     // Create the expected schema structure for failed payroll records
     // This will be used to validate the actual schema when implemented
-    String expectedSchemaJson = """
+    String expectedSchemaJson =
+        """
         {
           "type": "record",
           "name": "FailedPayrollRecord",
@@ -221,48 +223,56 @@ class FailedPayrollRecordSchemaTest {
   private GenericRecord createValidFailedRecord() {
     GenericRecord record = new GenericData.Record(failedPayrollRecordSchema);
 
-    record.put("failure_id", "FAIL-" + System.currentTimeMillis());
+    record.put("failure_id", "FAIL-" + System.nanoTime());
     record.put("original_record", "{\"employee_id\": 1001, \"ssn\": \"invalid-ssn\"}");
     record.put("employee_id", 1001);
     record.put("failure_timestamp", Instant.now().toEpochMilli());
 
     // Create validation errors
-    GenericRecord validationError = new GenericData.Record(
-        failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
+    GenericRecord validationError =
+        new GenericData.Record(
+            failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
     validationError.put("rule_id", "DQ-005");
     validationError.put("field_name", "ssn");
     validationError.put("error_message", "Invalid SSN format - must be XXX-XX-XXXX");
     validationError.put("error_code", "SSN_FORMAT_INVALID");
-    validationError.put("severity", new GenericData.EnumSymbol(
-        validationError.getSchema().getField("severity").schema(), "CRITICAL"));
+    validationError.put(
+        "severity",
+        new GenericData.EnumSymbol(
+            validationError.getSchema().getField("severity").schema(), "CRITICAL"));
 
     record.put("validation_errors", Arrays.asList(validationError));
 
     // Create HR workflow info
-    GenericRecord hrWorkflowInfo = new GenericData.Record(
-        failedPayrollRecordSchema.getField("hr_workflow_info").schema());
+    GenericRecord hrWorkflowInfo =
+        new GenericData.Record(failedPayrollRecordSchema.getField("hr_workflow_info").schema());
     hrWorkflowInfo.put("workflow_id", "HR-WF-" + System.currentTimeMillis());
-    hrWorkflowInfo.put("priority", new GenericData.EnumSymbol(
-        hrWorkflowInfo.getSchema().getField("priority").schema(), "CRITICAL"));
+    hrWorkflowInfo.put(
+        "priority",
+        new GenericData.EnumSymbol(
+            hrWorkflowInfo.getSchema().getField("priority").schema(), "CRITICAL"));
     hrWorkflowInfo.put("estimated_correction_time_minutes", 5);
     hrWorkflowInfo.put("assigned_to", null);
-    hrWorkflowInfo.put("correction_guidance", "Enter SSN in format XXX-XX-XXXX (e.g., 123-45-6789)");
+    hrWorkflowInfo.put(
+        "correction_guidance", "Enter SSN in format XXX-XX-XXXX (e.g., 123-45-6789)");
 
     record.put("hr_workflow_info", hrWorkflowInfo);
 
     // Create compliance impact
-    GenericRecord complianceImpact = new GenericData.Record(
-        failedPayrollRecordSchema.getField("compliance_impact").schema());
+    GenericRecord complianceImpact =
+        new GenericData.Record(failedPayrollRecordSchema.getField("compliance_impact").schema());
     complianceImpact.put("is_regulatory_violation", true);
     complianceImpact.put("compliance_rules_violated", Arrays.asList("SSN_FORMAT_COMPLIANCE"));
-    complianceImpact.put("pii_exposure_risk", new GenericData.EnumSymbol(
-        complianceImpact.getSchema().getField("pii_exposure_risk").schema(), "MEDIUM"));
+    complianceImpact.put(
+        "pii_exposure_risk",
+        new GenericData.EnumSymbol(
+            complianceImpact.getSchema().getField("pii_exposure_risk").schema(), "MEDIUM"));
 
     record.put("compliance_impact", complianceImpact);
 
     // Create processing metadata
-    GenericRecord processingMetadata = new GenericData.Record(
-        failedPayrollRecordSchema.getField("processing_metadata").schema());
+    GenericRecord processingMetadata =
+        new GenericData.Record(failedPayrollRecordSchema.getField("processing_metadata").schema());
     processingMetadata.put("pipeline_version", "1.0.0");
     processingMetadata.put("validation_rules_version", "1.0.0");
     processingMetadata.put("correlation_id", "CORR-" + System.currentTimeMillis());
@@ -276,7 +286,8 @@ class FailedPayrollRecordSchemaTest {
   private GenericRecord createOriginalEmployeeRecord() {
     // This would typically use the PayrollEmployee schema
     // For now, create a simple record structure
-    String employeeSchemaJson = """
+    String employeeSchemaJson =
+        """
         {
           "type": "record",
           "name": "PayrollEmployee",
@@ -319,7 +330,8 @@ class FailedPayrollRecordSchemaTest {
   @Test
   @DisplayName("Should validate validation errors array structure")
   void shouldValidateValidationErrorsStructure() {
-    Schema validationErrorsSchema = failedPayrollRecordSchema.getField("validation_errors").schema();
+    Schema validationErrorsSchema =
+        failedPayrollRecordSchema.getField("validation_errors").schema();
     assertEquals(Schema.Type.ARRAY, validationErrorsSchema.getType());
 
     Schema validationErrorSchema = validationErrorsSchema.getElementType();
@@ -402,23 +414,27 @@ class FailedPayrollRecordSchemaTest {
     GenericRecord multiErrorRecord = new GenericData.Record(failedPayrollRecordSchema);
 
     // Create multiple validation errors
-    GenericRecord ssnError = new GenericData.Record(
-        failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
+    GenericRecord ssnError =
+        new GenericData.Record(
+            failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
     ssnError.put("rule_id", "DQ-005");
     ssnError.put("field_name", "ssn");
     ssnError.put("error_message", "Invalid SSN format");
     ssnError.put("error_code", "SSN_FORMAT_INVALID");
-    ssnError.put("severity", new GenericData.EnumSymbol(
-        ssnError.getSchema().getField("severity").schema(), "CRITICAL"));
+    ssnError.put(
+        "severity",
+        new GenericData.EnumSymbol(ssnError.getSchema().getField("severity").schema(), "CRITICAL"));
 
-    GenericRecord ageError = new GenericData.Record(
-        failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
+    GenericRecord ageError =
+        new GenericData.Record(
+            failedPayrollRecordSchema.getField("validation_errors").schema().getElementType());
     ageError.put("rule_id", "DQ-004");
     ageError.put("field_name", "age");
     ageError.put("error_message", "Age outside employment eligibility range");
     ageError.put("error_code", "AGE_RANGE_INVALID");
-    ageError.put("severity", new GenericData.EnumSymbol(
-        ageError.getSchema().getField("severity").schema(), "HIGH"));
+    ageError.put(
+        "severity",
+        new GenericData.EnumSymbol(ageError.getSchema().getField("severity").schema(), "HIGH"));
 
     multiErrorRecord.put("validation_errors", Arrays.asList(ssnError, ageError));
 
@@ -443,9 +459,12 @@ class FailedPayrollRecordSchemaTest {
     // assertEquals(expectedPriorityMapping, HRWorkflowService.getPriorityMapping());
 
     // For now, just verify the enum values exist
-    Schema prioritySchema = failedPayrollRecordSchema
-        .getField("hr_workflow_info").schema()
-        .getField("priority").schema();
+    Schema prioritySchema =
+        failedPayrollRecordSchema
+            .getField("hr_workflow_info")
+            .schema()
+            .getField("priority")
+            .schema();
     List<String> symbols = prioritySchema.getEnumSymbols();
     assertTrue(symbols.contains("CRITICAL"));
     assertTrue(symbols.contains("HIGH"));

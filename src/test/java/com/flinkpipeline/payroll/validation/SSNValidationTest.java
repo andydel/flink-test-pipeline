@@ -2,7 +2,6 @@ package com.flinkpipeline.payroll.validation;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,10 +12,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Test class for SSN format validation rule (DQ-005).
- * Tests SSN format validation according to payroll business rules.
+ * Test class for SSN format validation rule (DQ-005). Tests SSN format validation according to
+ * payroll business rules.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until SSNValidationRule is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until SSNValidationRule is
+ * implemented.
  */
 @DisplayName("SSN Format Validation Tests")
 class SSNValidationTest {
@@ -37,11 +37,11 @@ class SSNValidationTest {
   void shouldValidateCorrectSSNFormat() {
     // Valid SSN formats that should pass validation
     String[] validSSNs = {
-        "123-45-6789",
-        "987-65-4321",
-        "555-12-3456",
-        "000-00-0001", // Edge case but valid format
-        "999-99-9999"  // Edge case but valid format
+      "123-45-6789",
+      "987-65-4321",
+      "555-12-3456",
+      "000-00-0001", // Edge case but valid format
+      "999-99-9999" // Edge case but valid format
     };
 
     for (String ssn : validSSNs) {
@@ -51,31 +51,32 @@ class SSNValidationTest {
       // assertFalse(result.hasErrors(), "SSN " + ssn + " should not have errors");
 
       // For now, just verify basic format pattern
-      assertTrue(ssn.matches("\\d{3}-\\d{2}-\\d{4}"),
-          "SSN " + ssn + " should match XXX-XX-XXXX pattern");
+      assertTrue(
+          ssn.matches("\\d{3}-\\d{2}-\\d{4}"), "SSN " + ssn + " should match XXX-XX-XXXX pattern");
     }
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {
-      "12345-6789",      // Missing hyphens
-      "123456789",       // No hyphens at all
-      "123-456-789",     // Wrong hyphen placement
-      "123-45-67890",    // Too many digits in last section
-      "12-45-6789",      // Too few digits in first section
-      "123-4-6789",      // Too few digits in middle section
-      "123-45-678",      // Too few digits in last section
-      "abc-45-6789",     // Letters in first section
-      "123-ab-6789",     // Letters in middle section
-      "123-45-abcd",     // Letters in last section
-      "",                // Empty string
-      "   ",             // Whitespace only
-      "123-45-6789 ",    // Trailing space
-      " 123-45-6789",    // Leading space
-      "123--45-6789",    // Double hyphen
-      "123-45-6789-",    // Extra hyphen
-      "-123-45-6789"     // Leading hyphen
-  })
+  @ValueSource(
+      strings = {
+        "12345-6789", // Missing hyphens
+        "123456789", // No hyphens at all
+        "123-456-789", // Wrong hyphen placement
+        "123-45-67890", // Too many digits in last section
+        "12-45-6789", // Too few digits in first section
+        "123-4-6789", // Too few digits in middle section
+        "123-45-678", // Too few digits in last section
+        "abc-45-6789", // Letters in first section
+        "123-ab-6789", // Letters in middle section
+        "123-45-abcd", // Letters in last section
+        "", // Empty string
+        "   ", // Whitespace only
+        "123-45-6789 ", // Trailing space
+        " 123-45-6789", // Leading space
+        "123--45-6789", // Double hyphen
+        "123-45-6789-", // Extra hyphen
+        "-123-45-6789" // Leading hyphen
+      })
   @DisplayName("Should reject invalid SSN formats")
   void shouldRejectInvalidSSNFormats(String invalidSSN) {
     // TODO: This assertion will fail until SSNValidationRule is implemented
@@ -84,7 +85,8 @@ class SSNValidationTest {
     // assertTrue(result.hasErrors(), "SSN " + invalidSSN + " should have errors");
 
     // For now, verify they don't match the correct pattern
-    assertFalse(invalidSSN.matches("\\d{3}-\\d{2}-\\d{4}"),
+    assertFalse(
+        invalidSSN.matches("\\d{3}-\\d{2}-\\d{4}"),
         "SSN " + invalidSSN + " should not match XXX-XX-XXXX pattern");
   }
 
@@ -93,19 +95,19 @@ class SSNValidationTest {
   void shouldCheckAgainstSSNBlacklist() {
     // Known invalid/test SSNs that should be blacklisted
     String[] blacklistedSSNs = {
-        "000-00-0000",     // All zeros
-        "123-45-6789",     // Common test number
-        "111-11-1111",     // All same digit
-        "222-22-2222",     // All same digit
-        "333-33-3333",     // All same digit
-        "444-44-4444",     // All same digit
-        "555-55-5555",     // All same digit
-        "666-66-6666",     // All same digit (666 area is invalid)
-        "777-77-7777",     // All same digit
-        "888-88-8888",     // All same digit
-        "999-99-9999",     // All same digit
-        "078-05-1120",     // Woolworth's fake SSN
-        "219-09-9999"      // Death Master File test number
+      "000-00-0000", // All zeros
+      "123-45-6789", // Common test number
+      "111-11-1111", // All same digit
+      "222-22-2222", // All same digit
+      "333-33-3333", // All same digit
+      "444-44-4444", // All same digit
+      "555-55-5555", // All same digit
+      "666-66-6666", // All same digit (666 area is invalid)
+      "777-77-7777", // All same digit
+      "888-88-8888", // All same digit
+      "999-99-9999", // All same digit
+      "078-05-1120", // Woolworth's fake SSN
+      "219-09-9999" // Death Master File test number
     };
 
     for (String ssn : blacklistedSSNs) {
@@ -130,11 +132,11 @@ class SSNValidationTest {
   void shouldValidateSSNAreaNumberRestrictions() {
     // SSNs with invalid area numbers (first 3 digits)
     String[] invalidAreaSSNs = {
-        "000-45-6789",     // Area 000 is invalid
-        "666-45-6789",     // Area 666 is reserved
-        "900-45-6789",     // Areas 900-999 are invalid
-        "950-45-6789",     // Areas 900-999 are invalid
-        "999-45-6789"      // Areas 900-999 are invalid
+      "000-45-6789", // Area 000 is invalid
+      "666-45-6789", // Area 666 is reserved
+      "900-45-6789", // Areas 900-999 are invalid
+      "950-45-6789", // Areas 900-999 are invalid
+      "999-45-6789" // Areas 900-999 are invalid
     };
 
     for (String ssn : invalidAreaSSNs) {
@@ -144,7 +146,8 @@ class SSNValidationTest {
       // assertTrue(result.hasErrors(), "SSN with invalid area " + ssn + " should have errors");
 
       // For now, just verify the pattern
-      assertTrue(ssn.matches("\\d{3}-\\d{2}-\\d{4}"),
+      assertTrue(
+          ssn.matches("\\d{3}-\\d{2}-\\d{4}"),
           "SSN " + ssn + " should match format but fail area validation");
     }
   }
@@ -186,7 +189,8 @@ class SSNValidationTest {
     // TODO: These assertions will fail until correction guidance is implemented
     // assertEquals(expectedGuidance, correctionGuidance);
     // assertTrue(correctionGuidance.contains("e.g.,"), "Guidance should include example");
-    // assertTrue(correctionGuidance.contains("123-45-6789"), "Guidance should include specific example");
+    // assertTrue(correctionGuidance.contains("123-45-6789"), "Guidance should include specific
+    // example");
 
     // For now, verify expected guidance format
     assertTrue(expectedGuidance.contains("e.g.,"));
@@ -200,8 +204,10 @@ class SSNValidationTest {
     String blacklistedSSN = "000-00-0000";
 
     // TODO: This assertion will fail until compliance categorization is implemented
-    // ValidationResult formatResult = ssnValidationRule.validate(invalidFormatSSN, validationContext);
-    // ValidationResult blacklistResult = ssnValidationRule.validate(blacklistedSSN, validationContext);
+    // ValidationResult formatResult = ssnValidationRule.validate(invalidFormatSSN,
+    // validationContext);
+    // ValidationResult blacklistResult = ssnValidationRule.validate(blacklistedSSN,
+    // validationContext);
 
     // Format errors should be REGULATORY level
     // assertEquals(ComplianceLevel.REGULATORY, formatResult.getComplianceLevel());
@@ -311,14 +317,15 @@ class SSNValidationTest {
   @ParameterizedTest
   @MethodSource("provideSSNTestCases")
   @DisplayName("Should validate comprehensive SSN test cases")
-  void shouldValidateComprehensiveSSNTestCases(String ssn, boolean expectedValid, String description) {
+  void shouldValidateComprehensiveSSNTestCases(
+      String ssn, boolean expectedValid, String description) {
     // TODO: This test will fail until comprehensive validation is implemented
     // ValidationResult result = ssnValidationRule.validate(ssn, validationContext);
     // assertEquals(expectedValid, result.isValid(),
     //             "SSN validation failed for: " + description + " (SSN: " + ssn + ")");
 
-    // For now, verify test case coverage
-    assertNotNull(ssn, "Test case SSN should not be null");
+    // For now, verify test case coverage. Note: ssn is intentionally null for the
+    // "Null value" case in provideSSNTestCases(), so it is not asserted non-null here.
     assertNotNull(description, "Test case description should not be null");
   }
 
@@ -341,7 +348,6 @@ class SSNValidationTest {
         Arguments.of(null, false, "Null value"),
         Arguments.of("   ", false, "Whitespace only"),
         Arguments.of("123-45-6789 ", false, "Trailing space"),
-        Arguments.of(" 123-45-6789", false, "Leading space")
-    );
+        Arguments.of(" 123-45-6789", false, "Leading space"));
   }
 }

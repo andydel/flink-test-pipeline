@@ -1,11 +1,9 @@
 package com.flinkpipeline.payroll.utils;
 
 import com.flinkpipeline.payroll.models.ComplianceAuditLog;
-import com.flinkpipeline.payroll.models.FailedPayrollRecord;
 import com.flinkpipeline.payroll.models.PayrollEmployee;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -21,15 +19,13 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Comprehensive error handling and recovery strategy for the payroll data quality pipeline.
- * Implements multiple error handling patterns including circuit breakers, dead letter queues,
- * retry mechanisms, and graceful degradation for various failure scenarios.
+ * Implements multiple error handling patterns including circuit breakers, dead letter queues, retry
+ * mechanisms, and graceful degradation for various failure scenarios.
  *
- * Error Categories Handled:
- * - Data format errors (schema validation, deserialization)
- * - Business logic errors (validation rule failures)
- * - System errors (connectivity, resource exhaustion)
- * - Compliance errors (PII access violations, audit failures)
- * - Performance errors (SLA violations, timeout errors)
+ * <p>Error Categories Handled: - Data format errors (schema validation, deserialization) - Business
+ * logic errors (validation rule failures) - System errors (connectivity, resource exhaustion) -
+ * Compliance errors (PII access violations, audit failures) - Performance errors (SLA violations,
+ * timeout errors)
  */
 public class ErrorHandlingStrategy {
 
@@ -86,24 +82,26 @@ public class ErrorHandlingStrategy {
     this(3, Duration.ofSeconds(1), Duration.ofMinutes(5), 0.5, true);
   }
 
-  public ErrorHandlingStrategy(int maxRetryAttempts,
-                              Duration retryDelay,
-                              Duration circuitBreakerTimeout,
-                              double circuitBreakerFailureThreshold,
-                              boolean enableGracefulDegradation) {
+  public ErrorHandlingStrategy(
+      int maxRetryAttempts,
+      Duration retryDelay,
+      Duration circuitBreakerTimeout,
+      double circuitBreakerFailureThreshold,
+      boolean enableGracefulDegradation) {
     this.maxRetryAttempts = maxRetryAttempts;
     this.retryDelay = retryDelay;
     this.circuitBreakerTimeout = circuitBreakerTimeout;
     this.circuitBreakerFailureThreshold = circuitBreakerFailureThreshold;
     this.enableGracefulDegradation = enableGracefulDegradation;
 
-    LOG.info("Initialized ErrorHandlingStrategy - maxRetries: {}, retryDelay: {}, circuitBreakerThreshold: {}",
-             maxRetryAttempts, retryDelay, circuitBreakerFailureThreshold);
+    LOG.info(
+        "Initialized ErrorHandlingStrategy - maxRetries: {}, retryDelay: {}, circuitBreakerThreshold: {}",
+        maxRetryAttempts,
+        retryDelay,
+        circuitBreakerFailureThreshold);
   }
 
-  /**
-   * Apply comprehensive error handling to a data stream
-   */
+  /** Apply comprehensive error handling to a data stream */
   public SingleOutputStreamOperator<PayrollEmployee> applyErrorHandling(
       DataStream<PayrollEmployee> stream, String operatorName) {
 
@@ -113,9 +111,7 @@ public class ErrorHandlingStrategy {
         .uid("error-handling-" + operatorName.toLowerCase().replace(" ", "-"));
   }
 
-  /**
-   * Create dead letter queue for unrecoverable errors
-   */
+  /** Create dead letter queue for unrecoverable errors */
   public DataStream<ErrorRecord> createDeadLetterQueue(DataStream<ErrorRecord> errorStream) {
     return errorStream
         .filter(new DeadLetterQueueFilter())
@@ -123,9 +119,7 @@ public class ErrorHandlingStrategy {
         .name("Dead Letter Queue");
   }
 
-  /**
-   * Create retry mechanism for recoverable errors
-   */
+  /** Create retry mechanism for recoverable errors */
   public DataStream<PayrollEmployee> createRetryMechanism(DataStream<ErrorRecord> errorStream) {
     return errorStream
         .filter(new RetryableErrorFilter())
@@ -133,10 +127,9 @@ public class ErrorHandlingStrategy {
         .name("Error Retry Processor");
   }
 
-  /**
-   * Error handling process function
-   */
-  private class ErrorHandlingProcessFunction extends ProcessFunction<PayrollEmployee, PayrollEmployee> {
+  /** Error handling process function */
+  private class ErrorHandlingProcessFunction
+      extends ProcessFunction<PayrollEmployee, PayrollEmployee> {
     private final String operatorName;
 
     public ErrorHandlingProcessFunction(String operatorName) {
@@ -144,7 +137,8 @@ public class ErrorHandlingStrategy {
     }
 
     @Override
-    public void processElement(PayrollEmployee record, Context context, Collector<PayrollEmployee> out) {
+    public void processElement(
+        PayrollEmployee record, Context context, Collector<PayrollEmployee> out) {
       try {
         // Check circuit breaker state
         if (isCircuitBreakerOpen()) {
@@ -161,8 +155,8 @@ public class ErrorHandlingStrategy {
       }
     }
 
-    private void processWithErrorHandling(PayrollEmployee record, Context context,
-                                        Collector<PayrollEmployee> out) throws Exception {
+    private void processWithErrorHandling(
+        PayrollEmployee record, Context context, Collector<PayrollEmployee> out) throws Exception {
       try {
         // Validate record before processing
         validateRecord(record);
@@ -202,38 +196,44 @@ public class ErrorHandlingStrategy {
       }
     }
 
-    private void handleDataFormatError(PayrollEmployee record, DataFormatException e, Context context) {
-      ErrorRecord errorRecord = createErrorRecord(record, e, ErrorCategory.DATA_FORMAT,
-          RecoveryStrategy.DEAD_LETTER_QUEUE);
+    private void handleDataFormatError(
+        PayrollEmployee record, DataFormatException e, Context context) {
+      ErrorRecord errorRecord =
+          createErrorRecord(
+              record, e, ErrorCategory.DATA_FORMAT, RecoveryStrategy.DEAD_LETTER_QUEUE);
       context.output(DATA_FORMAT_ERRORS_TAG, errorRecord);
       generateErrorAuditLog(record, e, ErrorCategory.DATA_FORMAT, context);
     }
 
-    private void handleBusinessLogicError(PayrollEmployee record, BusinessLogicException e, Context context) {
-      ErrorRecord errorRecord = createErrorRecord(record, e, ErrorCategory.BUSINESS_LOGIC,
-          RecoveryStrategy.RETRY);
+    private void handleBusinessLogicError(
+        PayrollEmployee record, BusinessLogicException e, Context context) {
+      ErrorRecord errorRecord =
+          createErrorRecord(record, e, ErrorCategory.BUSINESS_LOGIC, RecoveryStrategy.RETRY);
       context.output(DATA_FORMAT_ERRORS_TAG, errorRecord);
       generateErrorAuditLog(record, e, ErrorCategory.BUSINESS_LOGIC, context);
     }
 
     private void handleSystemError(PayrollEmployee record, SystemException e, Context context) {
       circuitBreakerState.recordFailure();
-      ErrorRecord errorRecord = createErrorRecord(record, e, ErrorCategory.SYSTEM_ERROR,
-          RecoveryStrategy.CIRCUIT_BREAKER);
+      ErrorRecord errorRecord =
+          createErrorRecord(
+              record, e, ErrorCategory.SYSTEM_ERROR, RecoveryStrategy.CIRCUIT_BREAKER);
       context.output(SYSTEM_ERRORS_TAG, errorRecord);
       generateErrorAuditLog(record, e, ErrorCategory.SYSTEM_ERROR, context);
     }
 
-    private void handleComplianceError(PayrollEmployee record, ComplianceException e, Context context) {
-      ErrorRecord errorRecord = createErrorRecord(record, e, ErrorCategory.COMPLIANCE_VIOLATION,
-          RecoveryStrategy.FAIL_FAST);
+    private void handleComplianceError(
+        PayrollEmployee record, ComplianceException e, Context context) {
+      ErrorRecord errorRecord =
+          createErrorRecord(
+              record, e, ErrorCategory.COMPLIANCE_VIOLATION, RecoveryStrategy.FAIL_FAST);
       context.output(COMPLIANCE_ERRORS_TAG, errorRecord);
       generateErrorAuditLog(record, e, ErrorCategory.COMPLIANCE_VIOLATION, context);
     }
 
     private void handleUnknownError(PayrollEmployee record, Exception e, Context context) {
-      ErrorRecord errorRecord = createErrorRecord(record, e, ErrorCategory.UNKNOWN,
-          RecoveryStrategy.DEAD_LETTER_QUEUE);
+      ErrorRecord errorRecord =
+          createErrorRecord(record, e, ErrorCategory.UNKNOWN, RecoveryStrategy.DEAD_LETTER_QUEUE);
       context.output(DATA_FORMAT_ERRORS_TAG, errorRecord);
       generateErrorAuditLog(record, e, ErrorCategory.UNKNOWN, context);
     }
@@ -249,9 +249,12 @@ public class ErrorHandlingStrategy {
         applyFallbackProcessing(record, context);
       } else {
         // Drop record with audit
-        ErrorRecord errorRecord = createErrorRecord(record,
-            new SystemException("Circuit breaker open - system overloaded"),
-            ErrorCategory.SYSTEM_ERROR, RecoveryStrategy.CIRCUIT_BREAKER);
+        ErrorRecord errorRecord =
+            createErrorRecord(
+                record,
+                new SystemException("Circuit breaker open - system overloaded"),
+                ErrorCategory.SYSTEM_ERROR,
+                RecoveryStrategy.CIRCUIT_BREAKER);
         context.output(SYSTEM_ERRORS_TAG, errorRecord);
       }
     }
@@ -262,10 +265,8 @@ public class ErrorHandlingStrategy {
         // Basic validation only
         if (record.getEmployeeId() != null && record.getEmployeeId() > 0) {
           // Mark as processed with degraded quality
-          PayrollEmployee fallbackRecord = PayrollEmployee.builder()
-              .from(record)
-              .pipelineVersion("FALLBACK-1.0.0")
-              .build();
+          PayrollEmployee fallbackRecord =
+              PayrollEmployee.builder().from(record).pipelineVersion("FALLBACK-1.0.0").build();
 
           // Note: This would go to main output, but we're in a side method
           // In real implementation, would need different approach
@@ -277,11 +278,9 @@ public class ErrorHandlingStrategy {
     }
   }
 
-  /**
-   * Create error record with context
-   */
-  private ErrorRecord createErrorRecord(PayrollEmployee record, Exception error,
-                                       ErrorCategory category, RecoveryStrategy strategy) {
+  /** Create error record with context */
+  private ErrorRecord createErrorRecord(
+      PayrollEmployee record, Exception error, ErrorCategory category, RecoveryStrategy strategy) {
     return new ErrorRecord(
         record,
         error.getMessage(),
@@ -290,50 +289,45 @@ public class ErrorHandlingStrategy {
         strategy,
         Instant.now(),
         0 // Initial attempt count
-    );
+        );
   }
 
-  /**
-   * Generate audit log for error events
-   */
-  private void generateErrorAuditLog(PayrollEmployee record, Exception error,
-                                   ErrorCategory category, ProcessFunction.Context context) {
+  /** Generate audit log for error events */
+  private void generateErrorAuditLog(
+      PayrollEmployee record,
+      Exception error,
+      ErrorCategory category,
+      ProcessFunction.Context context) {
     Map<String, String> metadata = new HashMap<>();
     metadata.put("error_category", category.toString());
     metadata.put("error_type", error.getClass().getSimpleName());
     metadata.put("operator_name", "error-handling");
 
-    ComplianceAuditLog auditLog = ComplianceAuditLog.createSystemErrorAudit(
-        record != null ? record.getEmployeeId() : null,
-        "ERROR_HANDLING",
-        error.getMessage(),
-        metadata
-    );
+    ComplianceAuditLog auditLog =
+        ComplianceAuditLog.createSystemErrorAudit(
+            record != null ? record.getEmployeeId() : null,
+            "ERROR_HANDLING",
+            error.getMessage(),
+            metadata);
 
     context.output(ERROR_AUDIT_LOGS_TAG, auditLog);
   }
 
-  /**
-   * Circuit breaker state management
-   */
+  /** Circuit breaker state management */
   private boolean isCircuitBreakerOpen() {
     return circuitBreakerState.isOpen(circuitBreakerFailureThreshold, circuitBreakerTimeout);
   }
 
-  /**
-   * Filter for dead letter queue candidates
-   */
+  /** Filter for dead letter queue candidates */
   private class DeadLetterQueueFilter implements FilterFunction<ErrorRecord> {
     @Override
     public boolean filter(ErrorRecord errorRecord) {
-      return errorRecord.getRecoveryStrategy() == RecoveryStrategy.DEAD_LETTER_QUEUE ||
-             errorRecord.getAttemptCount() >= maxRetryAttempts;
+      return errorRecord.getRecoveryStrategy() == RecoveryStrategy.DEAD_LETTER_QUEUE
+          || errorRecord.getAttemptCount() >= maxRetryAttempts;
     }
   }
 
-  /**
-   * Mapper for dead letter queue records
-   */
+  /** Mapper for dead letter queue records */
   private class DeadLetterQueueMapper implements MapFunction<ErrorRecord, ErrorRecord> {
     @Override
     public ErrorRecord map(ErrorRecord errorRecord) {
@@ -342,38 +336,40 @@ public class ErrorHandlingStrategy {
     }
   }
 
-  /**
-   * Filter for retryable errors
-   */
+  /** Filter for retryable errors */
   private class RetryableErrorFilter implements FilterFunction<ErrorRecord> {
     @Override
     public boolean filter(ErrorRecord errorRecord) {
-      return errorRecord.getRecoveryStrategy() == RecoveryStrategy.RETRY &&
-             errorRecord.getAttemptCount() < maxRetryAttempts;
+      return errorRecord.getRecoveryStrategy() == RecoveryStrategy.RETRY
+          && errorRecord.getAttemptCount() < maxRetryAttempts;
     }
   }
 
-  /**
-   * Process function for retry mechanism
-   */
+  /** Process function for retry mechanism */
   private class RetryProcessFunction extends ProcessFunction<ErrorRecord, PayrollEmployee> {
     @Override
-    public void processElement(ErrorRecord errorRecord, Context context, Collector<PayrollEmployee> out) {
+    public void processElement(
+        ErrorRecord errorRecord, Context context, Collector<PayrollEmployee> out) {
       retriesAttempted.incrementAndGet();
 
       try {
         // Wait for retry delay
-        Thread.sleep(retryDelay.toMillis() * (errorRecord.getAttemptCount() + 1)); // Exponential backoff
+        Thread.sleep(
+            retryDelay.toMillis() * (errorRecord.getAttemptCount() + 1)); // Exponential backoff
 
         // Attempt to reprocess
         out.collect(errorRecord.getOriginalRecord());
 
-        LOG.info("Successfully retried record ID: {} after {} attempts",
-                errorRecord.getOriginalRecord().getEmployeeId(), errorRecord.getAttemptCount() + 1);
+        LOG.info(
+            "Successfully retried record ID: {} after {} attempts",
+            errorRecord.getOriginalRecord().getEmployeeId(),
+            errorRecord.getAttemptCount() + 1);
 
       } catch (Exception e) {
-        LOG.warn("Retry failed for record ID: {}, attempt: {}",
-                errorRecord.getOriginalRecord().getEmployeeId(), errorRecord.getAttemptCount() + 1);
+        LOG.warn(
+            "Retry failed for record ID: {}, attempt: {}",
+            errorRecord.getOriginalRecord().getEmployeeId(),
+            errorRecord.getAttemptCount() + 1);
 
         // Increment attempt count and re-emit for potential further retry or DLQ
         ErrorRecord updatedRecord = errorRecord.withIncrementedAttempt();
@@ -384,22 +380,17 @@ public class ErrorHandlingStrategy {
     }
   }
 
-  /**
-   * Get error handling metrics
-   */
+  /** Get error handling metrics */
   public ErrorHandlingMetrics getMetrics() {
     return new ErrorHandlingMetrics(
         totalErrorsHandled.get(),
         retriesAttempted.get(),
         deadLetterRecords.get(),
         circuitBreakerTrips.get(),
-        circuitBreakerState.isOpen(circuitBreakerFailureThreshold, circuitBreakerTimeout)
-    );
+        circuitBreakerState.isOpen(circuitBreakerFailureThreshold, circuitBreakerTimeout));
   }
 
-  /**
-   * Circuit breaker state tracking
-   */
+  /** Circuit breaker state tracking */
   private static class CircuitBreakerState {
     private volatile long totalRequests = 0;
     private volatile long failedRequests = 0;
@@ -435,8 +426,9 @@ public class ErrorHandlingStrategy {
       }
 
       // Check if circuit breaker should be closed due to timeout
-      if (isOpen && lastFailureTime != null &&
-          Duration.between(lastFailureTime, Instant.now()).compareTo(timeout) > 0) {
+      if (isOpen
+          && lastFailureTime != null
+          && Duration.between(lastFailureTime, Instant.now()).compareTo(timeout) > 0) {
         isOpen = false;
         failedRequests = 0;
         totalRequests = 0;
@@ -446,32 +438,48 @@ public class ErrorHandlingStrategy {
     }
   }
 
-  /**
-   * Custom exception classes for error categorization
-   */
+  /** Custom exception classes for error categorization */
   public static class DataFormatException extends Exception {
-    public DataFormatException(String message) { super(message); }
-    public DataFormatException(String message, Throwable cause) { super(message, cause); }
+    public DataFormatException(String message) {
+      super(message);
+    }
+
+    public DataFormatException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 
   public static class BusinessLogicException extends Exception {
-    public BusinessLogicException(String message) { super(message); }
-    public BusinessLogicException(String message, Throwable cause) { super(message, cause); }
+    public BusinessLogicException(String message) {
+      super(message);
+    }
+
+    public BusinessLogicException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 
   public static class SystemException extends Exception {
-    public SystemException(String message) { super(message); }
-    public SystemException(String message, Throwable cause) { super(message, cause); }
+    public SystemException(String message) {
+      super(message);
+    }
+
+    public SystemException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 
   public static class ComplianceException extends Exception {
-    public ComplianceException(String message) { super(message); }
-    public ComplianceException(String message, Throwable cause) { super(message, cause); }
+    public ComplianceException(String message) {
+      super(message);
+    }
+
+    public ComplianceException(String message, Throwable cause) {
+      super(message, cause);
+    }
   }
 
-  /**
-   * Error record data class
-   */
+  /** Error record data class */
   public static class ErrorRecord {
     private final PayrollEmployee originalRecord;
     private final String errorMessage;
@@ -482,9 +490,14 @@ public class ErrorHandlingStrategy {
     private final int attemptCount;
     private String status;
 
-    public ErrorRecord(PayrollEmployee originalRecord, String errorMessage, String errorType,
-                      ErrorCategory category, RecoveryStrategy recoveryStrategy,
-                      Instant errorTimestamp, int attemptCount) {
+    public ErrorRecord(
+        PayrollEmployee originalRecord,
+        String errorMessage,
+        String errorType,
+        ErrorCategory category,
+        RecoveryStrategy recoveryStrategy,
+        Instant errorTimestamp,
+        int attemptCount) {
       this.originalRecord = originalRecord;
       this.errorMessage = errorMessage;
       this.errorType = errorType;
@@ -496,31 +509,65 @@ public class ErrorHandlingStrategy {
     }
 
     public ErrorRecord withIncrementedAttempt() {
-      return new ErrorRecord(originalRecord, errorMessage, errorType, category,
-                           recoveryStrategy, errorTimestamp, attemptCount + 1);
+      return new ErrorRecord(
+          originalRecord,
+          errorMessage,
+          errorType,
+          category,
+          recoveryStrategy,
+          errorTimestamp,
+          attemptCount + 1);
     }
 
     public ErrorRecord withStatus(String status) {
-      ErrorRecord copy = new ErrorRecord(originalRecord, errorMessage, errorType, category,
-                                       recoveryStrategy, errorTimestamp, attemptCount);
+      ErrorRecord copy =
+          new ErrorRecord(
+              originalRecord,
+              errorMessage,
+              errorType,
+              category,
+              recoveryStrategy,
+              errorTimestamp,
+              attemptCount);
       copy.status = status;
       return copy;
     }
 
     // Getters
-    public PayrollEmployee getOriginalRecord() { return originalRecord; }
-    public String getErrorMessage() { return errorMessage; }
-    public String getErrorType() { return errorType; }
-    public ErrorCategory getCategory() { return category; }
-    public RecoveryStrategy getRecoveryStrategy() { return recoveryStrategy; }
-    public Instant getErrorTimestamp() { return errorTimestamp; }
-    public int getAttemptCount() { return attemptCount; }
-    public String getStatus() { return status; }
+    public PayrollEmployee getOriginalRecord() {
+      return originalRecord;
+    }
+
+    public String getErrorMessage() {
+      return errorMessage;
+    }
+
+    public String getErrorType() {
+      return errorType;
+    }
+
+    public ErrorCategory getCategory() {
+      return category;
+    }
+
+    public RecoveryStrategy getRecoveryStrategy() {
+      return recoveryStrategy;
+    }
+
+    public Instant getErrorTimestamp() {
+      return errorTimestamp;
+    }
+
+    public int getAttemptCount() {
+      return attemptCount;
+    }
+
+    public String getStatus() {
+      return status;
+    }
   }
 
-  /**
-   * Error handling metrics data class
-   */
+  /** Error handling metrics data class */
   public static class ErrorHandlingMetrics {
     private final long totalErrorsHandled;
     private final long retriesAttempted;
@@ -528,9 +575,12 @@ public class ErrorHandlingStrategy {
     private final long circuitBreakerTrips;
     private final boolean circuitBreakerOpen;
 
-    public ErrorHandlingMetrics(long totalErrorsHandled, long retriesAttempted,
-                               long deadLetterRecords, long circuitBreakerTrips,
-                               boolean circuitBreakerOpen) {
+    public ErrorHandlingMetrics(
+        long totalErrorsHandled,
+        long retriesAttempted,
+        long deadLetterRecords,
+        long circuitBreakerTrips,
+        boolean circuitBreakerOpen) {
       this.totalErrorsHandled = totalErrorsHandled;
       this.retriesAttempted = retriesAttempted;
       this.deadLetterRecords = deadLetterRecords;
@@ -538,17 +588,35 @@ public class ErrorHandlingStrategy {
       this.circuitBreakerOpen = circuitBreakerOpen;
     }
 
-    public long getTotalErrorsHandled() { return totalErrorsHandled; }
-    public long getRetriesAttempted() { return retriesAttempted; }
-    public long getDeadLetterRecords() { return deadLetterRecords; }
-    public long getCircuitBreakerTrips() { return circuitBreakerTrips; }
-    public boolean isCircuitBreakerOpen() { return circuitBreakerOpen; }
+    public long getTotalErrorsHandled() {
+      return totalErrorsHandled;
+    }
+
+    public long getRetriesAttempted() {
+      return retriesAttempted;
+    }
+
+    public long getDeadLetterRecords() {
+      return deadLetterRecords;
+    }
+
+    public long getCircuitBreakerTrips() {
+      return circuitBreakerTrips;
+    }
+
+    public boolean isCircuitBreakerOpen() {
+      return circuitBreakerOpen;
+    }
 
     @Override
     public String toString() {
       return String.format(
           "ErrorHandlingMetrics{totalErrors=%d, retries=%d, deadLetter=%d, circuitBreakerTrips=%d, circuitBreakerOpen=%s}",
-          totalErrorsHandled, retriesAttempted, deadLetterRecords, circuitBreakerTrips, circuitBreakerOpen);
+          totalErrorsHandled,
+          retriesAttempted,
+          deadLetterRecords,
+          circuitBreakerTrips,
+          circuitBreakerOpen);
     }
   }
 }

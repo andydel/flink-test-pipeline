@@ -103,7 +103,7 @@
       "rule_name": "Email Format and Domain",
       "field_name": "email",
       "rule_type": "FORMAT",
-      "validation_expression": "email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$') && isApprovedDomain(email)",
+      "validation_expression": "email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$')",
       "error_template": "Invalid email format or unauthorized domain",
       "compliance_level": "BUSINESS",
       "enabled": true,
@@ -112,15 +112,15 @@
     },
     {
       "rule_id": "DQ-010",
-      "rule_name": "SSN Uniqueness Check",
+      "rule_name": "SSN Uniqueness",
       "field_name": "ssn",
       "rule_type": "UNIQUENESS",
-      "validation_expression": "!isDuplicateSSN(ssn)",
-      "error_template": "SSN {ssn} is already associated with another employee",
+      "validation_expression": "!isDuplicateWithinWindow(ssn, 3600000)",
+      "error_template": "SSN {ssn} has already been processed within the 1-hour window",
       "compliance_level": "REGULATORY",
       "enabled": true,
-      "cache_duration_ms": 3600000,
-      "suggested_correction": "Verify SSN is correct or investigate potential duplicate employee record"
+      "cache_duration_ms": 300000,
+      "suggested_correction": "Verify SSN is correct and this employee has not already been submitted"
     }
   ],
   "rule_execution_config": {

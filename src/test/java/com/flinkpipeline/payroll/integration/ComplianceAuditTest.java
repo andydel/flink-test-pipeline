@@ -3,14 +3,9 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for compliance audit and reporting scenarios in the payroll pipeline.
- * Tests end-to-end compliance auditing, regulatory reporting, data lineage tracking,
- * and retention management for payroll data processing.
+ * Integration test for compliance audit and reporting scenarios in the payroll pipeline. Tests
+ * end-to-end compliance auditing, regulatory reporting, data lineage tracking, and retention
+ * management for payroll data processing.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("Compliance Audit and Reporting Integration Tests")
 class ComplianceAuditTest {
@@ -93,12 +89,12 @@ class ComplianceAuditTest {
   @DisplayName("Should create comprehensive compliance audit trail for all payroll operations")
   @Timeout(value = 90, unit = TimeUnit.SECONDS)
   void shouldCreateComprehensiveComplianceAuditTrailForAllPayrollOperations() throws Exception {
-    List<PayrollEmployee> auditTestEmployees = Arrays.asList(
-        createEmployeeWithPII(8001, "AUDIT_PII_TEST"),
-        createEmployeeWithComplianceRisk(8002, "REGULATORY_RISK"),
-        createValidEmployee(8003, "STANDARD_PROCESSING"),
-        createEmployeeWithValidationFailure(8004, "VALIDATION_FAILURE")
-    );
+    List<PayrollEmployee> auditTestEmployees =
+        Arrays.asList(
+            createEmployeeWithPII(8001, "AUDIT_PII_TEST"),
+            createEmployeeWithComplianceRisk(8002, "REGULATORY_RISK"),
+            createValidEmployee(8003, "STANDARD_PROCESSING"),
+            createEmployeeWithValidationFailure(8004, "VALIDATION_FAILURE"));
 
     // TODO: This assertion will fail until comprehensive auditing is implemented
     // pipeline.start();
@@ -152,7 +148,8 @@ class ComplianceAuditTest {
 
     // For now, verify audit test concepts
     assertEquals(4, auditTestEmployees.size(), "Should test various audit scenarios");
-    assertTrue(AUDIT_RETENTION_PERIOD.toDays() >= 365 * 7, "Should meet 7-year retention requirement");
+    assertTrue(
+        AUDIT_RETENTION_PERIOD.toDays() >= 365 * 7, "Should meet 7-year retention requirement");
   }
 
   @Test
@@ -173,7 +170,8 @@ class ComplianceAuditTest {
     // Thread.sleep(1000);
     // simulatePIIAccess(piiTestEmployee.getEmployeeId(), "PAYROLL_CLERK_002", "PROCESS_PAYROLL");
     // Thread.sleep(1000);
-    // simulatePIIAccess(piiTestEmployee.getEmployeeId(), COMPLIANCE_OFFICER_ID, "COMPLIANCE_AUDIT");
+    // simulatePIIAccess(piiTestEmployee.getEmployeeId(), COMPLIANCE_OFFICER_ID,
+    // "COMPLIANCE_AUDIT");
     // Thread.sleep(3000);
 
     // Verify PII access event tracking
@@ -200,7 +198,8 @@ class ComplianceAuditTest {
     // }
 
     // Verify access purpose validation
-    // List<String> validPurposes = Arrays.asList("VIEW_EMPLOYEE_RECORD", "PROCESS_PAYROLL", "COMPLIANCE_AUDIT");
+    // List<String> validPurposes = Arrays.asList("VIEW_EMPLOYEE_RECORD", "PROCESS_PAYROLL",
+    // "COMPLIANCE_AUDIT");
     // for (PIIAccessEvent accessEvent : piiAccessSink.getResults()) {
     //   assertTrue(validPurposes.contains(accessEvent.getAccessPurpose()),
     //       "Should have valid access purpose");
@@ -208,7 +207,10 @@ class ComplianceAuditTest {
 
     // For now, verify PII access tracking concepts
     assertNotNull(piiTestEmployee.getSsn(), "Employee should have PII for access tracking");
-    assertEquals(COMPLIANCE_OFFICER_ID, "COMPLIANCE_OFFICER_001", "Should have compliance officer for testing");
+    assertEquals(
+        COMPLIANCE_OFFICER_ID,
+        "COMPLIANCE_OFFICER_001",
+        "Should have compliance officer for testing");
   }
 
   @Test
@@ -319,10 +321,12 @@ class ComplianceAuditTest {
 
     // Verify data transformation tracking
     // assertTrue(lineageEvent.getDataTransformations().stream()
-    //     .anyMatch(transformation -> transformation.getTransformationType().equals("PII_ENCRYPTION")),
+    //     .anyMatch(transformation ->
+    // transformation.getTransformationType().equals("PII_ENCRYPTION")),
     //     "Should track PII encryption transformation");
     // assertTrue(lineageEvent.getDataTransformations().stream()
-    //     .anyMatch(transformation -> transformation.getTransformationType().equals("FIELD_VALIDATION")),
+    //     .anyMatch(transformation ->
+    // transformation.getTransformationType().equals("FIELD_VALIDATION")),
     //     "Should track field validation transformation");
 
     // Verify output destination tracking
@@ -338,12 +342,12 @@ class ComplianceAuditTest {
   @DisplayName("Should detect and report compliance violations in real-time")
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldDetectAndReportComplianceViolationsInRealTime() throws Exception {
-    List<PayrollEmployee> violationTestEmployees = Arrays.asList(
-        createEmployeeWithUnauthorizedPIIAccess(8007, "UNAUTHORIZED_ACCESS"),
-        createEmployeeWithDataRetentionViolation(8008, "RETENTION_VIOLATION"),
-        createEmployeeWithEncryptionViolation(8009, "ENCRYPTION_VIOLATION"),
-        createEmployeeWithAuditTrailGap(8010, "AUDIT_GAP")
-    );
+    List<PayrollEmployee> violationTestEmployees =
+        Arrays.asList(
+            createEmployeeWithUnauthorizedPIIAccess(8007, "UNAUTHORIZED_ACCESS"),
+            createEmployeeWithDataRetentionViolation(8008, "RETENTION_VIOLATION"),
+            createEmployeeWithEncryptionViolation(8009, "ENCRYPTION_VIOLATION"),
+            createEmployeeWithAuditTrailGap(8010, "AUDIT_GAP"));
 
     // TODO: This assertion will fail until real-time violation detection is implemented
     // pipeline.start();
@@ -371,7 +375,8 @@ class ComplianceAuditTest {
     //   assertNotNull(violation.getViolationSeverity(), "Should assess violation severity");
     //   assertNotNull(violation.getViolationDetails(), "Should provide violation details");
     //   assertNotNull(violation.getRemediationRequired(), "Should specify remediation");
-    //   assertNotNull(violation.getComplianceOfficerNotified(), "Should notify compliance officer");
+    //   assertNotNull(violation.getComplianceOfficerNotified(), "Should notify compliance
+    // officer");
 
     //   // Verify real-time alerting
     //   assertTrue(violation.getDetectionLatencyMs() < REAL_TIME_AUDIT_WINDOW.toMillis(),
@@ -388,14 +393,16 @@ class ComplianceAuditTest {
 
     // For now, verify violation detection concepts
     assertEquals(4, violationTestEmployees.size(), "Should test various violation types");
-    assertTrue(REAL_TIME_AUDIT_WINDOW.toMinutes() == 5, "Should detect violations within 5 minutes");
+    assertTrue(
+        REAL_TIME_AUDIT_WINDOW.toMinutes() == 5, "Should detect violations within 5 minutes");
   }
 
   @Test
   @DisplayName("Should support compliance officer investigation workflows")
   @Timeout(value = 90, unit = TimeUnit.SECONDS)
   void shouldSupportComplianceOfficerInvestigationWorkflows() throws Exception {
-    PayrollEmployee investigationEmployee = createEmployeeWithComplianceRisk(8011, "INVESTIGATION_TARGET");
+    PayrollEmployee investigationEmployee =
+        createEmployeeWithComplianceRisk(8011, "INVESTIGATION_TARGET");
 
     // TODO: This assertion will fail until investigation workflows are implemented
     // pipeline.start();
@@ -416,7 +423,8 @@ class ComplianceAuditTest {
     // Thread.sleep(5000);
 
     // Verify investigation capabilities
-    // InvestigationResult result = mockReportingSystem.getInvestigationResult(investigation.getInvestigationId());
+    // InvestigationResult result =
+    // mockReportingSystem.getInvestigationResult(investigation.getInvestigationId());
     // assertNotNull(result, "Should provide investigation result");
 
     // Verify comprehensive investigation data
@@ -441,7 +449,10 @@ class ComplianceAuditTest {
     // }
 
     // For now, verify investigation workflow concepts
-    assertEquals(COMPLIANCE_OFFICER_ID, "COMPLIANCE_OFFICER_001", "Should support compliance officer workflows");
+    assertEquals(
+        COMPLIANCE_OFFICER_ID,
+        "COMPLIANCE_OFFICER_001",
+        "Should support compliance officer workflows");
   }
 
   @Test
@@ -449,11 +460,11 @@ class ComplianceAuditTest {
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldManageAuditDataRetentionAndPurgingPolicies() throws Exception {
     // Create audit entries with different retention requirements
-    List<PayrollEmployee> retentionTestEmployees = Arrays.asList(
-        createEmployeeWithShortRetention(8012, "SHORT_RETENTION"),
-        createEmployeeWithStandardRetention(8013, "STANDARD_RETENTION"),
-        createEmployeeWithExtendedRetention(8014, "EXTENDED_RETENTION")
-    );
+    List<PayrollEmployee> retentionTestEmployees =
+        Arrays.asList(
+            createEmployeeWithShortRetention(8012, "SHORT_RETENTION"),
+            createEmployeeWithStandardRetention(8013, "STANDARD_RETENTION"),
+            createEmployeeWithExtendedRetention(8014, "EXTENDED_RETENTION"));
 
     // TODO: This assertion will fail until retention management is implemented
     // pipeline.start();
@@ -475,11 +486,13 @@ class ComplianceAuditTest {
     //   // Verify retention categorization
     //   if (auditLog.getEmployeeId() == 8012) { // Short retention
     //     long shortRetentionPeriod = 1L * 365 * 24 * 60 * 60 * 1000; // 1 year
-    //     assertTrue(auditLog.getRetentionExpires() < System.currentTimeMillis() + shortRetentionPeriod + 86400000,
+    //     assertTrue(auditLog.getRetentionExpires() < System.currentTimeMillis() +
+    // shortRetentionPeriod + 86400000,
     //         "Short retention should be approximately 1 year");
     //   } else if (auditLog.getEmployeeId() == 8014) { // Extended retention
     //     long extendedRetentionPeriod = 10L * 365 * 24 * 60 * 60 * 1000; // 10 years
-    //     assertTrue(auditLog.getRetentionExpires() > System.currentTimeMillis() + extendedRetentionPeriod - 86400000,
+    //     assertTrue(auditLog.getRetentionExpires() > System.currentTimeMillis() +
+    // extendedRetentionPeriod - 86400000,
     //         "Extended retention should be approximately 10 years");
     //   }
     // }
@@ -527,7 +540,8 @@ class ComplianceAuditTest {
     // Thread.sleep(15000);
 
     // Verify external system notifications
-    // List<ExternalComplianceNotification> notifications = mockReportingSystem.getExternalNotifications();
+    // List<ExternalComplianceNotification> notifications =
+    // mockReportingSystem.getExternalNotifications();
     // assertTrue(notifications.size() > 0, "Should send notifications to external systems");
 
     // Verify notification content
@@ -551,19 +565,20 @@ class ComplianceAuditTest {
     //     "Should process external compliance alerts");
 
     // For now, verify external integration concepts
-    assertEquals(15, externalIntegrationEmployees.size(), "Should test external system integration");
+    assertEquals(
+        15, externalIntegrationEmployees.size(), "Should test external system integration");
   }
 
-  /**
-   * Helper methods to create specific employee types for compliance testing
-   */
+  /** Helper methods to create specific employee types for compliance testing */
   private PayrollEmployee createEmployeeWithPII(int employeeId, String testCase) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("PII_" + testCase)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("pii." + testCase.toLowerCase() + "@company.com")
@@ -576,7 +591,9 @@ class ComplianceAuditTest {
         .firstName("Risk_" + riskType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(150.00) // High wage triggers compliance review
         .gender("male")
         .email("risk." + riskType.toLowerCase() + "@company.com")
@@ -589,7 +606,9 @@ class ComplianceAuditTest {
         .firstName("Valid_" + testCase)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("valid." + testCase.toLowerCase() + "@company.com")
@@ -602,14 +621,17 @@ class ComplianceAuditTest {
         .firstName("Failure_" + failureType)
         .lastName("Employee")
         .age(15) // Invalid age triggers failure
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("failure." + failureType.toLowerCase() + "@company.com")
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithUnauthorizedPIIAccess(int employeeId, String violationType) {
+  private PayrollEmployee createEmployeeWithUnauthorizedPIIAccess(
+      int employeeId, String violationType) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("Unauthorized_" + violationType)
@@ -622,20 +644,24 @@ class ComplianceAuditTest {
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithDataRetentionViolation(int employeeId, String violationType) {
+  private PayrollEmployee createEmployeeWithDataRetentionViolation(
+      int employeeId, String violationType) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("Retention_" + violationType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("retention." + violationType.toLowerCase() + "@company.com")
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithEncryptionViolation(int employeeId, String violationType) {
+  private PayrollEmployee createEmployeeWithEncryptionViolation(
+      int employeeId, String violationType) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("Encryption_" + violationType)
@@ -654,7 +680,9 @@ class ComplianceAuditTest {
         .firstName("AuditGap_" + violationType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("auditgap." + violationType.toLowerCase() + "@company.com")
@@ -667,42 +695,48 @@ class ComplianceAuditTest {
         .firstName("ShortRetention_" + retentionType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("short.retention@company.com")
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithStandardRetention(int employeeId, String retentionType) {
+  private PayrollEmployee createEmployeeWithStandardRetention(
+      int employeeId, String retentionType) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("StandardRetention_" + retentionType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("standard.retention@company.com")
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithExtendedRetention(int employeeId, String retentionType) {
+  private PayrollEmployee createEmployeeWithExtendedRetention(
+      int employeeId, String retentionType) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName("ExtendedRetention_" + retentionType)
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("extended.retention@company.com")
         .build();
   }
 
-  /**
-   * Helper methods to generate test datasets
-   */
+  /** Helper methods to generate test datasets */
   private List<PayrollEmployee> generateComplianceReportingDataset(int size) {
     List<PayrollEmployee> dataset = new java.util.ArrayList<>();
     for (int i = 0; i < size; i++) {
@@ -723,17 +757,13 @@ class ComplianceAuditTest {
     return dataset;
   }
 
-  /**
-   * Helper method to simulate PII access
-   */
+  /** Helper method to simulate PII access */
   // private void simulatePIIAccess(Integer employeeId, String userId, String purpose) {
   //   // TODO: Implement when PII access simulation is available
   //   // mockReportingSystem.simulatePIIAccess(employeeId, userId, purpose);
   // }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

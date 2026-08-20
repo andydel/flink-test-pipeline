@@ -1,35 +1,38 @@
 package com.flinkpipeline.payroll.models;
 
+import java.io.Serializable;
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Data model representing a configurable payroll data quality validation rule.
- * Defines validation logic, error handling, compliance requirements, and performance settings
- * for payroll record validation operations.
+ * Data model representing a configurable payroll data quality validation rule. Defines validation
+ * logic, error handling, compliance requirements, and performance settings for payroll record
+ * validation operations.
  */
-public class PayrollQualityRule {
+public class PayrollQualityRule implements Serializable {
+
+  private static final long serialVersionUID = 1L;
 
   public enum RuleType {
-    FORMAT,          // Field format validation (SSN, email patterns)
-    RANGE,           // Numeric/date range validation (age, wage limits)
-    COMPLIANCE,      // Regulatory compliance validation (PII, audit requirements)
-    UNIQUENESS,      // Duplicate detection and uniqueness constraints
-    COMPLETENESS,    // Required field presence and data completeness
-    BUSINESS,        // Business logic validation (employment eligibility)
-    CROSS_FIELD      // Multi-field validation rules
+    FORMAT, // Field format validation (SSN, email patterns)
+    RANGE, // Numeric/date range validation (age, wage limits)
+    COMPLIANCE, // Regulatory compliance validation (PII, audit requirements)
+    UNIQUENESS, // Duplicate detection and uniqueness constraints
+    COMPLETENESS, // Required field presence and data completeness
+    BUSINESS, // Business logic validation (employment eligibility)
+    CROSS_FIELD // Multi-field validation rules
   }
 
   public enum ComplianceLevel {
-    REGULATORY,      // Federal/state regulatory requirements (must pass)
-    BUSINESS,        // Business policy requirements (should pass)
-    INFORMATIONAL   // Data quality information (may warn)
+    REGULATORY, // Federal/state regulatory requirements (must pass)
+    BUSINESS, // Business policy requirements (should pass)
+    INFORMATIONAL // Data quality information (may warn)
   }
 
   public enum ValidationMode {
-    STRICT,          // Fail immediately on rule violation
-    WARNING,         // Generate warning but allow processing
-    CONDITIONAL      // Apply rule based on conditions
+    STRICT, // Fail immediately on rule violation
+    WARNING, // Generate warning but allow processing
+    CONDITIONAL // Apply rule based on conditions
   }
 
   // Core rule identification
@@ -156,27 +159,111 @@ public class PayrollQualityRule {
         .build();
   }
 
+  public static PayrollQualityRule createEmailValidationRule() {
+    return new Builder()
+        .ruleId("DQ-001")
+        .ruleName("Email Format Validation")
+        .description("Validates employee email format")
+        .fieldName("email")
+        .ruleType(RuleType.FORMAT)
+        .complianceLevel(ComplianceLevel.BUSINESS)
+        .validationMode(ValidationMode.STRICT)
+        .validationExpression("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+        .errorTemplate("Email must be in valid format")
+        .correctionGuidance("Enter a valid email address")
+        .businessJustification("Valid email required for employee communication")
+        .priority(5)
+        .build();
+  }
+
+  public static PayrollQualityRule createAgeRangeRule() {
+    return createAgeRangeValidationRule();
+  }
+
+  public static PayrollQualityRule createWageComplianceRule() {
+    return createWageValidationRule();
+  }
+
   // Getters
-  public String getRuleId() { return ruleId; }
-  public String getRuleName() { return ruleName; }
-  public String getDescription() { return description; }
-  public String getVersion() { return version; }
-  public String getFieldName() { return fieldName; }
-  public RuleType getRuleType() { return ruleType; }
-  public ComplianceLevel getComplianceLevel() { return complianceLevel; }
-  public ValidationMode getValidationMode() { return validationMode; }
-  public String getValidationExpression() { return validationExpression; }
-  public String getErrorTemplate() { return errorTemplate; }
-  public String getCorrectionGuidance() { return correctionGuidance; }
-  public String getBusinessJustification() { return businessJustification; }
-  public boolean isEnabled() { return enabled; }
-  public int getPriority() { return priority; }
-  public long getCacheDurationMs() { return cacheDurationMs; }
-  public long getTimeoutMs() { return timeoutMs; }
-  public Instant getCreatedTimestamp() { return createdTimestamp; }
-  public Instant getLastModifiedTimestamp() { return lastModifiedTimestamp; }
-  public String getCreatedBy() { return createdBy; }
-  public String getLastModifiedBy() { return lastModifiedBy; }
+  public String getRuleId() {
+    return ruleId;
+  }
+
+  public String getRuleName() {
+    return ruleName;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public String getVersion() {
+    return version;
+  }
+
+  public String getFieldName() {
+    return fieldName;
+  }
+
+  public RuleType getRuleType() {
+    return ruleType;
+  }
+
+  public ComplianceLevel getComplianceLevel() {
+    return complianceLevel;
+  }
+
+  public ValidationMode getValidationMode() {
+    return validationMode;
+  }
+
+  public String getValidationExpression() {
+    return validationExpression;
+  }
+
+  public String getErrorTemplate() {
+    return errorTemplate;
+  }
+
+  public String getCorrectionGuidance() {
+    return correctionGuidance;
+  }
+
+  public String getBusinessJustification() {
+    return businessJustification;
+  }
+
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public int getPriority() {
+    return priority;
+  }
+
+  public long getCacheDurationMs() {
+    return cacheDurationMs;
+  }
+
+  public long getTimeoutMs() {
+    return timeoutMs;
+  }
+
+  public Instant getCreatedTimestamp() {
+    return createdTimestamp;
+  }
+
+  public Instant getLastModifiedTimestamp() {
+    return lastModifiedTimestamp;
+  }
+
+  public String getCreatedBy() {
+    return createdBy;
+  }
+
+  public String getLastModifiedBy() {
+    return lastModifiedBy;
+  }
 
   // Business logic methods
   public boolean isRegulatory() {
@@ -197,8 +284,9 @@ public class PayrollQualityRule {
 
   public String formatErrorMessage(String fieldValue) {
     if (errorTemplate == null) return "Validation failed for field: " + fieldName;
-    return errorTemplate.replace("{field_value}", fieldValue != null ? fieldValue : "null")
-                        .replace("{field_name}", fieldName);
+    return errorTemplate
+        .replace("{field_value}", fieldValue != null ? fieldValue : "null")
+        .replace("{field_name}", fieldName);
   }
 
   // Builder pattern
@@ -224,26 +312,105 @@ public class PayrollQualityRule {
     private String createdBy = "SYSTEM";
     private String lastModifiedBy = "SYSTEM";
 
-    public Builder ruleId(String ruleId) { this.ruleId = ruleId; return this; }
-    public Builder ruleName(String ruleName) { this.ruleName = ruleName; return this; }
-    public Builder description(String description) { this.description = description; return this; }
-    public Builder version(String version) { this.version = version; return this; }
-    public Builder fieldName(String fieldName) { this.fieldName = fieldName; return this; }
-    public Builder ruleType(RuleType ruleType) { this.ruleType = ruleType; return this; }
-    public Builder complianceLevel(ComplianceLevel complianceLevel) { this.complianceLevel = complianceLevel; return this; }
-    public Builder validationMode(ValidationMode validationMode) { this.validationMode = validationMode; return this; }
-    public Builder validationExpression(String validationExpression) { this.validationExpression = validationExpression; return this; }
-    public Builder errorTemplate(String errorTemplate) { this.errorTemplate = errorTemplate; return this; }
-    public Builder correctionGuidance(String correctionGuidance) { this.correctionGuidance = correctionGuidance; return this; }
-    public Builder businessJustification(String businessJustification) { this.businessJustification = businessJustification; return this; }
-    public Builder enabled(boolean enabled) { this.enabled = enabled; return this; }
-    public Builder priority(int priority) { this.priority = priority; return this; }
-    public Builder cacheDurationMs(long cacheDurationMs) { this.cacheDurationMs = cacheDurationMs; return this; }
-    public Builder timeoutMs(long timeoutMs) { this.timeoutMs = timeoutMs; return this; }
-    public Builder createdTimestamp(Instant createdTimestamp) { this.createdTimestamp = createdTimestamp; return this; }
-    public Builder lastModifiedTimestamp(Instant lastModifiedTimestamp) { this.lastModifiedTimestamp = lastModifiedTimestamp; return this; }
-    public Builder createdBy(String createdBy) { this.createdBy = createdBy; return this; }
-    public Builder lastModifiedBy(String lastModifiedBy) { this.lastModifiedBy = lastModifiedBy; return this; }
+    public Builder ruleId(String ruleId) {
+      this.ruleId = ruleId;
+      return this;
+    }
+
+    public Builder ruleName(String ruleName) {
+      this.ruleName = ruleName;
+      return this;
+    }
+
+    public Builder description(String description) {
+      this.description = description;
+      return this;
+    }
+
+    public Builder version(String version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder fieldName(String fieldName) {
+      this.fieldName = fieldName;
+      return this;
+    }
+
+    public Builder ruleType(RuleType ruleType) {
+      this.ruleType = ruleType;
+      return this;
+    }
+
+    public Builder complianceLevel(ComplianceLevel complianceLevel) {
+      this.complianceLevel = complianceLevel;
+      return this;
+    }
+
+    public Builder validationMode(ValidationMode validationMode) {
+      this.validationMode = validationMode;
+      return this;
+    }
+
+    public Builder validationExpression(String validationExpression) {
+      this.validationExpression = validationExpression;
+      return this;
+    }
+
+    public Builder errorTemplate(String errorTemplate) {
+      this.errorTemplate = errorTemplate;
+      return this;
+    }
+
+    public Builder correctionGuidance(String correctionGuidance) {
+      this.correctionGuidance = correctionGuidance;
+      return this;
+    }
+
+    public Builder businessJustification(String businessJustification) {
+      this.businessJustification = businessJustification;
+      return this;
+    }
+
+    public Builder enabled(boolean enabled) {
+      this.enabled = enabled;
+      return this;
+    }
+
+    public Builder priority(int priority) {
+      this.priority = priority;
+      return this;
+    }
+
+    public Builder cacheDurationMs(long cacheDurationMs) {
+      this.cacheDurationMs = cacheDurationMs;
+      return this;
+    }
+
+    public Builder timeoutMs(long timeoutMs) {
+      this.timeoutMs = timeoutMs;
+      return this;
+    }
+
+    public Builder createdTimestamp(Instant createdTimestamp) {
+      this.createdTimestamp = createdTimestamp;
+      return this;
+    }
+
+    public Builder lastModifiedTimestamp(Instant lastModifiedTimestamp) {
+      this.lastModifiedTimestamp = lastModifiedTimestamp;
+      return this;
+    }
+
+    public Builder createdBy(String createdBy) {
+      this.createdBy = createdBy;
+      return this;
+    }
+
+    public Builder lastModifiedBy(String lastModifiedBy) {
+      this.lastModifiedBy = lastModifiedBy;
+      return this;
+    }
 
     public PayrollQualityRule build() {
       // Validation
@@ -263,8 +430,7 @@ public class PayrollQualityRule {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     PayrollQualityRule that = (PayrollQualityRule) obj;
-    return Objects.equals(ruleId, that.ruleId) &&
-           Objects.equals(version, that.version);
+    return Objects.equals(ruleId, that.ruleId) && Objects.equals(version, that.version);
   }
 
   @Override
@@ -274,14 +440,24 @@ public class PayrollQualityRule {
 
   @Override
   public String toString() {
-    return "PayrollQualityRule{" +
-           "ruleId='" + ruleId + '\'' +
-           ", ruleName='" + ruleName + '\'' +
-           ", fieldName='" + fieldName + '\'' +
-           ", ruleType=" + ruleType +
-           ", complianceLevel=" + complianceLevel +
-           ", enabled=" + enabled +
-           ", priority=" + priority +
-           '}';
+    return "PayrollQualityRule{"
+        + "ruleId='"
+        + ruleId
+        + '\''
+        + ", ruleName='"
+        + ruleName
+        + '\''
+        + ", fieldName='"
+        + fieldName
+        + '\''
+        + ", ruleType="
+        + ruleType
+        + ", complianceLevel="
+        + complianceLevel
+        + ", enabled="
+        + enabled
+        + ", priority="
+        + priority
+        + '}';
   }
 }

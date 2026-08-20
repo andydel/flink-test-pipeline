@@ -20,18 +20,14 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Comprehensive security and authentication manager for the payroll data quality pipeline.
- * Implements enterprise-grade security controls including PII encryption, access control,
- * audit logging, and compliance with data protection regulations (GDPR, CCPA, SOX).
+ * Implements enterprise-grade security controls including PII encryption, access control, audit
+ * logging, and compliance with data protection regulations (GDPR, CCPA, SOX).
  *
- * Security Features:
- * - AES-256-GCM encryption for PII data (SSN, email, names)
- * - Role-based access control (RBAC) with principle of least privilege
- * - Multi-factor authentication integration
- * - Comprehensive audit logging for all data access
- * - Key management and rotation policies
- * - Data masking and tokenization for non-production environments
- * - Session management and token validation
- * - Integration with enterprise identity providers (LDAP, Active Directory, OAuth)
+ * <p>Security Features: - AES-256-GCM encryption for PII data (SSN, email, names) - Role-based
+ * access control (RBAC) with principle of least privilege - Multi-factor authentication integration
+ * - Comprehensive audit logging for all data access - Key management and rotation policies - Data
+ * masking and tokenization for non-production environments - Session management and token
+ * validation - Integration with enterprise identity providers (LDAP, Active Directory, OAuth)
  */
 public class PayrollSecurityManager {
 
@@ -72,8 +68,10 @@ public class PayrollSecurityManager {
     this.encryptionEnabled = config.isPiiEncryptionEnabled();
     this.authenticationEnabled = config.isAuthenticationEnabled();
 
-    LOG.info("Initializing PayrollSecurityManager - encryption: {}, authentication: {}",
-             encryptionEnabled, authenticationEnabled);
+    LOG.info(
+        "Initializing PayrollSecurityManager - encryption: {}, authentication: {}",
+        encryptionEnabled,
+        authenticationEnabled);
 
     try {
       initializeSecurity();
@@ -84,9 +82,7 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Initialize security components
-   */
+  /** Initialize security components */
   private void initializeSecurity() throws Exception {
     // Initialize encryption if enabled
     if (encryptionEnabled) {
@@ -100,9 +96,7 @@ public class PayrollSecurityManager {
     setupDefaultRolesAndPermissions();
   }
 
-  /**
-   * Initialize encryption key and components
-   */
+  /** Initialize encryption key and components */
   private void initializeEncryption() throws Exception {
     LOG.info("Initializing PII encryption with AES-256-GCM");
 
@@ -120,9 +114,7 @@ public class PayrollSecurityManager {
     LOG.info("Encryption initialization completed");
   }
 
-  /**
-   * Initialize access control system
-   */
+  /** Initialize access control system */
   private void initializeAccessControl() {
     LOG.info("Initializing role-based access control");
 
@@ -130,12 +122,11 @@ public class PayrollSecurityManager {
     LOG.info("Access control initialization completed");
   }
 
-  /**
-   * Setup default roles and permissions
-   */
+  /** Setup default roles and permissions */
   private void setupDefaultRolesAndPermissions() {
     // Define permissions
-    permissions.put("READ_PII", new Permission("READ_PII", "Read personally identifiable information"));
+    permissions.put(
+        "READ_PII", new Permission("READ_PII", "Read personally identifiable information"));
     permissions.put("WRITE_PII", new Permission("WRITE_PII", "Write/modify PII data"));
     permissions.put("READ_PAYROLL", new Permission("READ_PAYROLL", "Read payroll data"));
     permissions.put("WRITE_PAYROLL", new Permission("WRITE_PAYROLL", "Write/modify payroll data"));
@@ -167,9 +158,7 @@ public class PayrollSecurityManager {
     LOG.info("Setup {} roles and {} permissions", roles.size(), permissions.size());
   }
 
-  /**
-   * Encrypt PII field value
-   */
+  /** Encrypt PII field value */
   public String encryptPII(String plaintext, String fieldName) {
     if (!encryptionEnabled || plaintext == null || plaintext.isEmpty()) {
       return plaintext;
@@ -205,9 +194,7 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Decrypt PII field value
-   */
+  /** Decrypt PII field value */
   public String decryptPII(String encryptedText, String fieldName) {
     if (!encryptionEnabled || encryptedText == null || encryptedText.isEmpty()) {
       return encryptedText;
@@ -243,9 +230,7 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Mask PII data for non-production environments
-   */
+  /** Mask PII data for non-production environments */
   public String maskPII(String value, String fieldName) {
     if (value == null || value.isEmpty()) {
       return value;
@@ -264,9 +249,7 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Authenticate user and create session
-   */
+  /** Authenticate user and create session */
   public AuthenticationResult authenticate(String username, String credentials, String authMethod) {
     authenticationAttempts.incrementAndGet();
 
@@ -293,9 +276,7 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Check if user has permission to access resource
-   */
+  /** Check if user has permission to access resource */
   public boolean hasPermission(String sessionId, String permissionName) {
     UserSession session = activeSessions.get(sessionId);
     if (session == null || session.isExpired()) {
@@ -314,31 +295,24 @@ public class PayrollSecurityManager {
     boolean hasPermission = userRole.hasPermission(permissionName);
     if (!hasPermission) {
       accessViolations.incrementAndGet();
-      LOG.warn("Access denied - user {} lacks permission: {}", session.getUsername(), permissionName);
+      LOG.warn(
+          "Access denied - user {} lacks permission: {}", session.getUsername(), permissionName);
     }
 
     return hasPermission;
   }
 
-  /**
-   * Generate audit log for PII access
-   */
-  public ComplianceAuditLog generatePIIAccessAuditLog(String sessionId, Integer employeeId,
-                                                     String[] piiFields, String purpose) {
+  /** Generate audit log for PII access */
+  public ComplianceAuditLog generatePIIAccessAuditLog(
+      String sessionId, Integer employeeId, String[] piiFields, String purpose) {
     UserSession session = activeSessions.get(sessionId);
     String username = session != null ? session.getUsername() : "UNKNOWN";
 
     return ComplianceAuditLog.createPIIAccessAudit(
-        employeeId,
-        username,
-        java.util.Arrays.asList(piiFields),
-        purpose
-    );
+        employeeId, username, java.util.Arrays.asList(piiFields), purpose);
   }
 
-  /**
-   * Hash sensitive data for comparison without storing plaintext
-   */
+  /** Hash sensitive data for comparison without storing plaintext */
   public String hashSensitiveData(String data, String salt) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");
@@ -351,18 +325,14 @@ public class PayrollSecurityManager {
     }
   }
 
-  /**
-   * Generate secure random salt
-   */
+  /** Generate secure random salt */
   public String generateSalt() {
     byte[] salt = new byte[32];
     secureRandom.nextBytes(salt);
     return Base64.getEncoder().encodeToString(salt);
   }
 
-  /**
-   * Get security metrics
-   */
+  /** Get security metrics */
   public SecurityMetrics getSecurityMetrics() {
     return new SecurityMetrics(
         encryptionOperations.get(),
@@ -370,8 +340,7 @@ public class PayrollSecurityManager {
         authenticationAttempts.get(),
         authenticationFailures.get(),
         accessViolations.get(),
-        activeSessions.size()
-    );
+        activeSessions.size());
   }
 
   // Private helper methods
@@ -395,14 +364,17 @@ public class PayrollSecurityManager {
   private boolean validateCredentials(String username, String credentials, String authMethod) {
     // Simplified validation for demo purposes
     // In real implementation, would integrate with enterprise identity provider
-    return username != null && !username.isEmpty() &&
-           credentials != null && credentials.length() >= 8;
+    return username != null
+        && !username.isEmpty()
+        && credentials != null
+        && credentials.length() >= 8;
   }
 
   private UserSession createUserSession(String username) {
     String sessionId = generateSessionId();
     String roleName = determineUserRole(username);
-    return new UserSession(sessionId, username, roleName, Instant.now().plusSeconds(3600)); // 1 hour expiry
+    return new UserSession(
+        sessionId, username, roleName, Instant.now().plusSeconds(3600)); // 1 hour expiry
   }
 
   private String generateSessionId() {
@@ -447,7 +419,9 @@ public class PayrollSecurityManager {
     if (value.length() <= 4) {
       return "*".repeat(value.length());
     }
-    return value.substring(0, 2) + "*".repeat(value.length() - 4) + value.substring(value.length() - 2);
+    return value.substring(0, 2)
+        + "*".repeat(value.length() - 4)
+        + value.substring(value.length() - 2);
   }
 
   // Data classes
@@ -463,14 +437,27 @@ public class PayrollSecurityManager {
       this.message = message;
     }
 
-    public boolean isSuccess() { return success; }
-    public String getSessionId() { return sessionId; }
-    public String getMessage() { return message; }
+    public boolean isSuccess() {
+      return success;
+    }
+
+    public String getSessionId() {
+      return sessionId;
+    }
+
+    public String getMessage() {
+      return message;
+    }
 
     @Override
     public String toString() {
-      return String.format("AuthenticationResult{success=%s, sessionId='%s', message='%s'}",
-                          success, sessionId != null ? sessionId.substring(0, Math.min(8, sessionId.length())) + "..." : null, message);
+      return String.format(
+          "AuthenticationResult{success=%s, sessionId='%s', message='%s'}",
+          success,
+          sessionId != null
+              ? sessionId.substring(0, Math.min(8, sessionId.length())) + "..."
+              : null,
+          message);
     }
   }
 
@@ -491,15 +478,26 @@ public class PayrollSecurityManager {
       return Instant.now().isAfter(expiryTime);
     }
 
-    public String getSessionId() { return sessionId; }
-    public String getUsername() { return username; }
-    public String getRoleName() { return roleName; }
-    public Instant getExpiryTime() { return expiryTime; }
+    public String getSessionId() {
+      return sessionId;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public String getRoleName() {
+      return roleName;
+    }
+
+    public Instant getExpiryTime() {
+      return expiryTime;
+    }
 
     @Override
     public String toString() {
-      return String.format("UserSession{username='%s', role='%s', expires=%s}",
-                          username, roleName, expiryTime);
+      return String.format(
+          "UserSession{username='%s', role='%s', expires=%s}", username, roleName, expiryTime);
     }
   }
 
@@ -521,9 +519,17 @@ public class PayrollSecurityManager {
       return permissions.containsKey(permissionName);
     }
 
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public Map<String, Permission> getPermissions() { return new HashMap<>(permissions); }
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
+
+    public Map<String, Permission> getPermissions() {
+      return new HashMap<>(permissions);
+    }
   }
 
   public static class Permission {
@@ -535,8 +541,13 @@ public class PayrollSecurityManager {
       this.description = description;
     }
 
-    public String getName() { return name; }
-    public String getDescription() { return description; }
+    public String getName() {
+      return name;
+    }
+
+    public String getDescription() {
+      return description;
+    }
 
     @Override
     public String toString() {
@@ -552,9 +563,13 @@ public class PayrollSecurityManager {
     private final long accessViolations;
     private final int activeSessions;
 
-    public SecurityMetrics(long encryptionOperations, long decryptionOperations,
-                          long authenticationAttempts, long authenticationFailures,
-                          long accessViolations, int activeSessions) {
+    public SecurityMetrics(
+        long encryptionOperations,
+        long decryptionOperations,
+        long authenticationAttempts,
+        long authenticationFailures,
+        long accessViolations,
+        int activeSessions) {
       this.encryptionOperations = encryptionOperations;
       this.decryptionOperations = decryptionOperations;
       this.authenticationAttempts = authenticationAttempts;
@@ -563,24 +578,47 @@ public class PayrollSecurityManager {
       this.activeSessions = activeSessions;
     }
 
-    public long getEncryptionOperations() { return encryptionOperations; }
-    public long getDecryptionOperations() { return decryptionOperations; }
-    public long getAuthenticationAttempts() { return authenticationAttempts; }
-    public long getAuthenticationFailures() { return authenticationFailures; }
-    public long getAccessViolations() { return accessViolations; }
-    public int getActiveSessions() { return activeSessions; }
+    public long getEncryptionOperations() {
+      return encryptionOperations;
+    }
+
+    public long getDecryptionOperations() {
+      return decryptionOperations;
+    }
+
+    public long getAuthenticationAttempts() {
+      return authenticationAttempts;
+    }
+
+    public long getAuthenticationFailures() {
+      return authenticationFailures;
+    }
+
+    public long getAccessViolations() {
+      return accessViolations;
+    }
+
+    public int getActiveSessions() {
+      return activeSessions;
+    }
 
     public double getAuthenticationSuccessRate() {
-      return authenticationAttempts > 0 ?
-          (double) (authenticationAttempts - authenticationFailures) / authenticationAttempts : 1.0;
+      return authenticationAttempts > 0
+          ? (double) (authenticationAttempts - authenticationFailures) / authenticationAttempts
+          : 1.0;
     }
 
     @Override
     public String toString() {
       return String.format(
           "SecurityMetrics{encrypt=%d, decrypt=%d, auth=%d, authFail=%d, violations=%d, sessions=%d, authRate=%.2f%%}",
-          encryptionOperations, decryptionOperations, authenticationAttempts, authenticationFailures,
-          accessViolations, activeSessions, getAuthenticationSuccessRate() * 100);
+          encryptionOperations,
+          decryptionOperations,
+          authenticationAttempts,
+          authenticationFailures,
+          accessViolations,
+          activeSessions,
+          getAuthenticationSuccessRate() * 100);
     }
   }
 }

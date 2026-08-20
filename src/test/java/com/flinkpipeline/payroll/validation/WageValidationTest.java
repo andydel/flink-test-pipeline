@@ -12,10 +12,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Test class for hourly rate wage compliance validation rule (DQ-007).
- * Tests hourly rate validation against federal minimum wage and executive compensation limits.
+ * Test class for hourly rate wage compliance validation rule (DQ-007). Tests hourly rate validation
+ * against federal minimum wage and executive compensation limits.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until HourlyRateValidationRule is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until HourlyRateValidationRule is
+ * implemented.
  */
 @DisplayName("Hourly Rate Wage Compliance Tests")
 class WageValidationTest {
@@ -25,7 +26,7 @@ class WageValidationTest {
   // private ValidationContext validationContext;
 
   // Constants for wage validation (amounts in cents)
-  private static final int MINIMUM_WAGE_CENTS = 725;  // $7.25 federal minimum wage
+  private static final int MINIMUM_WAGE_CENTS = 725; // $7.25 federal minimum wage
   private static final int MAXIMUM_WAGE_CENTS = 15000; // $150.00 executive cap
 
   @BeforeEach
@@ -40,13 +41,16 @@ class WageValidationTest {
   @DisplayName("Should validate hourly rates within federal wage range ($7.25-$150.00)")
   void shouldValidateHourlyRatesWithinFederalWageRange(int validRateCents) {
     // TODO: This assertion will fail until HourlyRateValidationRule is implemented
-    // ValidationResult result = hourlyRateValidationRule.validate(validRateCents, validationContext);
+    // ValidationResult result = hourlyRateValidationRule.validate(validRateCents,
+    // validationContext);
     // assertTrue(result.isValid(), "Hourly rate $" + (validRateCents/100.0) + " should be valid");
-    // assertFalse(result.hasErrors(), "Hourly rate $" + (validRateCents/100.0) + " should not have errors");
+    // assertFalse(result.hasErrors(), "Hourly rate $" + (validRateCents/100.0) + " should not have
+    // errors");
 
     // For now, just verify the rate is within expected range
-    assertTrue(validRateCents >= MINIMUM_WAGE_CENTS && validRateCents <= MAXIMUM_WAGE_CENTS,
-        "Hourly rate $" + (validRateCents/100.0) + " should be within federal wage range");
+    assertTrue(
+        validRateCents >= MINIMUM_WAGE_CENTS && validRateCents <= MAXIMUM_WAGE_CENTS,
+        "Hourly rate $" + (validRateCents / 100.0) + " should be within federal wage range");
   }
 
   @ParameterizedTest
@@ -54,13 +58,17 @@ class WageValidationTest {
   @DisplayName("Should reject hourly rates outside federal wage range")
   void shouldRejectHourlyRatesOutsideFederalWageRange(int invalidRateCents) {
     // TODO: This assertion will fail until HourlyRateValidationRule is implemented
-    // ValidationResult result = hourlyRateValidationRule.validate(invalidRateCents, validationContext);
-    // assertFalse(result.isValid(), "Hourly rate $" + (invalidRateCents/100.0) + " should be invalid");
-    // assertTrue(result.hasErrors(), "Hourly rate $" + (invalidRateCents/100.0) + " should have errors");
+    // ValidationResult result = hourlyRateValidationRule.validate(invalidRateCents,
+    // validationContext);
+    // assertFalse(result.isValid(), "Hourly rate $" + (invalidRateCents/100.0) + " should be
+    // invalid");
+    // assertTrue(result.hasErrors(), "Hourly rate $" + (invalidRateCents/100.0) + " should have
+    // errors");
 
     // For now, verify they're outside the expected range
-    assertFalse(invalidRateCents >= MINIMUM_WAGE_CENTS && invalidRateCents <= MAXIMUM_WAGE_CENTS,
-        "Hourly rate $" + (invalidRateCents/100.0) + " should be outside federal wage range");
+    assertFalse(
+        invalidRateCents >= MINIMUM_WAGE_CENTS && invalidRateCents <= MAXIMUM_WAGE_CENTS,
+        "Hourly rate $" + (invalidRateCents / 100.0) + " should be outside federal wage range");
   }
 
   @Test
@@ -69,7 +77,8 @@ class WageValidationTest {
     int belowMinimumRate = 500; // $5.00
 
     // TODO: This assertion will fail until error message generation is implemented
-    // ValidationResult result = hourlyRateValidationRule.validate(belowMinimumRate, validationContext);
+    // ValidationResult result = hourlyRateValidationRule.validate(belowMinimumRate,
+    // validationContext);
     // String errorMessage = result.getErrorMessage();
 
     // Expected error message format for HR team
@@ -117,12 +126,15 @@ class WageValidationTest {
     // ValidationResult result = hourlyRateValidationRule.validate(invalidRate, validationContext);
     // String correctionGuidance = result.getCorrectionGuidance();
 
-    String expectedGuidance = "Verify hourly rate is within federal minimum wage ($7.25) and executive cap ($150.00)";
+    String expectedGuidance =
+        "Verify hourly rate is within federal minimum wage ($7.25) and executive cap ($150.00)";
 
     // TODO: These assertions will fail until correction guidance is implemented
     // assertEquals(expectedGuidance, correctionGuidance);
-    // assertTrue(correctionGuidance.contains("federal minimum wage"), "Guidance should mention federal minimum");
-    // assertTrue(correctionGuidance.contains("executive cap"), "Guidance should mention executive cap");
+    // assertTrue(correctionGuidance.contains("federal minimum wage"), "Guidance should mention
+    // federal minimum");
+    // assertTrue(correctionGuidance.contains("executive cap"), "Guidance should mention executive
+    // cap");
 
     // For now, verify expected guidance format
     assertTrue(expectedGuidance.contains("federal minimum wage"));
@@ -143,7 +155,8 @@ class WageValidationTest {
     // assertEquals(ComplianceLevel.REGULATORY, result.getComplianceLevel());
 
     // For now, just verify the concept
-    assertTrue(true, "Hourly rate validation errors should be categorized as REGULATORY compliance level");
+    assertTrue(
+        true, "Hourly rate validation errors should be categorized as REGULATORY compliance level");
   }
 
   @Test
@@ -154,8 +167,10 @@ class WageValidationTest {
 
     // Test boundary conditions
     // TODO: These assertions will fail until boundary validation is implemented
-    // ValidationResult minResult = hourlyRateValidationRule.validate(minimumWage, validationContext);
-    // ValidationResult maxResult = hourlyRateValidationRule.validate(maximumWage, validationContext);
+    // ValidationResult minResult = hourlyRateValidationRule.validate(minimumWage,
+    // validationContext);
+    // ValidationResult maxResult = hourlyRateValidationRule.validate(maximumWage,
+    // validationContext);
 
     // assertTrue(minResult.isValid(), "$7.25 should be valid (federal minimum wage)");
     // assertTrue(maxResult.isValid(), "$150.00 should be valid (executive cap)");
@@ -172,7 +187,8 @@ class WageValidationTest {
 
     // Test negative values
     int negativeWage = -100;
-    // ValidationResult negativeResult = hourlyRateValidationRule.validate(negativeWage, validationContext);
+    // ValidationResult negativeResult = hourlyRateValidationRule.validate(negativeWage,
+    // validationContext);
     // assertFalse(negativeResult.isValid(), "Negative wage should be invalid");
 
     // Test zero value
@@ -190,15 +206,19 @@ class WageValidationTest {
   void shouldValidateAgainstFederalMinimumWageRequirements() {
     // Federal minimum wage considerations
     int subMinimumWage = 600; // $6.00 - below federal minimum
-    int federalMinimum = 725;  // $7.25 - federal minimum wage
-    int livingWage = 1500;     // $15.00 - common living wage target
-    int executiveCap = 15000;  // $150.00 - company executive cap
+    int federalMinimum = 725; // $7.25 - federal minimum wage
+    int livingWage = 1500; // $15.00 - common living wage target
+    int executiveCap = 15000; // $150.00 - company executive cap
 
     // TODO: These assertions will fail until federal wage validation is implemented
-    // ValidationResult subMinResult = hourlyRateValidationRule.validate(subMinimumWage, validationContext);
-    // ValidationResult federalResult = hourlyRateValidationRule.validate(federalMinimum, validationContext);
-    // ValidationResult livingResult = hourlyRateValidationRule.validate(livingWage, validationContext);
-    // ValidationResult executiveResult = hourlyRateValidationRule.validate(executiveCap, validationContext);
+    // ValidationResult subMinResult = hourlyRateValidationRule.validate(subMinimumWage,
+    // validationContext);
+    // ValidationResult federalResult = hourlyRateValidationRule.validate(federalMinimum,
+    // validationContext);
+    // ValidationResult livingResult = hourlyRateValidationRule.validate(livingWage,
+    // validationContext);
+    // ValidationResult executiveResult = hourlyRateValidationRule.validate(executiveCap,
+    // validationContext);
 
     // assertFalse(subMinResult.isValid(), "$6.00 should violate federal minimum wage");
     // assertTrue(federalResult.isValid(), "$7.25 should meet federal minimum wage");
@@ -244,9 +264,11 @@ class WageValidationTest {
     String expectedFieldName = "hourly_rate";
     String expectedRuleType = "RANGE";
     String expectedValidationExpression = "hourly_rate >= 725 && hourly_rate <= 15000";
-    String expectedErrorTemplate = "Hourly rate ${hourly_rate/100} is outside valid range ($7.25 - $150.00)";
+    String expectedErrorTemplate =
+        "Hourly rate ${hourly_rate/100} is outside valid range ($7.25 - $150.00)";
     String expectedComplianceLevel = "REGULATORY";
-    String expectedCorrectionGuidance = "Verify hourly rate is within federal minimum wage ($7.25) and executive cap ($150.00)";
+    String expectedCorrectionGuidance =
+        "Verify hourly rate is within federal minimum wage ($7.25) and executive cap ($150.00)";
 
     // TODO: These assertions will fail until rule configuration loading is implemented
     // PayrollQualityRule rule = PayrollRuleEngine.getRule(expectedRuleId);
@@ -280,7 +302,8 @@ class WageValidationTest {
 
     // ValidationResult result = hourlyRateValidationRule.validate(rateCents, validationContext);
     // String errorMessage = result.getErrorMessage();
-    // assertTrue(errorMessage.contains("$25.00"), "Error message should include formatted currency");
+    // assertTrue(errorMessage.contains("$25.00"), "Error message should include formatted
+    // currency");
 
     // For now, verify currency conversion concepts
     assertEquals(25.0, rateDollars, 0.01);
@@ -291,25 +314,33 @@ class WageValidationTest {
   @DisplayName("Should validate specific wage tiers and categories")
   void shouldValidateSpecificWageTearsAndCategories() {
     // Common wage categories (in cents)
-    int minimumWage = 725;      // $7.25 - Federal minimum
-    int tippedMinimum = 213;    // $2.13 - Tipped employee minimum (should be invalid for this validation)
-    int livingWage = 1500;      // $15.00 - Living wage target
-    int skilledWage = 2500;     // $25.00 - Skilled worker wage
+    int minimumWage = 725; // $7.25 - Federal minimum
+    int tippedMinimum =
+        213; // $2.13 - Tipped employee minimum (should be invalid for this validation)
+    int livingWage = 1500; // $15.00 - Living wage target
+    int skilledWage = 2500; // $25.00 - Skilled worker wage
     int professionalWage = 5000; // $50.00 - Professional wage
-    int executiveWage = 10000;   // $100.00 - Executive wage
-    int ceoWage = 15000;        // $150.00 - CEO wage cap
+    int executiveWage = 10000; // $100.00 - Executive wage
+    int ceoWage = 15000; // $150.00 - CEO wage cap
 
     // TODO: These assertions will fail until wage tier validation is implemented
-    // ValidationResult minResult = hourlyRateValidationRule.validate(minimumWage, validationContext);
-    // ValidationResult tippedResult = hourlyRateValidationRule.validate(tippedMinimum, validationContext);
-    // ValidationResult livingResult = hourlyRateValidationRule.validate(livingWage, validationContext);
-    // ValidationResult skilledResult = hourlyRateValidationRule.validate(skilledWage, validationContext);
-    // ValidationResult professionalResult = hourlyRateValidationRule.validate(professionalWage, validationContext);
-    // ValidationResult executiveResult = hourlyRateValidationRule.validate(executiveWage, validationContext);
+    // ValidationResult minResult = hourlyRateValidationRule.validate(minimumWage,
+    // validationContext);
+    // ValidationResult tippedResult = hourlyRateValidationRule.validate(tippedMinimum,
+    // validationContext);
+    // ValidationResult livingResult = hourlyRateValidationRule.validate(livingWage,
+    // validationContext);
+    // ValidationResult skilledResult = hourlyRateValidationRule.validate(skilledWage,
+    // validationContext);
+    // ValidationResult professionalResult = hourlyRateValidationRule.validate(professionalWage,
+    // validationContext);
+    // ValidationResult executiveResult = hourlyRateValidationRule.validate(executiveWage,
+    // validationContext);
     // ValidationResult ceoResult = hourlyRateValidationRule.validate(ceoWage, validationContext);
 
     // assertTrue(minResult.isValid(), "Federal minimum wage should be valid");
-    // assertFalse(tippedResult.isValid(), "Tipped minimum should be invalid for standard employees");
+    // assertFalse(tippedResult.isValid(), "Tipped minimum should be invalid for standard
+    // employees");
     // assertTrue(livingResult.isValid(), "Living wage should be valid");
     // assertTrue(skilledResult.isValid(), "Skilled wage should be valid");
     // assertTrue(professionalResult.isValid(), "Professional wage should be valid");
@@ -326,15 +357,19 @@ class WageValidationTest {
   @ParameterizedTest
   @MethodSource("provideWageTestCases")
   @DisplayName("Should validate comprehensive wage test cases")
-  void shouldValidateComprehensiveWageTestCases(int wageCents, boolean expectedValid, String description) {
+  void shouldValidateComprehensiveWageTestCases(
+      int wageCents, boolean expectedValid, String description) {
     // TODO: This test will fail until comprehensive validation is implemented
     // ValidationResult result = hourlyRateValidationRule.validate(wageCents, validationContext);
     // assertEquals(expectedValid, result.isValid(),
-    //             "Wage validation failed for: " + description + " (Wage: $" + (wageCents/100.0) + ")");
+    //             "Wage validation failed for: " + description + " (Wage: $" + (wageCents/100.0) +
+    // ")");
 
     // For now, verify test case coverage
     assertNotNull(description, "Test case description should not be null");
-    assertTrue(wageCents >= -1000 && wageCents <= 100000, "Test case wage should be within reasonable bounds");
+    assertTrue(
+        wageCents >= -1000 && wageCents <= 100000,
+        "Test case wage should be within reasonable bounds");
   }
 
   private static Stream<Arguments> provideWageTestCases() {
@@ -355,19 +390,20 @@ class WageValidationTest {
         Arguments.of(15001, false, "Above executive cap ($150.01)"),
         Arguments.of(20000, false, "Well above cap ($200.00)"),
         Arguments.of(50000, false, "Extreme wage ($500.00)"),
-        Arguments.of(100000, false, "Unrealistic wage ($1000.00)")
-    );
+        Arguments.of(100000, false, "Unrealistic wage ($1000.00)"));
   }
 
   @Test
   @DisplayName("Should provide specific error codes for different wage violations")
   void shouldProvideSpecificErrorCodesForDifferentWageViolations() {
     int belowMinimumRate = 500; // $5.00
-    int aboveCapRate = 20000;   // $200.00
+    int aboveCapRate = 20000; // $200.00
 
     // TODO: This test will fail until error code generation is implemented
-    // ValidationResult belowResult = hourlyRateValidationRule.validate(belowMinimumRate, validationContext);
-    // ValidationResult aboveResult = hourlyRateValidationRule.validate(aboveCapRate, validationContext);
+    // ValidationResult belowResult = hourlyRateValidationRule.validate(belowMinimumRate,
+    // validationContext);
+    // ValidationResult aboveResult = hourlyRateValidationRule.validate(aboveCapRate,
+    // validationContext);
 
     // String belowErrorCode = belowResult.getErrorCode();
     // String aboveErrorCode = aboveResult.getErrorCode();
@@ -396,11 +432,13 @@ class WageValidationTest {
     double expectedHourlyRate = annualSalary / (52.0 * 40.0); // ~$25.00/hour
     int expectedHourlyRateCents = (int) Math.round(expectedHourlyRate * 100);
 
-    // ValidationResult salaryResult = hourlyRateValidationRule.validateFromAnnualSalary(annualSalary, validationContext);
+    // ValidationResult salaryResult =
+    // hourlyRateValidationRule.validateFromAnnualSalary(annualSalary, validationContext);
     // assertTrue(salaryResult.isValid(), "Converted annual salary should be valid");
 
     // For now, verify calculation concepts
-    assertTrue(expectedHourlyRateCents >= MINIMUM_WAGE_CENTS, "Converted rate should meet minimum wage");
+    assertTrue(
+        expectedHourlyRateCents >= MINIMUM_WAGE_CENTS, "Converted rate should meet minimum wage");
     assertTrue(expectedHourlyRateCents <= MAXIMUM_WAGE_CENTS, "Converted rate should be below cap");
   }
 }

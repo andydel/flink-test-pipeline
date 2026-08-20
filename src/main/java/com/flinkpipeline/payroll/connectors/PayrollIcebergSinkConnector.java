@@ -9,11 +9,18 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
+import org.apache.flink.table.runtime.typeutils.InternalTypeInfo;
+import org.apache.flink.table.types.logical.IntType;
+import org.apache.flink.table.types.logical.RowType;
+import org.apache.flink.table.types.logical.TimestampType;
+import org.apache.flink.table.types.logical.VarCharType;
+import org.apache.flink.table.types.utils.TypeConversions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -134,12 +141,54 @@ public class PayrollIcebergSinkConnector {
       // Create or verify Iceberg table
       createOrVerifyTable(tableEnv);
 
-      // Convert PayrollEmployee to RowData
+      // Convert PayrollEmployee to RowData with explicit type information
+      RowType payrollRowType =
+          RowType.of(
+              new org.apache.flink.table.types.logical.LogicalType[] {
+                new IntType(),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new IntType(),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new IntType(),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new TimestampType(3),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new TimestampType(3),
+                new IntType(),
+                new IntType(),
+                new IntType(),
+                new IntType()
+              },
+              new String[] {
+                "employee_id",
+                "first_name",
+                "last_name",
+                "age",
+                "ssn",
+                "hourly_rate_cents",
+                "gender",
+                "email",
+                "source_system",
+                "ingestion_timestamp",
+                "pipeline_version",
+                "validation_timestamp",
+                "validation_date_epoch",
+                "partition_year",
+                "partition_month",
+                "partition_day"
+              });
+
       DataStream<RowData> rowDataStream =
-          payrollStream.map(new PayrollEmployeeToRowDataMapper()).name("Convert to RowData");
+          payrollStream
+              .map(new PayrollEmployeeToRowDataMapper())
+              .name("Convert to RowData")
+              .returns(InternalTypeInfo.of(payrollRowType));
 
       // Configure and create Iceberg sink
-      configureSinkToTable(rowDataStream, tableEnv);
+      configureSinkToTable(rowDataStream, tableEnv, payrollRowType);
 
       LOG.info("Successfully created Iceberg sink for payroll data");
 
@@ -232,10 +281,10 @@ public class PayrollIcebergSinkConnector {
           pipeline_version STRING,
           validation_timestamp TIMESTAMP(3),
           processing_date DATE,
-          year INT,
-          month INT,
-          day INT
-        ) PARTITIONED BY (processing_date, year, month)
+          `year` INT,
+          `month` INT,
+          `day` INT
+        ) PARTITIONED BY (processing_date, `year`, `month`)
         WITH (
           'format-version' = '2',
           'write.target-file-size-bytes' = '134217728',
@@ -253,11 +302,16 @@ public class PayrollIcebergSinkConnector {
 
   /** Configure sink to write to Iceberg table */
   private void configureSinkToTable(
-      DataStream<RowData> rowDataStream, StreamTableEnvironment tableEnv) {
+      DataStream<RowData> rowDataStream, StreamTableEnvironment tableEnv, RowType payrollRowType) {
     String fullTableName = String.format("%s.%s.%s", catalogName, databaseName, tableName);
 
     // Create temporary view from stream
-    tableEnv.createTemporaryView("payroll_stream", rowDataStream);
+    Schema payrollStreamSchema =
+        Schema.newBuilder()
+            .fromRowDataType(TypeConversions.fromLogicalToDataType(payrollRowType))
+            .build();
+
+    tableEnv.createTemporaryView("payroll_stream", rowDataStream, payrollStreamSchema);
 
     // Configure streaming insert
     String insertSql =
@@ -274,13 +328,13 @@ public class PayrollIcebergSinkConnector {
           gender,
           email,
           source_system,
-          ingestion_timestamp,
+          CAST(ingestion_timestamp AS TIMESTAMP(6)) as ingestion_timestamp,
           pipeline_version,
-          validation_timestamp,
+          CAST(validation_timestamp AS TIMESTAMP(6)) as validation_timestamp,
           CAST(validation_timestamp AS DATE) as processing_date,
-          YEAR(validation_timestamp) as year,
-          MONTH(validation_timestamp) as month,
-          DAYOFMONTH(validation_timestamp) as day
+          CAST(YEAR(validation_timestamp) AS INT) as `year`,
+          CAST(MONTH(validation_timestamp) AS INT) as `month`,
+          CAST(DAYOFMONTH(validation_timestamp) AS INT) as `day`
         FROM payroll_stream
         """,
             fullTableName);

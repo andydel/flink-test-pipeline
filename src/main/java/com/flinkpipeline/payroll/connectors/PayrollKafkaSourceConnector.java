@@ -2,13 +2,14 @@ package com.flinkpipeline.payroll.connectors;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
 import com.flinkpipeline.payroll.serialization.PayrollAvroDeserializer;
+import java.io.Serializable;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.serialization.DeserializationSchema;
+import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
@@ -16,25 +17,21 @@ import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDe
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
-import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Apache Flink Kafka source connector for streaming payroll employee data.
- * Provides high-throughput, fault-tolerant ingestion of payroll records from Kafka topics
- * with support for schema evolution, exactly-once processing, and performance monitoring.
+ * Apache Flink Kafka source connector for streaming payroll employee data. Provides
+ * high-throughput, fault-tolerant ingestion of payroll records from Kafka topics with support for
+ * schema evolution, exactly-once processing, and performance monitoring.
  *
- * Features:
- * - Confluent Schema Registry integration for Avro deserialization
- * - Configurable offset management (earliest, latest, specific timestamp)
- * - Exactly-once processing guarantees with Kafka transactions
- * - Consumer group management and partition assignment
- * - Watermark strategy for event-time processing
- * - Comprehensive error handling and dead letter queue support
- * - Real-time metrics and monitoring integration
- * - Support for multiple Kafka environments (dev, staging, prod)
+ * <p>Features: - Confluent Schema Registry integration for Avro deserialization - Configurable
+ * offset management (earliest, latest, specific timestamp) - Exactly-once processing guarantees
+ * with Kafka transactions - Consumer group management and partition assignment - Watermark strategy
+ * for event-time processing - Comprehensive error handling and dead letter queue support -
+ * Real-time metrics and monitoring integration - Support for multiple Kafka environments (dev,
+ * staging, prod)
  */
 public class PayrollKafkaSourceConnector {
 
@@ -61,17 +58,24 @@ public class PayrollKafkaSourceConnector {
 
   // Constructor
   public PayrollKafkaSourceConnector(String bootstrapServers, String schemaRegistryUrl) {
-    this(bootstrapServers, schemaRegistryUrl, Arrays.asList(DEFAULT_TOPIC),
-         DEFAULT_CONSUMER_GROUP, OffsetsInitializer.latest(), true, new Properties());
+    this(
+        bootstrapServers,
+        schemaRegistryUrl,
+        Arrays.asList(DEFAULT_TOPIC),
+        DEFAULT_CONSUMER_GROUP,
+        OffsetsInitializer.latest(),
+        true,
+        new Properties());
   }
 
-  public PayrollKafkaSourceConnector(String bootstrapServers,
-                                    String schemaRegistryUrl,
-                                    List<String> topics,
-                                    String consumerGroupId,
-                                    OffsetsInitializer offsetsInitializer,
-                                    boolean enableExactlyOnce,
-                                    Properties additionalProperties) {
+  public PayrollKafkaSourceConnector(
+      String bootstrapServers,
+      String schemaRegistryUrl,
+      List<String> topics,
+      String consumerGroupId,
+      OffsetsInitializer offsetsInitializer,
+      boolean enableExactlyOnce,
+      Properties additionalProperties) {
     this.bootstrapServers = bootstrapServers;
     this.schemaRegistryUrl = schemaRegistryUrl;
     this.topics = topics;
@@ -80,39 +84,42 @@ public class PayrollKafkaSourceConnector {
     this.enableExactlyOnce = enableExactlyOnce;
     this.additionalProperties = new Properties(additionalProperties);
 
-    LOG.info("Initialized PayrollKafkaSourceConnector - Bootstrap: {}, Topics: {}, Group: {}",
-             bootstrapServers, topics, consumerGroupId);
+    LOG.info(
+        "Initialized PayrollKafkaSourceConnector - Bootstrap: {}, Topics: {}, Group: {}",
+        bootstrapServers,
+        topics,
+        consumerGroupId);
   }
 
-  /**
-   * Create Kafka source for payroll employee data stream
-   */
+  /** Create Kafka source for payroll employee data stream */
   public KafkaSource<PayrollEmployee> createKafkaSource() {
     LOG.info("Creating Kafka source for payroll data ingestion");
 
     try {
       // Create Avro deserializer with Schema Registry integration
-      PayrollAvroDeserializer avroDeserializer = new PayrollAvroDeserializer.Builder()
-          .schemaRegistryUrl(schemaRegistryUrl)
-          .schemaSubject("payroll-employee-value")
-          .useLatestVersion(true)
-          .strictValidation(false) // Allow processing of records with minor schema issues
-          .enableSchemaEvolution(true)
-          .logDeserializationErrors(true)
-          .build();
+      PayrollAvroDeserializer avroDeserializer =
+          new PayrollAvroDeserializer.Builder()
+              .schemaRegistryUrl(schemaRegistryUrl)
+              .schemaSubject("payroll-employee-value")
+              .useLatestVersion(true)
+              .strictValidation(false) // Allow processing of records with minor schema issues
+              .enableSchemaEvolution(true)
+              .logDeserializationErrors(true)
+              .build();
 
       // Create Kafka record deserializer
       KafkaRecordDeserializationSchema<PayrollEmployee> deserializationSchema =
-          KafkaRecordDeserializationSchema.valueOnlyDeserializationSchema(avroDeserializer);
+          KafkaRecordDeserializationSchema.valueOnly(avroDeserializer);
 
       // Build Kafka source
-      KafkaSourceBuilder<PayrollEmployee> sourceBuilder = KafkaSource.<PayrollEmployee>builder()
-          .setBootstrapServers(bootstrapServers)
-          .setTopics(topics)
-          .setGroupId(consumerGroupId)
-          .setStartingOffsets(offsetsInitializer)
-          .setDeserializer(deserializationSchema)
-          .setProperties(buildKafkaConsumerProperties());
+      KafkaSourceBuilder<PayrollEmployee> sourceBuilder =
+          KafkaSource.<PayrollEmployee>builder()
+              .setBootstrapServers(bootstrapServers)
+              .setTopics(topics)
+              .setGroupId(consumerGroupId)
+              .setStartingOffsets(offsetsInitializer)
+              .setDeserializer(deserializationSchema)
+              .setProperties(buildKafkaConsumerProperties());
 
       KafkaSource<PayrollEmployee> kafkaSource = sourceBuilder.build();
 
@@ -125,36 +132,25 @@ public class PayrollKafkaSourceConnector {
     }
   }
 
-  /**
-   * Create data stream from Kafka source with watermark strategy
-   */
+  /** Create data stream from Kafka source with watermark strategy */
   public DataStream<PayrollEmployee> createPayrollDataStream(StreamExecutionEnvironment env) {
     return createPayrollDataStream(env, createDefaultWatermarkStrategy());
   }
 
-  /**
-   * Create data stream with custom watermark strategy
-   */
-  public DataStream<PayrollEmployee> createPayrollDataStream(StreamExecutionEnvironment env,
-                                                            WatermarkStrategy<PayrollEmployee> watermarkStrategy) {
+  /** Create data stream with custom watermark strategy */
+  public DataStream<PayrollEmployee> createPayrollDataStream(
+      StreamExecutionEnvironment env, WatermarkStrategy<PayrollEmployee> watermarkStrategy) {
     LOG.info("Creating payroll data stream from Kafka source");
 
     try {
       KafkaSource<PayrollEmployee> kafkaSource = createKafkaSource();
 
-      DataStream<PayrollEmployee> payrollStream = env
-          .fromSource(kafkaSource, watermarkStrategy, "Payroll Kafka Source")
-          .uid("payroll-kafka-source") // For state recovery
-          .name("Payroll Employee Stream");
-
-      // Add monitoring and metrics
-      payrollStream = payrollStream
-          .map(record -> {
-            recordsConsumed.incrementAndGet();
-            logRecordMetrics();
-            return record;
-          })
-          .name("Record Counter");
+      DataStream<PayrollEmployee> payrollStream =
+          env.fromSource(kafkaSource, watermarkStrategy, "Payroll Kafka Source")
+              .uid("payroll-kafka-source") // For state recovery
+              .name("Payroll Employee Stream")
+              .map(new RecordCountingMapFunction(recordsConsumed, deserializationErrors))
+              .name("Record Counter");
 
       LOG.info("Successfully created payroll data stream");
       return payrollStream;
@@ -165,31 +161,31 @@ public class PayrollKafkaSourceConnector {
     }
   }
 
-  /**
-   * Create watermark strategy for event-time processing
-   */
+  /** Create watermark strategy for event-time processing */
   private WatermarkStrategy<PayrollEmployee> createDefaultWatermarkStrategy() {
-    return WatermarkStrategy
-        .<PayrollEmployee>forBoundedOutOfOrderness(Duration.ofMinutes(1))
-        .withTimestampAssigner((record, timestamp) -> {
-          // Use ingestion timestamp for event time
-          return record.getIngestionTimestamp() != null ?
-              record.getIngestionTimestamp().toEpochMilli() : System.currentTimeMillis();
-        })
+    return WatermarkStrategy.<PayrollEmployee>forBoundedOutOfOrderness(Duration.ofMinutes(1))
+        .withTimestampAssigner(
+            (record, timestamp) -> {
+              // Use ingestion timestamp for event time
+              return record.getIngestionTimestamp() != null
+                  ? record.getIngestionTimestamp()
+                  : System.currentTimeMillis();
+            })
         .withIdleness(DEFAULT_WATERMARK_IDLE_TIMEOUT);
   }
 
-  /**
-   * Build Kafka consumer properties
-   */
+  /** Build Kafka consumer properties */
   private Properties buildKafkaConsumerProperties() {
     Properties props = new Properties();
 
     // Basic Kafka configuration
     props.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
     props.setProperty(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
-    props.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-    props.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "io.confluent.kafka.serializers.KafkaAvroDeserializer");
+    props.setProperty(
+        ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
+    props.setProperty(
+        ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG,
+        "io.confluent.kafka.serializers.KafkaAvroDeserializer");
 
     // Schema Registry configuration
     props.setProperty("schema.registry.url", schemaRegistryUrl);
@@ -220,9 +216,7 @@ public class PayrollKafkaSourceConnector {
     return props;
   }
 
-  /**
-   * Configure Kafka security settings
-   */
+  /** Configure Kafka security settings */
   private void configureKafkaSecurity(Properties props) {
     // SSL configuration
     String securityProtocol = System.getProperty("kafka.security.protocol");
@@ -262,29 +256,23 @@ public class PayrollKafkaSourceConnector {
     }
   }
 
-  /**
-   * Log performance metrics periodically
-   */
+  /** Log performance metrics periodically */
   private void logRecordMetrics() {
     long consumed = recordsConsumed.get();
     if (consumed % 10000 == 0) {
       long errors = deserializationErrors.get();
       double errorRate = consumed > 0 ? (double) errors / consumed * 100 : 0;
 
-      LOG.info("Kafka Source Metrics - Records consumed: {}, Deserialization errors: {}, Error rate: {:.2f}%",
-               consumed, errors, errorRate);
+      LOG.info(
+          "Kafka Source Metrics - Records consumed: {}, Deserialization errors: {}, Error rate: {:.2f}%",
+          consumed, errors, errorRate);
     }
   }
 
-  /**
-   * Get consumption metrics
-   */
+  /** Get consumption metrics */
   public KafkaSourceMetrics getMetrics() {
     return new KafkaSourceMetrics(
-        recordsConsumed.get(),
-        deserializationErrors.get(),
-        calculateThroughput()
-    );
+        recordsConsumed.get(), deserializationErrors.get(), calculateThroughput());
   }
 
   private double calculateThroughput() {
@@ -292,9 +280,34 @@ public class PayrollKafkaSourceConnector {
     return recordsConsumed.get() / 60.0; // Records per minute
   }
 
-  /**
-   * Builder for PayrollKafkaSourceConnector configuration
-   */
+  private static class RecordCountingMapFunction
+      implements MapFunction<PayrollEmployee, PayrollEmployee>, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    private final AtomicLong recordsConsumed;
+    private final AtomicLong deserializationErrors;
+
+    RecordCountingMapFunction(AtomicLong recordsConsumed, AtomicLong deserializationErrors) {
+      this.recordsConsumed = recordsConsumed;
+      this.deserializationErrors = deserializationErrors;
+    }
+
+    @Override
+    public PayrollEmployee map(PayrollEmployee record) {
+      long consumed = recordsConsumed.incrementAndGet();
+      if (consumed % 10000 == 0) {
+        long errors = deserializationErrors.get();
+        double errorRate = consumed > 0 ? (double) errors / consumed * 100 : 0;
+        LOG.info(
+            "Kafka Source Metrics - Records consumed: {}, Deserialization errors: {}, Error rate: {:.2f}%",
+            consumed, errors, errorRate);
+      }
+      return record;
+    }
+  }
+
+  /** Builder for PayrollKafkaSourceConnector configuration */
   public static class Builder {
     private String bootstrapServers;
     private String schemaRegistryUrl;
@@ -368,15 +381,19 @@ public class PayrollKafkaSourceConnector {
       }
 
       return new PayrollKafkaSourceConnector(
-          bootstrapServers, schemaRegistryUrl, topics, consumerGroupId,
-          offsetsInitializer, enableExactlyOnce, additionalProperties);
+          bootstrapServers,
+          schemaRegistryUrl,
+          topics,
+          consumerGroupId,
+          offsetsInitializer,
+          enableExactlyOnce,
+          additionalProperties);
     }
   }
 
-  /**
-   * Factory methods for common configurations
-   */
-  public static PayrollKafkaSourceConnector forDevelopment(String bootstrapServers, String schemaRegistryUrl) {
+  /** Factory methods for common configurations */
+  public static PayrollKafkaSourceConnector forDevelopment(
+      String bootstrapServers, String schemaRegistryUrl) {
     return new Builder()
         .bootstrapServers(bootstrapServers)
         .schemaRegistryUrl(schemaRegistryUrl)
@@ -386,7 +403,8 @@ public class PayrollKafkaSourceConnector {
         .build();
   }
 
-  public static PayrollKafkaSourceConnector forProduction(String bootstrapServers, String schemaRegistryUrl) {
+  public static PayrollKafkaSourceConnector forProduction(
+      String bootstrapServers, String schemaRegistryUrl) {
     return new Builder()
         .bootstrapServers(bootstrapServers)
         .schemaRegistryUrl(schemaRegistryUrl)
@@ -398,7 +416,8 @@ public class PayrollKafkaSourceConnector {
         .build();
   }
 
-  public static PayrollKafkaSourceConnector forTesting(String bootstrapServers, String schemaRegistryUrl) {
+  public static PayrollKafkaSourceConnector forTesting(
+      String bootstrapServers, String schemaRegistryUrl) {
     return new Builder()
         .bootstrapServers(bootstrapServers)
         .schemaRegistryUrl(schemaRegistryUrl)
@@ -408,23 +427,30 @@ public class PayrollKafkaSourceConnector {
         .build();
   }
 
-  /**
-   * Metrics data class
-   */
+  /** Metrics data class */
   public static class KafkaSourceMetrics {
     private final long recordsConsumed;
     private final long deserializationErrors;
     private final double throughputPerMinute;
 
-    public KafkaSourceMetrics(long recordsConsumed, long deserializationErrors, double throughputPerMinute) {
+    public KafkaSourceMetrics(
+        long recordsConsumed, long deserializationErrors, double throughputPerMinute) {
       this.recordsConsumed = recordsConsumed;
       this.deserializationErrors = deserializationErrors;
       this.throughputPerMinute = throughputPerMinute;
     }
 
-    public long getRecordsConsumed() { return recordsConsumed; }
-    public long getDeserializationErrors() { return deserializationErrors; }
-    public double getThroughputPerMinute() { return throughputPerMinute; }
+    public long getRecordsConsumed() {
+      return recordsConsumed;
+    }
+
+    public long getDeserializationErrors() {
+      return deserializationErrors;
+    }
+
+    public double getThroughputPerMinute() {
+      return throughputPerMinute;
+    }
 
     public double getErrorRate() {
       return recordsConsumed > 0 ? (double) deserializationErrors / recordsConsumed : 0.0;

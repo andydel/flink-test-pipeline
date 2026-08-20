@@ -11,10 +11,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test class for validating Iceberg payroll table schema contract.
- * Tests table structure, partitioning, and data types for payroll storage.
+ * Test class for validating Iceberg payroll table schema contract. Tests table structure,
+ * partitioning, and data types for payroll storage.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until Iceberg integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until Iceberg integration is
+ * implemented.
  */
 @DisplayName("Iceberg Payroll Table Schema Contract Tests")
 class PayrollTableSchemaTest {
@@ -38,35 +39,37 @@ class PayrollTableSchemaTest {
   @DisplayName("Should validate validated_employees table schema structure")
   void shouldValidateValidatedEmployeesTableSchema() {
     // Expected schema based on iceberg-payroll-table-schema.sql
-    List<String> expectedColumns = Arrays.asList(
-        "employee_id",
-        "first_name",
-        "last_name",
-        "age",
-        "ssn_encrypted",
-        "hourly_rate_cents",
-        "gender",
-        "email",
-        "ingestion_timestamp",
-        "validation_timestamp",
-        "processing_latency_ms",
-        "validation_rules_version",
-        "quality_score",
-        "compliance_flags",
-        "source_system",
-        "pipeline_version",
-        "year",
-        "month",
-        "day",
-        "hour"
-    );
+    List<String> expectedColumns =
+        Arrays.asList(
+            "employee_id",
+            "first_name",
+            "last_name",
+            "age",
+            "ssn_encrypted",
+            "hourly_rate_cents",
+            "gender",
+            "email",
+            "ingestion_timestamp",
+            "validation_timestamp",
+            "processing_latency_ms",
+            "validation_rules_version",
+            "quality_score",
+            "compliance_flags",
+            "source_system",
+            "pipeline_version",
+            "year",
+            "month",
+            "day",
+            "hour");
 
     // TODO: This assertion will fail until Iceberg table is implemented
     // Schema tableSchema = validatedEmployeesTable.schema();
-    // assertEquals(expectedColumns.size(), tableSchema.columns().size(), "Table should have correct number of columns");
+    // assertEquals(expectedColumns.size(), tableSchema.columns().size(), "Table should have correct
+    // number of columns");
 
     // for (String columnName : expectedColumns) {
-    //   assertNotNull(tableSchema.findField(columnName), "Column " + columnName + " should exist in table");
+    //   assertNotNull(tableSchema.findField(columnName), "Column " + columnName + " should exist in
+    // table");
     // }
 
     // For now, just verify expected schema structure
@@ -93,7 +96,9 @@ class PayrollTableSchemaTest {
 
     // For now, verify partitioning concept
     assertEquals(4, expectedPartitionFields.size(), "Should partition by 4 time fields");
-    assertTrue(expectedPartitionFields.contains("hour"), "Should partition by hour for query optimization");
+    assertTrue(
+        expectedPartitionFields.contains("hour"),
+        "Should partition by hour for query optimization");
   }
 
   @Test
@@ -103,11 +108,16 @@ class PayrollTableSchemaTest {
     // Schema schema = validatedEmployeesTable.schema();
 
     // Validate critical field types
-    // assertEquals(Types.IntegerType.get(), schema.findType("employee_id"), "employee_id should be integer");
-    // assertEquals(Types.StringType.get(), schema.findType("first_name"), "first_name should be string");
-    // assertEquals(Types.StringType.get(), schema.findType("ssn_encrypted"), "ssn_encrypted should be string");
-    // assertEquals(Types.IntegerType.get(), schema.findType("hourly_rate_cents"), "hourly_rate_cents should be integer");
-    // assertEquals(Types.TimestampType.withoutZone(), schema.findType("ingestion_timestamp"), "ingestion_timestamp should be timestamp");
+    // assertEquals(Types.IntegerType.get(), schema.findType("employee_id"), "employee_id should be
+    // integer");
+    // assertEquals(Types.StringType.get(), schema.findType("first_name"), "first_name should be
+    // string");
+    // assertEquals(Types.StringType.get(), schema.findType("ssn_encrypted"), "ssn_encrypted should
+    // be string");
+    // assertEquals(Types.IntegerType.get(), schema.findType("hourly_rate_cents"),
+    // "hourly_rate_cents should be integer");
+    // assertEquals(Types.TimestampType.withoutZone(), schema.findType("ingestion_timestamp"),
+    // "ingestion_timestamp should be timestamp");
 
     // For now, verify data type concepts
     String[] stringFields = {"first_name", "last_name", "ssn_encrypted", "gender", "email"};
@@ -122,46 +132,48 @@ class PayrollTableSchemaTest {
   @Test
   @DisplayName("Should validate compliance audit log table structure")
   void shouldValidateComplianceAuditLogTableStructure() {
-    List<String> expectedAuditColumns = Arrays.asList(
-        "audit_id",
-        "employee_id",
-        "audit_timestamp",
-        "audit_type",
-        "user_id",
-        "operation_details",
-        "pii_fields_accessed",
-        "compliance_status",
-        "retention_expires"
-    );
+    List<String> expectedAuditColumns =
+        Arrays.asList(
+            "audit_id",
+            "employee_id",
+            "audit_timestamp",
+            "audit_type",
+            "user_id",
+            "operation_details",
+            "pii_fields_accessed",
+            "compliance_status",
+            "retention_expires");
 
     // TODO: This assertion will fail until compliance audit table is implemented
     // Schema auditSchema = complianceAuditTable.schema();
     // assertEquals(expectedAuditColumns.size(), auditSchema.columns().size());
 
     // for (String columnName : expectedAuditColumns) {
-    //   assertNotNull(auditSchema.findField(columnName), "Audit column " + columnName + " should exist");
+    //   assertNotNull(auditSchema.findField(columnName), "Audit column " + columnName + " should
+    // exist");
     // }
 
     // For now, verify audit schema concept
     assertEquals(9, expectedAuditColumns.size(), "Audit table should have 9 columns");
     assertTrue(expectedAuditColumns.contains("audit_type"), "Should track audit type");
-    assertTrue(expectedAuditColumns.contains("pii_fields_accessed"), "Should track PII field access");
+    assertTrue(
+        expectedAuditColumns.contains("pii_fields_accessed"), "Should track PII field access");
   }
 
   @Test
   @DisplayName("Should validate quality metrics summary table structure")
   void shouldValidateQualityMetricsSummaryTableStructure() {
-    List<String> expectedMetricsColumns = Arrays.asList(
-        "metric_window_start",
-        "metric_window_end",
-        "total_records_processed",
-        "valid_records_count",
-        "invalid_records_count",
-        "compliance_violations_count",
-        "average_validation_latency_ms",
-        "records_per_second",
-        "rule_performance_metrics"
-    );
+    List<String> expectedMetricsColumns =
+        Arrays.asList(
+            "metric_window_start",
+            "metric_window_end",
+            "total_records_processed",
+            "valid_records_count",
+            "invalid_records_count",
+            "compliance_violations_count",
+            "average_validation_latency_ms",
+            "records_per_second",
+            "rule_performance_metrics");
 
     // TODO: This assertion will fail until metrics table is implemented
     // Schema metricsSchema = qualityMetricsTable.schema();
@@ -169,7 +181,9 @@ class PayrollTableSchemaTest {
 
     // For now, verify metrics schema concept
     assertEquals(9, expectedMetricsColumns.size(), "Metrics table should have 9 columns");
-    assertTrue(expectedMetricsColumns.contains("rule_performance_metrics"), "Should track per-rule performance");
+    assertTrue(
+        expectedMetricsColumns.contains("rule_performance_metrics"),
+        "Should track per-rule performance");
   }
 
   @Test
@@ -184,14 +198,18 @@ class PayrollTableSchemaTest {
 
     // for (String zOrderField : expectedZOrderFields) {
     //   boolean hasZOrder = sortOrder.fields().stream()
-    //       .anyMatch(field -> field.sourceId() == validatedEmployeesTable.schema().findField(zOrderField).fieldId());
+    //       .anyMatch(field -> field.sourceId() ==
+    // validatedEmployeesTable.schema().findField(zOrderField).fieldId());
     //   assertTrue(hasZOrder, "Should have Z-ordering on " + zOrderField);
     // }
 
     // For now, verify Z-ordering concept
     assertEquals(2, expectedZOrderFields.size(), "Should Z-order by 2 fields");
-    assertTrue(expectedZOrderFields.contains("employee_id"), "Should Z-order by employee_id for lookups");
-    assertTrue(expectedZOrderFields.contains("validation_timestamp"), "Should Z-order by validation_timestamp for time queries");
+    assertTrue(
+        expectedZOrderFields.contains("employee_id"), "Should Z-order by employee_id for lookups");
+    assertTrue(
+        expectedZOrderFields.contains("validation_timestamp"),
+        "Should Z-order by validation_timestamp for time queries");
   }
 
   @Test
@@ -199,12 +217,12 @@ class PayrollTableSchemaTest {
   void shouldValidateTablePropertiesForPayrollRequirements() {
     // Expected table properties from iceberg-payroll-table-schema.sql
     String[] expectedProperties = {
-        "write.format.default=parquet",
-        "write.parquet.compression-codec=zstd",
-        "write.metadata.compression-codec=gzip",
-        "write.target-file-size-bytes=134217728",
-        "write.upsert.enabled=false",
-        "history.expire.max-snapshot-age-ms=604800000"
+      "write.format.default=parquet",
+      "write.parquet.compression-codec=zstd",
+      "write.metadata.compression-codec=gzip",
+      "write.target-file-size-bytes=134217728",
+      "write.upsert.enabled=false",
+      "history.expire.max-snapshot-age-ms=604800000"
     };
 
     // TODO: This assertion will fail until table properties are implemented
@@ -220,9 +238,11 @@ class PayrollTableSchemaTest {
     assertTrue(expectedProperties.length == 6, "Should have 6 key table properties");
 
     // Verify specific properties
-    String formatProperty = Arrays.stream(expectedProperties)
-        .filter(p -> p.startsWith("write.format.default"))
-        .findFirst().orElse("");
+    String formatProperty =
+        Arrays.stream(expectedProperties)
+            .filter(p -> p.startsWith("write.format.default"))
+            .findFirst()
+            .orElse("");
     assertTrue(formatProperty.contains("parquet"), "Should use Parquet format for payroll data");
   }
 
@@ -264,16 +284,20 @@ class PayrollTableSchemaTest {
     // Map<String, String> auditProperties = complianceAuditTable.properties();
 
     // Validate payroll data retention (7 days for snapshots)
-    // assertEquals(String.valueOf(sevenDaysMs), tableProperties.get("history.expire.max-snapshot-age-ms"),
+    // assertEquals(String.valueOf(sevenDaysMs),
+    // tableProperties.get("history.expire.max-snapshot-age-ms"),
     //     "Payroll table should retain snapshots for 7 days");
 
     // Validate compliance audit retention (7 years)
-    // assertEquals(String.valueOf(sevenYearsMs * 3), auditProperties.get("history.expire.max-snapshot-age-ms"),
+    // assertEquals(String.valueOf(sevenYearsMs * 3),
+    // auditProperties.get("history.expire.max-snapshot-age-ms"),
     //     "Compliance audit should retain data for compliance period");
 
     // For now, verify retention concepts
-    assertTrue(sevenYearsMs > sevenDaysMs, "Compliance data should be retained longer than operational data");
-    assertEquals(220752000000L, sevenYearsMs * 3, "Compliance audit should retain for ~7 years");
+    assertTrue(
+        sevenYearsMs > sevenDaysMs,
+        "Compliance data should be retained longer than operational data");
+    assertEquals(220752000000L, sevenYearsMs, "Compliance audit should retain for ~7 years");
   }
 
   @Test
@@ -338,7 +362,8 @@ class PayrollTableSchemaTest {
     // Schema newSchema = new Schema(
     //     Lists.newArrayList(currentSchema.columns()),
     //     ImmutableList.of(
-    //         Types.NestedField.optional(1000, "department", Types.StringType.get(), "Employee department")
+    //         Types.NestedField.optional(1000, "department", Types.StringType.get(), "Employee
+    // department")
     //     )
     // );
 

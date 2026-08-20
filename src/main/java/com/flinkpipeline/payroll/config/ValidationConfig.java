@@ -4,9 +4,7 @@ import com.flinkpipeline.payroll.models.PayrollQualityRule;
 import java.time.Duration;
 import java.util.List;
 
-/**
- * Configuration for validation operators and rules.
- */
+/** Configuration for validation operators and rules. */
 public class ValidationConfig {
   private final List<PayrollQualityRule> qualityRules;
   private final boolean duplicateDetectionEnabled;
@@ -14,9 +12,12 @@ public class ValidationConfig {
   private final boolean complianceAuditingEnabled;
   private final boolean strictModeEnabled;
 
-  public ValidationConfig(List<PayrollQualityRule> qualityRules, boolean duplicateDetectionEnabled,
-                         Duration duplicateDetectionWindow, boolean complianceAuditingEnabled,
-                         boolean strictModeEnabled) {
+  public ValidationConfig(
+      List<PayrollQualityRule> qualityRules,
+      boolean duplicateDetectionEnabled,
+      Duration duplicateDetectionWindow,
+      boolean complianceAuditingEnabled,
+      boolean strictModeEnabled) {
     this.qualityRules = qualityRules;
     this.duplicateDetectionEnabled = duplicateDetectionEnabled;
     this.duplicateDetectionWindow = duplicateDetectionWindow;
@@ -24,9 +25,23 @@ public class ValidationConfig {
     this.strictModeEnabled = strictModeEnabled;
   }
 
-  public List<PayrollQualityRule> getQualityRules() { return qualityRules; }
-  public boolean isDuplicateDetectionEnabled() { return duplicateDetectionEnabled; }
-  public Duration getDuplicateDetectionWindow() { return duplicateDetectionWindow; }
-  public boolean isComplianceAuditingEnabled() { return complianceAuditingEnabled; }
-  public boolean isStrictModeEnabled() { return strictModeEnabled; }
+  public List<PayrollQualityRule> getQualityRules() {
+    return qualityRules;
+  }
+
+  public boolean isDuplicateDetectionEnabled() {
+    return duplicateDetectionEnabled;
+  }
+
+  public Duration getDuplicateDetectionWindow() {
+    return duplicateDetectionWindow;
+  }
+
+  public boolean isComplianceAuditingEnabled() {
+    return complianceAuditingEnabled;
+  }
+
+  public boolean isStrictModeEnabled() {
+    return strictModeEnabled;
+  }
 }

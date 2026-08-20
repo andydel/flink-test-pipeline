@@ -4,56 +4,67 @@ import com.flinkpipeline.payroll.models.FieldValidationResult;
 import com.flinkpipeline.payroll.models.FieldValidationResult.ComplianceLevel;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Validation rule for employee email format and domain compliance.
- * Validates email addresses according to RFC standards, business domain policies,
- * and security requirements for corporate payroll systems.
+ * Validation rule for employee email format and domain compliance. Validates email addresses
+ * according to RFC standards, business domain policies, and security requirements for corporate
+ * payroll systems.
  */
 public class EmailValidationRule {
 
   // Email validation patterns
-  private static final Pattern BASIC_EMAIL_PATTERN = Pattern.compile(
-      "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
-  );
+  private static final Pattern BASIC_EMAIL_PATTERN =
+      Pattern.compile("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
 
-  private static final Pattern STRICT_EMAIL_PATTERN = Pattern.compile(
-      "^[a-zA-Z0-9][a-zA-Z0-9._%+-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]\\.[a-zA-Z]{2,}$"
-  );
+  private static final Pattern STRICT_EMAIL_PATTERN =
+      Pattern.compile(
+          "^[a-zA-Z0-9][a-zA-Z0-9._%+-]*[a-zA-Z0-9]@[a-zA-Z0-9][a-zA-Z0-9.-]*[a-zA-Z0-9]\\.[a-zA-Z]{2,}$");
 
-  private static final Pattern SUSPICIOUS_PATTERN = Pattern.compile(
-      ".*[<>\"'\\\\;\\[\\]{}|`~!#$%^&*()=+/?].*"
-  );
+  private static final Pattern SUSPICIOUS_PATTERN =
+      Pattern.compile(".*[<>\"'\\\\;\\[\\]{}|`~!#$%^&*()=+/?].*");
 
   // Domain validation
-  private static final Set<String> APPROVED_DOMAINS = new HashSet<>(Arrays.asList(
-      "company.com", "corp.company.com", "internal.company.com",
-      "gmail.com", "outlook.com", "hotmail.com", "yahoo.com", // Common external domains for contractors
-      "consultant.com", "contractor.com" // Example contractor domains
-  ));
+  private static final Set<String> APPROVED_DOMAINS =
+      new HashSet<>(
+          Arrays.asList(
+              "company.com",
+              "corp.company.com",
+              "internal.company.com",
+              "gmail.com",
+              "outlook.com",
+              "hotmail.com",
+              "yahoo.com", // Common external domains for contractors
+              "consultant.com",
+              "contractor.com" // Example contractor domains
+              ));
 
-  private static final Set<String> BLOCKED_DOMAINS = new HashSet<>(Arrays.asList(
-      "tempmail.org", "10minutemail.com", "guerrillamail.com", "mailinator.com",
-      "throwaway.email", "temp-mail.org", "fake.com", "test.com", "example.com"
-  ));
+  private static final Set<String> BLOCKED_DOMAINS =
+      new HashSet<>(
+          Arrays.asList(
+              "tempmail.org",
+              "10minutemail.com",
+              "guerrillamail.com",
+              "mailinator.com",
+              "throwaway.email",
+              "temp-mail.org",
+              "fake.com",
+              "test.com",
+              "example.com"));
 
-  private static final Set<String> SUSPICIOUS_DOMAINS = new HashSet<>(Arrays.asList(
-      "suspicious.com", "phishing.com", "malware.org", "spam.net"
-  ));
+  private static final Set<String> SUSPICIOUS_DOMAINS =
+      new HashSet<>(Arrays.asList("suspicious.com", "phishing.com", "malware.org", "spam.net"));
 
   // Configuration
   private static final int MAX_EMAIL_LENGTH = 254; // RFC 5321 limit
   private static final int MAX_LOCAL_PART_LENGTH = 64; // RFC 5321 limit
-  private static final boolean ENFORCE_CORPORATE_DOMAIN = false; // Set to true for strict corporate policy
+  private static final boolean ENFORCE_CORPORATE_DOMAIN =
+      false; // Set to true for strict corporate policy
   private static final boolean ALLOW_PLUS_ADDRESSING = true; // Allow email+tag@domain.com
   private static final boolean STRICT_VALIDATION = true; // Use strict pattern matching
 
-  /**
-   * Validates email address format and compliance
-   */
+  /** Validates email address format and compliance */
   public FieldValidationResult validateEmail(String email) {
     // Null or empty check
     if (email == null) {
@@ -62,8 +73,7 @@ public class EmailValidationRule {
           "Email Format Validation",
           "Email address is required",
           "Enter a valid company email address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     String trimmedEmail = email.trim();
@@ -73,8 +83,7 @@ public class EmailValidationRule {
           "Email Format Validation",
           "Email address is required and cannot be empty",
           "Enter a valid company email address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Length validation
@@ -84,8 +93,7 @@ public class EmailValidationRule {
           "Email Format Validation",
           "Email address is too long (maximum " + MAX_EMAIL_LENGTH + " characters)",
           "Use a shorter email address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Basic format validation
@@ -96,8 +104,7 @@ public class EmailValidationRule {
           "Email Format Validation",
           "Email address format is invalid",
           "Use valid email format: username@domain.com",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Suspicious character detection
@@ -107,8 +114,7 @@ public class EmailValidationRule {
           "Email Security Validation",
           "Email address contains suspicious characters",
           "Remove special characters and symbols from email address",
-          ComplianceLevel.REGULATORY
-      );
+          ComplianceLevel.REGULATORY);
     }
 
     // Extract and validate parts
@@ -119,8 +125,7 @@ public class EmailValidationRule {
           "Email Format Validation",
           "Email address must contain exactly one @ symbol",
           "Correct email format: username@domain.com",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     String localPart = parts[0];
@@ -139,7 +144,8 @@ public class EmailValidationRule {
     }
 
     // Business rule validation
-    FieldValidationResult businessRuleResult = validateBusinessRules(trimmedEmail, localPart, domain);
+    FieldValidationResult businessRuleResult =
+        validateBusinessRules(trimmedEmail, localPart, domain);
     if (businessRuleResult.isFailed()) {
       return businessRuleResult;
     }
@@ -148,9 +154,7 @@ public class EmailValidationRule {
     return FieldValidationResult.success("email", "Email Format Validation");
   }
 
-  /**
-   * Validate local part (username) of email address
-   */
+  /** Validate local part (username) of email address */
   private FieldValidationResult validateLocalPart(String localPart) {
     if (localPart.isEmpty()) {
       return FieldValidationResult.failure(
@@ -158,8 +162,7 @@ public class EmailValidationRule {
           "Email Local Part Validation",
           "Email username part cannot be empty",
           "Enter valid username before @ symbol",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     if (localPart.length() > MAX_LOCAL_PART_LENGTH) {
@@ -168,8 +171,7 @@ public class EmailValidationRule {
           "Email Local Part Validation",
           "Email username part is too long (maximum " + MAX_LOCAL_PART_LENGTH + " characters)",
           "Use shorter username in email address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Check for invalid characters or patterns in local part
@@ -179,8 +181,7 @@ public class EmailValidationRule {
           "Email Local Part Validation",
           "Email username cannot start or end with a period",
           "Remove periods from beginning or end of username",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     if (localPart.contains("..")) {
@@ -189,8 +190,7 @@ public class EmailValidationRule {
           "Email Local Part Validation",
           "Email username cannot contain consecutive periods",
           "Remove double periods from username",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Plus addressing validation
@@ -200,16 +200,13 @@ public class EmailValidationRule {
           "Email Local Part Validation",
           "Plus addressing (+) is not allowed in email addresses",
           "Use standard email format without + symbols",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     return FieldValidationResult.success("email", "Email Local Part Validation");
   }
 
-  /**
-   * Validate domain part of email address
-   */
+  /** Validate domain part of email address */
   private FieldValidationResult validateDomain(String domain) {
     if (domain.isEmpty()) {
       return FieldValidationResult.failure(
@@ -217,8 +214,7 @@ public class EmailValidationRule {
           "Email Domain Validation",
           "Email domain cannot be empty",
           "Enter valid domain after @ symbol",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Check blocked domains
@@ -228,8 +224,7 @@ public class EmailValidationRule {
           "Email Domain Validation",
           "Email domain is not allowed (temporary/disposable email)",
           "Use a permanent business email address",
-          ComplianceLevel.REGULATORY
-      );
+          ComplianceLevel.REGULATORY);
     }
 
     // Check suspicious domains
@@ -239,8 +234,7 @@ public class EmailValidationRule {
           "Email Security Validation",
           "Email domain is flagged as suspicious",
           "Use a trusted business email domain",
-          ComplianceLevel.REGULATORY
-      );
+          ComplianceLevel.REGULATORY);
     }
 
     // Corporate domain enforcement
@@ -250,8 +244,7 @@ public class EmailValidationRule {
           "Email Domain Policy Validation",
           "Email must use approved corporate domain",
           "Use company email address with approved domain",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Domain format validation
@@ -261,17 +254,15 @@ public class EmailValidationRule {
           "Email Domain Validation",
           "Email domain format is invalid",
           "Use valid domain format: domain.com",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     return FieldValidationResult.success("email", "Email Domain Validation");
   }
 
-  /**
-   * Additional business rule validations
-   */
-  private FieldValidationResult validateBusinessRules(String email, String localPart, String domain) {
+  /** Additional business rule validations */
+  private FieldValidationResult validateBusinessRules(
+      String email, String localPart, String domain) {
     // Check for role-based addresses that might not be appropriate for payroll
     if (isRoleBasedAddress(localPart)) {
       return FieldValidationResult.failure(
@@ -279,8 +270,7 @@ public class EmailValidationRule {
           "Email Business Rule Validation",
           "Role-based email addresses should not be used for payroll",
           "Use personal email address instead of role-based address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Check for test or placeholder addresses
@@ -290,8 +280,7 @@ public class EmailValidationRule {
           "Email Business Rule Validation",
           "Test or placeholder email addresses are not allowed",
           "Enter actual employee email address",
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     // Check for common typos in domain
@@ -302,29 +291,27 @@ public class EmailValidationRule {
           "Email Domain Validation",
           "Possible typo in email domain - did you mean: " + domainSuggestion + "?",
           "Check domain spelling and use: " + domainSuggestion,
-          ComplianceLevel.BUSINESS
-      );
+          ComplianceLevel.BUSINESS);
     }
 
     return FieldValidationResult.success("email", "Email Business Rule Validation");
   }
 
-  /**
-   * Check if domain is approved corporate domain
-   */
+  /** Check if domain is approved corporate domain */
   private boolean isApprovedCorporateDomain(String domain) {
-    return APPROVED_DOMAINS.contains(domain) ||
-           domain.endsWith(".company.com") || // Allow subdomains
-           domain.equals("company.com");
+    return APPROVED_DOMAINS.contains(domain)
+        || domain.endsWith(".company.com")
+        || // Allow subdomains
+        domain.equals("company.com");
   }
 
-  /**
-   * Validate domain format
-   */
+  /** Validate domain format */
   private boolean isValidDomainFormat(String domain) {
     // Basic domain format check
-    if (domain.startsWith(".") || domain.endsWith(".") ||
-        domain.startsWith("-") || domain.endsWith("-")) {
+    if (domain.startsWith(".")
+        || domain.endsWith(".")
+        || domain.startsWith("-")
+        || domain.endsWith("-")) {
       return false;
     }
 
@@ -351,20 +338,34 @@ public class EmailValidationRule {
     return true;
   }
 
-  /**
-   * Check for role-based email addresses
-   */
+  /** Check for role-based email addresses */
   private boolean isRoleBasedAddress(String localPart) {
     String lowerLocal = localPart.toLowerCase();
     String[] rolePrefixes = {
-        "admin", "administrator", "support", "help", "info", "sales",
-        "marketing", "hr", "humanresources", "payroll", "accounting",
-        "finance", "it", "technical", "webmaster", "noreply", "no-reply"
+      "admin",
+      "administrator",
+      "support",
+      "help",
+      "info",
+      "sales",
+      "marketing",
+      "hr",
+      "humanresources",
+      "payroll",
+      "accounting",
+      "finance",
+      "it",
+      "technical",
+      "webmaster",
+      "noreply",
+      "no-reply"
     };
 
     for (String role : rolePrefixes) {
-      if (lowerLocal.equals(role) || lowerLocal.startsWith(role + ".") ||
-          lowerLocal.startsWith(role + "+") || lowerLocal.startsWith(role + "-")) {
+      if (lowerLocal.equals(role)
+          || lowerLocal.startsWith(role + ".")
+          || lowerLocal.startsWith(role + "+")
+          || lowerLocal.startsWith(role + "-")) {
         return true;
       }
     }
@@ -372,15 +373,24 @@ public class EmailValidationRule {
     return false;
   }
 
-  /**
-   * Check for test or placeholder email addresses
-   */
+  /** Check for test or placeholder email addresses */
   private boolean isTestOrPlaceholderEmail(String email) {
     String lowerEmail = email.toLowerCase();
     String[] testPatterns = {
-        "test@", "testing@", "example@", "sample@", "demo@",
-        "placeholder@", "temp@", "temporary@", "fake@",
-        "@test.", "@testing.", "@example.", "@sample.", "@demo."
+      "test@",
+      "testing@",
+      "example@",
+      "sample@",
+      "demo@",
+      "placeholder@",
+      "temp@",
+      "temporary@",
+      "fake@",
+      "@test.",
+      "@testing.",
+      "@example.",
+      "@sample.",
+      "@demo."
     };
 
     for (String pattern : testPatterns) {
@@ -392,23 +402,21 @@ public class EmailValidationRule {
     return false;
   }
 
-  /**
-   * Suggest domain correction for common typos
-   */
+  /** Suggest domain correction for common typos */
   private String suggestDomainCorrection(String domain) {
     // Common domain typos and their corrections
     String[][] commonTypos = {
-        {"gmial.com", "gmail.com"},
-        {"gmai.com", "gmail.com"},
-        {"gmail.co", "gmail.com"},
-        {"hotmial.com", "hotmail.com"},
-        {"hotmai.com", "hotmail.com"},
-        {"yahooo.com", "yahoo.com"},
-        {"yaho.com", "yahoo.com"},
-        {"outlook.co", "outlook.com"},
-        {"outlok.com", "outlook.com"},
-        {"company.co", "company.com"},
-        {"compnay.com", "company.com"}
+      {"gmial.com", "gmail.com"},
+      {"gmai.com", "gmail.com"},
+      {"gmail.co", "gmail.com"},
+      {"hotmial.com", "hotmail.com"},
+      {"hotmai.com", "hotmail.com"},
+      {"yahooo.com", "yahoo.com"},
+      {"yaho.com", "yahoo.com"},
+      {"outlook.co", "outlook.com"},
+      {"outlok.com", "outlook.com"},
+      {"company.co", "company.com"},
+      {"compnay.com", "company.com"}
     };
 
     for (String[] typo : commonTypos) {
@@ -420,9 +428,7 @@ public class EmailValidationRule {
     return null; // No suggestion
   }
 
-  /**
-   * Get email formatting suggestions
-   */
+  /** Get email formatting suggestions */
   public String getEmailFormattingSuggestion(String email) {
     if (email == null || email.trim().isEmpty()) {
       return "Enter a valid email address in format: username@domain.com";
@@ -452,7 +458,10 @@ public class EmailValidationRule {
       String domain = trimmed.split("@")[1].toLowerCase();
       String domainSuggestion = suggestDomainCorrection(domain);
       if (domainSuggestion != null) {
-        suggestion.append("Check domain spelling - did you mean: ").append(domainSuggestion).append("? ");
+        suggestion
+            .append("Check domain spelling - did you mean: ")
+            .append(domainSuggestion)
+            .append("? ");
       }
     }
 
@@ -463,9 +472,7 @@ public class EmailValidationRule {
     return suggestion.toString().trim();
   }
 
-  /**
-   * Format email according to business standards
-   */
+  /** Format email according to business standards */
   public String formatEmail(String email) {
     if (email == null) return null;
 
@@ -481,9 +488,7 @@ public class EmailValidationRule {
     return formatted;
   }
 
-  /**
-   * Check if email domain is external (not corporate)
-   */
+  /** Check if email domain is external (not corporate) */
   public boolean isExternalDomain(String email) {
     if (email == null || !email.contains("@")) {
       return true; // Assume external if invalid
@@ -493,9 +498,7 @@ public class EmailValidationRule {
     return !isApprovedCorporateDomain(domain);
   }
 
-  /**
-   * Get domain classification
-   */
+  /** Get domain classification */
   public DomainClassification classifyDomain(String email) {
     if (email == null || !email.contains("@")) {
       return DomainClassification.INVALID;
@@ -522,15 +525,13 @@ public class EmailValidationRule {
     return DomainClassification.EXTERNAL;
   }
 
-  /**
-   * Domain classification enumeration
-   */
+  /** Domain classification enumeration */
   public enum DomainClassification {
-    CORPORATE,        // Internal corporate domain
+    CORPORATE, // Internal corporate domain
     APPROVED_EXTERNAL, // Approved external domain
-    EXTERNAL,         // Unknown external domain
-    SUSPICIOUS,       // Flagged as suspicious
-    BLOCKED,          // Explicitly blocked
-    INVALID           // Invalid email format
+    EXTERNAL, // Unknown external domain
+    SUSPICIOUS, // Flagged as suspicious
+    BLOCKED, // Explicitly blocked
+    INVALID // Invalid email format
   }
 }

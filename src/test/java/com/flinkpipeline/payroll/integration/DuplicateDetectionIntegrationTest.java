@@ -3,7 +3,6 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -15,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for duplicate employee detection scenarios in the payroll pipeline.
- * Tests end-to-end processing of duplicate employees across SSN, email, and name similarity,
- * including windowed duplicate detection and real-time alerting.
+ * Integration test for duplicate employee detection scenarios in the payroll pipeline. Tests
+ * end-to-end processing of duplicate employees across SSN, email, and name similarity, including
+ * windowed duplicate detection and real-time alerting.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("Duplicate Employee Detection Integration Tests")
 class DuplicateDetectionIntegrationTest {
@@ -75,8 +75,10 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldDetectExactDuplicateEmployeesWithSameSSN() throws Exception {
     // Create employees with identical SSN
-    PayrollEmployee originalEmployee = createEmployee(5001, "John", "Doe", "123-45-6789", "john.doe@company.com");
-    PayrollEmployee duplicateEmployee = createEmployee(5002, "John", "Doe", "123-45-6789", "john.doe2@company.com");
+    PayrollEmployee originalEmployee =
+        createEmployee(5001, "John", "Doe", "123-45-6789", "john.doe@company.com");
+    PayrollEmployee duplicateEmployee =
+        createEmployee(5002, "John", "Doe", "123-45-6789", "john.doe2@company.com");
 
     // TODO: This assertion will fail until duplicate detection is implemented
     // pipeline.start();
@@ -113,9 +115,13 @@ class DuplicateDetectionIntegrationTest {
     //     "Should reference original employee");
 
     // For now, verify test data
-    assertEquals("123-45-6789", originalEmployee.getSsn(), "Original employee should have test SSN");
-    assertEquals("123-45-6789", duplicateEmployee.getSsn(), "Duplicate employee should have same SSN");
-    assertNotEquals(originalEmployee.getEmployeeId(), duplicateEmployee.getEmployeeId(),
+    assertEquals(
+        "123-45-6789", originalEmployee.getSsn(), "Original employee should have test SSN");
+    assertEquals(
+        "123-45-6789", duplicateEmployee.getSsn(), "Duplicate employee should have same SSN");
+    assertNotEquals(
+        originalEmployee.getEmployeeId(),
+        duplicateEmployee.getEmployeeId(),
         "Employees should have different IDs");
   }
 
@@ -124,8 +130,10 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldDetectDuplicateEmployeesWithSameEmailAddress() throws Exception {
     // Create employees with identical email
-    PayrollEmployee originalEmployee = createEmployee(5003, "Jane", "Smith", "987-65-4321", "jane.smith@company.com");
-    PayrollEmployee duplicateEmployee = createEmployee(5004, "Jane", "Johnson", "111-22-3333", "jane.smith@company.com");
+    PayrollEmployee originalEmployee =
+        createEmployee(5003, "Jane", "Smith", "987-65-4321", "jane.smith@company.com");
+    PayrollEmployee duplicateEmployee =
+        createEmployee(5004, "Jane", "Johnson", "111-22-3333", "jane.smith@company.com");
 
     // TODO: This assertion will fail until email duplicate detection is implemented
     // pipeline.start();
@@ -152,9 +160,17 @@ class DuplicateDetectionIntegrationTest {
     //     "Should identify email duplicate type");
 
     // For now, verify test data
-    assertEquals("jane.smith@company.com", originalEmployee.getEmail(), "Original employee should have test email");
-    assertEquals("jane.smith@company.com", duplicateEmployee.getEmail(), "Duplicate employee should have same email");
-    assertNotEquals(originalEmployee.getSsn(), duplicateEmployee.getSsn(),
+    assertEquals(
+        "jane.smith@company.com",
+        originalEmployee.getEmail(),
+        "Original employee should have test email");
+    assertEquals(
+        "jane.smith@company.com",
+        duplicateEmployee.getEmail(),
+        "Duplicate employee should have same email");
+    assertNotEquals(
+        originalEmployee.getSsn(),
+        duplicateEmployee.getSsn(),
         "Employees should have different SSNs");
   }
 
@@ -163,9 +179,12 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldDetectPotentialDuplicatesByNameSimilarity() throws Exception {
     // Create employees with similar names
-    PayrollEmployee originalEmployee = createEmployee(5005, "Michael", "Johnson", "444-55-6666", "michael.johnson@company.com");
-    PayrollEmployee similarEmployee1 = createEmployee(5006, "Mike", "Johnson", "777-88-9999", "mike.johnson@company.com");
-    PayrollEmployee similarEmployee2 = createEmployee(5007, "Michael", "Jonson", "000-11-2222", "m.jonson@company.com");
+    PayrollEmployee originalEmployee =
+        createEmployee(5005, "Michael", "Johnson", "444-55-6666", "michael.johnson@company.com");
+    PayrollEmployee similarEmployee1 =
+        createEmployee(5006, "Mike", "Johnson", "777-88-9999", "mike.johnson@company.com");
+    PayrollEmployee similarEmployee2 =
+        createEmployee(5007, "Michael", "Jonson", "000-11-2222", "m.jonson@company.com");
 
     // TODO: This assertion will fail until name similarity detection is implemented
     // pipeline.start();
@@ -197,7 +216,9 @@ class DuplicateDetectionIntegrationTest {
     // For now, verify test data
     assertTrue(isNameSimilar("Michael", "Mike"), "Names should be similar");
     assertTrue(isNameSimilar("Johnson", "Jonson"), "Last names should be similar");
-    assertEquals(3, Arrays.asList(originalEmployee, similarEmployee1, similarEmployee2).size(),
+    assertEquals(
+        3,
+        Arrays.asList(originalEmployee, similarEmployee1, similarEmployee2).size(),
         "Should have 3 similar employees");
   }
 
@@ -206,8 +227,10 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldHandleWindowedDuplicateDetectionCorrectly() throws Exception {
     // Create employees with same SSN but different processing times
-    PayrollEmployee employee1 = createEmployee(5008, "Robert", "Wilson", "555-66-7777", "robert.wilson@company.com");
-    PayrollEmployee employee2 = createEmployee(5009, "Bob", "Wilson", "555-66-7777", "bob.wilson@company.com");
+    PayrollEmployee employee1 =
+        createEmployee(5008, "Robert", "Wilson", "555-66-7777", "robert.wilson@company.com");
+    PayrollEmployee employee2 =
+        createEmployee(5009, "Bob", "Wilson", "555-66-7777", "bob.wilson@company.com");
 
     // TODO: This assertion will fail until windowed duplicate detection is implemented
     // pipeline.start();
@@ -234,7 +257,8 @@ class DuplicateDetectionIntegrationTest {
     // advanceWatermark(DUPLICATE_DETECTION_WINDOW.plusMinutes(5));
 
     // Process third employee with same SSN after window expiration
-    // PayrollEmployee employee3 = createEmployee(5010, "Robert", "Wilson", "555-66-7777", "r.wilson@company.com");
+    // PayrollEmployee employee3 = createEmployee(5010, "Robert", "Wilson", "555-66-7777",
+    // "r.wilson@company.com");
     // pipeline.processEmployee(employee3);
     // Thread.sleep(5000);
 
@@ -243,8 +267,10 @@ class DuplicateDetectionIntegrationTest {
     //     "Third employee should be validated after window expiration");
 
     // For now, verify windowing concepts
-    assertTrue(DUPLICATE_DETECTION_WINDOW.toHours() == 1, "Should use 1-hour duplicate detection window");
-    assertEquals("555-66-7777", employee1.getSsn(), "Employees should have same SSN for windowing test");
+    assertTrue(
+        DUPLICATE_DETECTION_WINDOW.toHours() == 1, "Should use 1-hour duplicate detection window");
+    assertEquals(
+        "555-66-7777", employee1.getSsn(), "Employees should have same SSN for windowing test");
   }
 
   @Test
@@ -252,8 +278,10 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleMultipleDuplicateTypesForSameEmployee() throws Exception {
     // Create employees with multiple matching attributes
-    PayrollEmployee originalEmployee = createEmployee(5011, "Sarah", "Davis", "888-99-0000", "sarah.davis@company.com");
-    PayrollEmployee multiDuplicateEmployee = createEmployee(5012, "Sarah", "Davis", "888-99-0000", "sarah.davis@company.com");
+    PayrollEmployee originalEmployee =
+        createEmployee(5011, "Sarah", "Davis", "888-99-0000", "sarah.davis@company.com");
+    PayrollEmployee multiDuplicateEmployee =
+        createEmployee(5012, "Sarah", "Davis", "888-99-0000", "sarah.davis@company.com");
 
     // TODO: This assertion will fail until multi-attribute duplicate detection is implemented
     // pipeline.start();
@@ -282,17 +310,26 @@ class DuplicateDetectionIntegrationTest {
     //     "Should detect name duplicate");
 
     // For now, verify multi-attribute test data
-    assertEquals(originalEmployee.getSsn(), multiDuplicateEmployee.getSsn(), "Should have same SSN");
-    assertEquals(originalEmployee.getEmail(), multiDuplicateEmployee.getEmail(), "Should have same email");
-    assertEquals(originalEmployee.getFirstName(), multiDuplicateEmployee.getFirstName(), "Should have same first name");
-    assertEquals(originalEmployee.getLastName(), multiDuplicateEmployee.getLastName(), "Should have same last name");
+    assertEquals(
+        originalEmployee.getSsn(), multiDuplicateEmployee.getSsn(), "Should have same SSN");
+    assertEquals(
+        originalEmployee.getEmail(), multiDuplicateEmployee.getEmail(), "Should have same email");
+    assertEquals(
+        originalEmployee.getFirstName(),
+        multiDuplicateEmployee.getFirstName(),
+        "Should have same first name");
+    assertEquals(
+        originalEmployee.getLastName(),
+        multiDuplicateEmployee.getLastName(),
+        "Should have same last name");
   }
 
   @Test
   @DisplayName("Should maintain duplicate detection state across Flink checkpoints")
   @Timeout(value = 45, unit = TimeUnit.SECONDS)
   void shouldMaintainDuplicateDetectionStateAcrossFlinkCheckpoints() throws Exception {
-    PayrollEmployee employee1 = createEmployee(5013, "David", "Brown", "111-11-1111", "david.brown@company.com");
+    PayrollEmployee employee1 =
+        createEmployee(5013, "David", "Brown", "111-11-1111", "david.brown@company.com");
 
     // TODO: This assertion will fail until checkpoint state management is implemented
     // pipeline.start();
@@ -312,7 +349,8 @@ class DuplicateDetectionIntegrationTest {
     // Thread.sleep(2000);
 
     // Process duplicate after restart
-    // PayrollEmployee employee2 = createEmployee(5014, "Dave", "Brown", "111-11-1111", "dave.brown@company.com");
+    // PayrollEmployee employee2 = createEmployee(5014, "Dave", "Brown", "111-11-1111",
+    // "dave.brown@company.com");
     // pipeline.processEmployee(employee2);
     // Thread.sleep(5000);
 
@@ -333,7 +371,8 @@ class DuplicateDetectionIntegrationTest {
     // Generate batch with intentional duplicates
     int batchSize = 500;
     int duplicateCount = 50;
-    List<PayrollEmployee> batchWithDuplicates = generateBatchWithDuplicates(batchSize, duplicateCount);
+    List<PayrollEmployee> batchWithDuplicates =
+        generateBatchWithDuplicates(batchSize, duplicateCount);
 
     // TODO: This assertion will fail until high-throughput handling is implemented
     // pipeline.start();
@@ -375,8 +414,10 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldProvideDetailedDuplicateResolutionGuidance() throws Exception {
     // Create various types of duplicates
-    PayrollEmployee originalEmployee = createEmployee(5015, "Lisa", "Taylor", "222-33-4444", "lisa.taylor@company.com");
-    PayrollEmployee ssnDuplicate = createEmployee(5016, "Elizabeth", "Johnson", "222-33-4444", "liz.johnson@company.com");
+    PayrollEmployee originalEmployee =
+        createEmployee(5015, "Lisa", "Taylor", "222-33-4444", "lisa.taylor@company.com");
+    PayrollEmployee ssnDuplicate =
+        createEmployee(5016, "Elizabeth", "Johnson", "222-33-4444", "liz.johnson@company.com");
 
     // TODO: This assertion will fail until resolution guidance is implemented
     // pipeline.start();
@@ -407,7 +448,9 @@ class DuplicateDetectionIntegrationTest {
     //     "Should estimate resolution time");
 
     // For now, verify resolution guidance concepts
-    String[] expectedActions = {"MERGE_RECORDS", "VERIFY_IDENTITY", "DEACTIVATE_DUPLICATE", "MANUAL_REVIEW"};
+    String[] expectedActions = {
+      "MERGE_RECORDS", "VERIFY_IDENTITY", "DEACTIVATE_DUPLICATE", "MANUAL_REVIEW"
+    };
     assertEquals(4, expectedActions.length, "Should have multiple resolution action types");
   }
 
@@ -416,12 +459,17 @@ class DuplicateDetectionIntegrationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldTrackDuplicateDetectionMetricsForMonitoring() throws Exception {
     // Process mix of unique and duplicate employees
-    List<PayrollEmployee> mixedEmployees = Arrays.asList(
-        createEmployee(5017, "Mark", "Wilson", "333-44-5555", "mark.wilson@company.com"),     // Unique
-        createEmployee(5018, "Mark", "Wilson", "333-44-5555", "mark.wilson2@company.com"),    // SSN duplicate
-        createEmployee(5019, "Jennifer", "Lee", "666-77-8888", "jennifer.lee@company.com"),   // Unique
-        createEmployee(5020, "Jenny", "Lee", "999-00-1111", "jennifer.lee@company.com")       // Email duplicate
-    );
+    List<PayrollEmployee> mixedEmployees =
+        Arrays.asList(
+            createEmployee(
+                5017, "Mark", "Wilson", "333-44-5555", "mark.wilson@company.com"), // Unique
+            createEmployee(
+                5018, "Mark", "Wilson", "333-44-5555", "mark.wilson2@company.com"), // SSN duplicate
+            createEmployee(
+                5019, "Jennifer", "Lee", "666-77-8888", "jennifer.lee@company.com"), // Unique
+            createEmployee(
+                5020, "Jenny", "Lee", "999-00-1111", "jennifer.lee@company.com") // Email duplicate
+            );
 
     // TODO: This assertion will fail until metrics tracking is implemented
     // pipeline.start();
@@ -461,8 +509,10 @@ class DuplicateDetectionIntegrationTest {
   @DisplayName("Should handle late-arriving duplicates within grace period")
   @Timeout(value = 45, unit = TimeUnit.SECONDS)
   void shouldHandleLateArrivingDuplicatesWithinGracePeriod() throws Exception {
-    PayrollEmployee employee1 = createEmployee(5021, "Andrew", "Clark", "444-44-4444", "andrew.clark@company.com");
-    PayrollEmployee lateEmployee = createEmployee(5022, "Andy", "Clark", "444-44-4444", "andy.clark@company.com");
+    PayrollEmployee employee1 =
+        createEmployee(5021, "Andrew", "Clark", "444-44-4444", "andrew.clark@company.com");
+    PayrollEmployee lateEmployee =
+        createEmployee(5022, "Andy", "Clark", "444-44-4444", "andy.clark@company.com");
 
     // TODO: This assertion will fail until late arrival handling is implemented
     // pipeline.start();
@@ -495,10 +545,9 @@ class DuplicateDetectionIntegrationTest {
     assertTrue(LATE_ARRIVAL_GRACE_PERIOD.toMinutes() == 15, "Should use 15-minute grace period");
   }
 
-  /**
-   * Helper method to create employee with specific attributes
-   */
-  private PayrollEmployee createEmployee(int employeeId, String firstName, String lastName, String ssn, String email) {
+  /** Helper method to create employee with specific attributes */
+  private PayrollEmployee createEmployee(
+      int employeeId, String firstName, String lastName, String ssn, String email) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName(firstName)
@@ -511,59 +560,51 @@ class DuplicateDetectionIntegrationTest {
         .build();
   }
 
-  /**
-   * Helper method to check name similarity
-   */
+  /** Helper method to check name similarity */
   private boolean isNameSimilar(String name1, String name2) {
     if (name1 == null || name2 == null) return false;
     // Simple similarity check (real implementation would use Levenshtein distance)
-    return Math.abs(name1.length() - name2.length()) <= 2 &&
-        name1.toLowerCase().charAt(0) == name2.toLowerCase().charAt(0);
+    return Math.abs(name1.length() - name2.length()) <= 2
+        && name1.toLowerCase().charAt(0) == name2.toLowerCase().charAt(0);
   }
 
-  /**
-   * Helper method to generate batch with intentional duplicates
-   */
+  /** Helper method to generate batch with intentional duplicates */
   private List<PayrollEmployee> generateBatchWithDuplicates(int totalSize, int duplicateCount) {
     List<PayrollEmployee> batch = new java.util.ArrayList<>();
 
     // Generate unique employees
     for (int i = 0; i < totalSize - duplicateCount; i++) {
-      batch.add(createEmployee(
-          7000 + i,
-          "Employee" + i,
-          "Unique" + i,
-          String.format("%03d-%02d-%04d", i % 999, (i / 100) % 99, i % 9999),
-          "employee" + i + "@company.com"
-      ));
+      batch.add(
+          createEmployee(
+              7000 + i,
+              "Employee" + i,
+              "Unique" + i,
+              String.format("%03d-%02d-%04d", i % 999, (i / 100) % 99, i % 9999),
+              "employee" + i + "@company.com"));
     }
 
     // Generate duplicates of first few employees
     for (int i = 0; i < duplicateCount; i++) {
       PayrollEmployee original = batch.get(i);
-      batch.add(createEmployee(
-          8000 + i, // Different ID
-          original.getFirstName() + "Copy",
-          original.getLastName(),
-          original.getSsn(), // Same SSN (duplicate)
-          original.getEmail() + ".dup"
-      ));
+      batch.add(
+          createEmployee(
+              8000 + i, // Different ID
+              original.getFirstName() + "Copy",
+              original.getLastName(),
+              original.getSsn(), // Same SSN (duplicate)
+              original.getEmail() + ".dup"));
     }
 
     return batch;
   }
 
-  /**
-   * Helper method to advance watermark (for testing windowing)
-   */
+  /** Helper method to advance watermark (for testing windowing) */
   // private void advanceWatermark(Duration advancement) {
   //   // TODO: Implement when Flink test harness is available
   //   // testHarness.advanceWatermark(System.currentTimeMillis() + advancement.toMillis());
   // }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

@@ -3,8 +3,6 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +13,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for age range validation scenarios in the payroll pipeline.
- * Tests end-to-end processing of employees with various age-related validation cases,
- * including employment eligibility, labor law compliance, and edge cases.
+ * Integration test for age range validation scenarios in the payroll pipeline. Tests end-to-end
+ * processing of employees with various age-related validation cases, including employment
+ * eligibility, labor law compliance, and edge cases.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("Age Range Validation Integration Tests")
 class AgeRangeValidationTest {
@@ -73,16 +72,17 @@ class AgeRangeValidationTest {
   @DisplayName("Should validate employees within acceptable age range (16-75)")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldValidateEmployeesWithinAcceptableAgeRange() throws Exception {
-    List<PayrollEmployee> validAgeEmployees = Arrays.asList(
-        createEmployeeWithAge(3001, 16),  // Minimum age
-        createEmployeeWithAge(3002, 18),  // Young adult
-        createEmployeeWithAge(3003, 25),  // Early career
-        createEmployeeWithAge(3004, 35),  // Mid career
-        createEmployeeWithAge(3005, 45),  // Experienced
-        createEmployeeWithAge(3006, 55),  // Senior professional
-        createEmployeeWithAge(3007, 65),  // Traditional retirement age
-        createEmployeeWithAge(3008, 75)   // Maximum age
-    );
+    List<PayrollEmployee> validAgeEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3001, 16), // Minimum age
+            createEmployeeWithAge(3002, 18), // Young adult
+            createEmployeeWithAge(3003, 25), // Early career
+            createEmployeeWithAge(3004, 35), // Mid career
+            createEmployeeWithAge(3005, 45), // Experienced
+            createEmployeeWithAge(3006, 55), // Senior professional
+            createEmployeeWithAge(3007, 65), // Traditional retirement age
+            createEmployeeWithAge(3008, 75) // Maximum age
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -113,7 +113,8 @@ class AgeRangeValidationTest {
     // For now, verify test data
     assertEquals(8, validAgeEmployees.size(), "Should have 8 employees with valid ages");
     for (PayrollEmployee employee : validAgeEmployees) {
-      assertTrue(employee.getAge() >= MIN_EMPLOYMENT_AGE && employee.getAge() <= MAX_EMPLOYMENT_AGE,
+      assertTrue(
+          employee.getAge() >= MIN_EMPLOYMENT_AGE && employee.getAge() <= MAX_EMPLOYMENT_AGE,
           "Employee age should be within valid range: " + employee.getAge());
     }
   }
@@ -122,12 +123,13 @@ class AgeRangeValidationTest {
   @DisplayName("Should reject employees under minimum employment age")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldRejectEmployeesUnderMinimumEmploymentAge() throws Exception {
-    List<PayrollEmployee> underageEmployees = Arrays.asList(
-        createEmployeeWithAge(3009, 10),  // Well under minimum
-        createEmployeeWithAge(3010, 13),  // Just under child labor threshold
-        createEmployeeWithAge(3011, 14),  // At child labor threshold
-        createEmployeeWithAge(3012, 15)   // Just under minimum employment age
-    );
+    List<PayrollEmployee> underageEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3009, 10), // Well under minimum
+            createEmployeeWithAge(3010, 13), // Just under child labor threshold
+            createEmployeeWithAge(3011, 14), // At child labor threshold
+            createEmployeeWithAge(3012, 15) // Just under minimum employment age
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -162,7 +164,8 @@ class AgeRangeValidationTest {
     // For now, verify test data
     assertEquals(4, underageEmployees.size(), "Should have 4 underage employees");
     for (PayrollEmployee employee : underageEmployees) {
-      assertTrue(employee.getAge() < MIN_EMPLOYMENT_AGE,
+      assertTrue(
+          employee.getAge() < MIN_EMPLOYMENT_AGE,
           "Employee should be under minimum employment age: " + employee.getAge());
     }
   }
@@ -171,12 +174,13 @@ class AgeRangeValidationTest {
   @DisplayName("Should reject employees over maximum employment age")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldRejectEmployeesOverMaximumEmploymentAge() throws Exception {
-    List<PayrollEmployee> overageEmployees = Arrays.asList(
-        createEmployeeWithAge(3013, 76),  // Just over maximum
-        createEmployeeWithAge(3014, 80),  // Moderately over maximum
-        createEmployeeWithAge(3015, 90),  // Well over maximum
-        createEmployeeWithAge(3016, 100)  // Extremely over maximum
-    );
+    List<PayrollEmployee> overageEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3013, 76), // Just over maximum
+            createEmployeeWithAge(3014, 80), // Moderately over maximum
+            createEmployeeWithAge(3015, 90), // Well over maximum
+            createEmployeeWithAge(3016, 100) // Extremely over maximum
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -211,7 +215,8 @@ class AgeRangeValidationTest {
     // For now, verify test data
     assertEquals(4, overageEmployees.size(), "Should have 4 overage employees");
     for (PayrollEmployee employee : overageEmployees) {
-      assertTrue(employee.getAge() > MAX_EMPLOYMENT_AGE,
+      assertTrue(
+          employee.getAge() > MAX_EMPLOYMENT_AGE,
           "Employee should be over maximum employment age: " + employee.getAge());
     }
   }
@@ -220,12 +225,13 @@ class AgeRangeValidationTest {
   @DisplayName("Should handle null or invalid age values")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleNullOrInvalidAgeValues() throws Exception {
-    List<PayrollEmployee> invalidAgeEmployees = Arrays.asList(
-        createEmployeeWithAge(3017, null),  // Null age
-        createEmployeeWithAge(3018, 0),     // Zero age
-        createEmployeeWithAge(3019, -5),    // Negative age
-        createEmployeeWithAge(3020, -1)     // Negative age
-    );
+    List<PayrollEmployee> invalidAgeEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3017, null), // Null age
+            createEmployeeWithAge(3018, 0), // Zero age
+            createEmployeeWithAge(3019, -5), // Negative age
+            createEmployeeWithAge(3020, -1) // Negative age
+            );
 
     // TODO: This assertion will fail until pipeline integration is implemented
     // pipeline.start();
@@ -247,7 +253,8 @@ class AgeRangeValidationTest {
     // Verify specific error messages
     // for (FailedPayrollRecord failedRecord : hrWorkflowSink.getResults()) {
     //   assertTrue(failedRecord.getValidationErrors().stream()
-    //       .anyMatch(error -> error.contains("age") && (error.contains("required") || error.contains("positive"))),
+    //       .anyMatch(error -> error.contains("age") && (error.contains("required") ||
+    // error.contains("positive"))),
     //       "Should contain age requirement error message");
     // }
 
@@ -259,12 +266,13 @@ class AgeRangeValidationTest {
   @DisplayName("Should handle age-related special compliance cases")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleAgeRelatedSpecialComplianceCases() throws Exception {
-    List<PayrollEmployee> specialCaseEmployees = Arrays.asList(
-        createEmployeeWithAge(3021, 17),  // Minor requiring special permits
-        createEmployeeWithAge(3022, 66),  // Post-retirement age worker
-        createEmployeeWithAge(3023, 70),  // Senior worker requiring special considerations
-        createEmployeeWithAge(3024, 65)   // Traditional retirement age
-    );
+    List<PayrollEmployee> specialCaseEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3021, 17), // Minor requiring special permits
+            createEmployeeWithAge(3022, 66), // Post-retirement age worker
+            createEmployeeWithAge(3023, 70), // Senior worker requiring special considerations
+            createEmployeeWithAge(3024, 65) // Traditional retirement age
+            );
 
     // TODO: This assertion will fail until special compliance handling is implemented
     // pipeline.start();
@@ -298,7 +306,9 @@ class AgeRangeValidationTest {
     // For now, verify special case concepts
     assertEquals(4, specialCaseEmployees.size(), "Should have 4 special case employees");
     assertTrue(specialCaseEmployees.get(0).getAge() == 17, "Should have minor employee");
-    assertTrue(specialCaseEmployees.get(1).getAge() >= SENIOR_EMPLOYMENT_THRESHOLD, "Should have senior employee");
+    assertTrue(
+        specialCaseEmployees.get(1).getAge() >= SENIOR_EMPLOYMENT_THRESHOLD,
+        "Should have senior employee");
   }
 
   @Test
@@ -338,12 +348,13 @@ class AgeRangeValidationTest {
   @DisplayName("Should generate actionable HR correction messages for age validation failures")
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldGenerateActionableHRCorrectionMessagesForAgeValidationFailures() throws Exception {
-    List<PayrollEmployee> variousAgeFailures = Arrays.asList(
-        createEmployeeWithAge(3026, 15),   // Underage
-        createEmployeeWithAge(3027, 80),   // Overage
-        createEmployeeWithAge(3028, null), // Null age
-        createEmployeeWithAge(3029, -5)    // Negative age
-    );
+    List<PayrollEmployee> variousAgeFailures =
+        Arrays.asList(
+            createEmployeeWithAge(3026, 15), // Underage
+            createEmployeeWithAge(3027, 80), // Overage
+            createEmployeeWithAge(3028, null), // Null age
+            createEmployeeWithAge(3029, -5) // Negative age
+            );
 
     // TODO: This assertion will fail until HR message generation is implemented
     // pipeline.start();
@@ -369,10 +380,10 @@ class AgeRangeValidationTest {
 
     // For now, verify correction message concepts
     String[] expectedInstructions = {
-        "Verify employee meets minimum age requirement of 16",
-        "Review employment eligibility for employees over 75",
-        "Age is required field - verify employee birthdate",
-        "Correct negative or invalid age values"
+      "Verify employee meets minimum age requirement of 16",
+      "Review employment eligibility for employees over 75",
+      "Age is required field - verify employee birthdate",
+      "Correct negative or invalid age values"
     };
     assertEquals(4, expectedInstructions.length, "Should have specific correction instructions");
   }
@@ -452,14 +463,15 @@ class AgeRangeValidationTest {
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldHandleEdgeCasesAroundAgeBoundaries() throws Exception {
     // Test exact boundary values
-    List<PayrollEmployee> boundaryEmployees = Arrays.asList(
-        createEmployeeWithAge(3031, MIN_EMPLOYMENT_AGE - 1),  // 15 (just under minimum)
-        createEmployeeWithAge(3032, MIN_EMPLOYMENT_AGE),      // 16 (exact minimum)
-        createEmployeeWithAge(3033, MIN_EMPLOYMENT_AGE + 1),  // 17 (just over minimum)
-        createEmployeeWithAge(3034, MAX_EMPLOYMENT_AGE - 1),  // 74 (just under maximum)
-        createEmployeeWithAge(3035, MAX_EMPLOYMENT_AGE),      // 75 (exact maximum)
-        createEmployeeWithAge(3036, MAX_EMPLOYMENT_AGE + 1)   // 76 (just over maximum)
-    );
+    List<PayrollEmployee> boundaryEmployees =
+        Arrays.asList(
+            createEmployeeWithAge(3031, MIN_EMPLOYMENT_AGE - 1), // 15 (just under minimum)
+            createEmployeeWithAge(3032, MIN_EMPLOYMENT_AGE), // 16 (exact minimum)
+            createEmployeeWithAge(3033, MIN_EMPLOYMENT_AGE + 1), // 17 (just over minimum)
+            createEmployeeWithAge(3034, MAX_EMPLOYMENT_AGE - 1), // 74 (just under maximum)
+            createEmployeeWithAge(3035, MAX_EMPLOYMENT_AGE), // 75 (exact maximum)
+            createEmployeeWithAge(3036, MAX_EMPLOYMENT_AGE + 1) // 76 (just over maximum)
+            );
 
     // TODO: This assertion will fail until boundary handling is implemented
     // pipeline.start();
@@ -484,13 +496,13 @@ class AgeRangeValidationTest {
 
     // For now, verify boundary test data
     assertEquals(6, boundaryEmployees.size(), "Should have 6 boundary test employees");
-    assertTrue(boundaryEmployees.get(1).getAge() == MIN_EMPLOYMENT_AGE, "Should test minimum boundary");
-    assertTrue(boundaryEmployees.get(4).getAge() == MAX_EMPLOYMENT_AGE, "Should test maximum boundary");
+    assertTrue(
+        boundaryEmployees.get(1).getAge() == MIN_EMPLOYMENT_AGE, "Should test minimum boundary");
+    assertTrue(
+        boundaryEmployees.get(4).getAge() == MAX_EMPLOYMENT_AGE, "Should test maximum boundary");
   }
 
-  /**
-   * Helper method to create employee with specific age
-   */
+  /** Helper method to create employee with specific age */
   private PayrollEmployee createEmployeeWithAge(int employeeId, Integer age) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
@@ -504,35 +516,53 @@ class AgeRangeValidationTest {
         .build();
   }
 
-  /**
-   * Helper method to generate mixed age batch for performance testing
-   */
+  /** Helper method to generate mixed age batch for performance testing */
   private List<PayrollEmployee> generateMixedAgeBatch(int size) {
     List<PayrollEmployee> batch = new java.util.ArrayList<>();
     for (int i = 0; i < size; i++) {
       // Generate mix of valid and invalid ages
       Integer age;
       switch (i % 10) {
-        case 0: age = 15; break;  // Invalid - too young
-        case 1: age = 16; break;  // Valid - minimum
-        case 2: age = 25; break;  // Valid - young adult
-        case 3: age = 35; break;  // Valid - mid career
-        case 4: age = 45; break;  // Valid - experienced
-        case 5: age = 55; break;  // Valid - senior
-        case 6: age = 65; break;  // Valid - retirement age
-        case 7: age = 75; break;  // Valid - maximum
-        case 8: age = 80; break;  // Invalid - too old
-        case 9: age = null; break; // Invalid - null
-        default: age = 30; break;
+        case 0:
+          age = 15;
+          break; // Invalid - too young
+        case 1:
+          age = 16;
+          break; // Valid - minimum
+        case 2:
+          age = 25;
+          break; // Valid - young adult
+        case 3:
+          age = 35;
+          break; // Valid - mid career
+        case 4:
+          age = 45;
+          break; // Valid - experienced
+        case 5:
+          age = 55;
+          break; // Valid - senior
+        case 6:
+          age = 65;
+          break; // Valid - retirement age
+        case 7:
+          age = 75;
+          break; // Valid - maximum
+        case 8:
+          age = 80;
+          break; // Invalid - too old
+        case 9:
+          age = null;
+          break; // Invalid - null
+        default:
+          age = 30;
+          break;
       }
       batch.add(createEmployeeWithAge(5000 + i, age));
     }
     return batch;
   }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

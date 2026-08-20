@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,10 +12,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Test class for validating payroll quality rules configuration.
- * Tests rule structure, validation expressions, and compliance settings.
+ * Test class for validating payroll quality rules configuration. Tests rule structure, validation
+ * expressions, and compliance settings.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollRulesConfig is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollRulesConfig is
+ * implemented.
  */
 @DisplayName("Payroll Quality Rules Configuration Validation Tests")
 class PayrollRulesConfigTest {
@@ -29,8 +29,8 @@ class PayrollRulesConfigTest {
   @BeforeEach
   void setUp() throws IOException {
     // Load the payroll quality rules configuration
-    try (InputStream configStream = getClass().getClassLoader()
-        .getResourceAsStream("payroll-quality-rules-config.json")) {
+    try (InputStream configStream =
+        getClass().getClassLoader().getResourceAsStream("payroll-quality-rules-config.json")) {
       assertNotNull(configStream, "Payroll quality rules config file not found");
       configJson = new String(configStream.readAllBytes());
     }
@@ -59,9 +59,15 @@ class PayrollRulesConfigTest {
   @DisplayName("Should validate all required rule fields are present")
   void shouldValidateAllRequiredRuleFieldsArePresent() {
     String[] requiredFields = {
-        "rule_id", "rule_name", "field_name", "rule_type",
-        "validation_expression", "error_template", "compliance_level",
-        "enabled", "suggested_correction"
+      "rule_id",
+      "rule_name",
+      "field_name",
+      "rule_type",
+      "validation_expression",
+      "error_template",
+      "compliance_level",
+      "enabled",
+      "suggested_correction"
     };
 
     // TODO: This assertion will fail until rule parsing is implemented
@@ -79,14 +85,18 @@ class PayrollRulesConfigTest {
 
     // For now, verify fields exist in JSON
     for (String field : requiredFields) {
-      assertTrue(configJson.contains("\"" + field + "\""),
+      assertTrue(
+          configJson.contains("\"" + field + "\""),
           "Configuration should contain " + field + " field");
     }
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"DQ-001", "DQ-002", "DQ-003", "DQ-004", "DQ-005",
-                         "DQ-006", "DQ-007", "DQ-008", "DQ-009", "DQ-010"})
+  @ValueSource(
+      strings = {
+        "DQ-001", "DQ-002", "DQ-003", "DQ-004", "DQ-005", "DQ-006", "DQ-007", "DQ-008", "DQ-009",
+        "DQ-010"
+      })
   @DisplayName("Should validate specific payroll quality rules exist")
   void shouldValidateSpecificPayrollQualityRulesExist(String ruleId) {
     // TODO: This assertion will fail until rule lookup is implemented
@@ -95,8 +105,8 @@ class PayrollRulesConfigTest {
     // assertEquals(ruleId, rule.getRuleId(), "Rule ID should match");
 
     // For now, verify rule exists in JSON
-    assertTrue(configJson.contains("\"" + ruleId + "\""),
-        "Configuration should contain rule " + ruleId);
+    assertTrue(
+        configJson.contains("\"" + ruleId + "\""), "Configuration should contain rule " + ruleId);
   }
 
   @Test
@@ -226,19 +236,19 @@ class PayrollRulesConfigTest {
   @DisplayName("Should validate HR workflow configuration")
   void shouldValidateHRWorkflowConfiguration() {
     // Expected HR workflow settings
-    Map<String, String> expectedPriorityMapping = Map.of(
-        "REGULATORY", "CRITICAL",
-        "BUSINESS", "HIGH",
-        "INFORMATIONAL", "MEDIUM"
-    );
+    Map<String, String> expectedPriorityMapping =
+        Map.of(
+            "REGULATORY", "CRITICAL",
+            "BUSINESS", "HIGH",
+            "INFORMATIONAL", "MEDIUM");
 
-    Map<String, Integer> expectedCorrectionTimes = Map.of(
-        "FORMAT", 5,
-        "RANGE", 10,
-        "COMPLIANCE", 30,
-        "UNIQUENESS", 60,
-        "COMPLETENESS", 15
-    );
+    Map<String, Integer> expectedCorrectionTimes =
+        Map.of(
+            "FORMAT", 5,
+            "RANGE", 10,
+            "COMPLIANCE", 30,
+            "UNIQUENESS", 60,
+            "COMPLETENESS", 15);
 
     // TODO: This assertion will fail until HR workflow config is implemented
     // HRWorkflowConfig hrConfig = rulesConfig.getHRWorkflowConfig();
@@ -287,12 +297,14 @@ class PayrollRulesConfigTest {
 
     // For now, verify rule types exist in JSON
     for (String ruleType : expectedRuleTypes) {
-      assertTrue(configJson.contains("\"" + ruleType + "\""),
+      assertTrue(
+          configJson.contains("\"" + ruleType + "\""),
           "Configuration should contain rule type " + ruleType);
     }
 
     for (String complianceLevel : expectedComplianceLevels) {
-      assertTrue(configJson.contains("\"" + complianceLevel + "\""),
+      assertTrue(
+          configJson.contains("\"" + complianceLevel + "\""),
           "Configuration should contain compliance level " + complianceLevel);
     }
   }
@@ -359,7 +371,8 @@ class PayrollRulesConfigTest {
     // TODO: This assertion will fail until field grouping is implemented
     // Map<String, List<PayrollQualityRule>> rulesByField = rulesConfig.getRulesByField();
     // assertEquals(3, rulesByField.get("ssn").size(), "SSN should have 3 validation rules");
-    // assertEquals(2, rulesByField.get("first_name,last_name").size(), "Names should have 2 validation rules");
+    // assertEquals(2, rulesByField.get("first_name,last_name").size(), "Names should have 2
+    // validation rules");
 
     // For now, verify field groupings exist in JSON
     for (String ruleId : ssnRules) {

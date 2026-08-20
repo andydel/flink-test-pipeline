@@ -2,7 +2,6 @@ package com.flinkpipeline.payroll.integration;
 
 import com.flinkpipeline.payroll.config.PayrollPipelineConfig;
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -22,9 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.KafkaContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 
-/**
- * Integration test helper for setting up test infrastructure and collecting results.
- */
+/** Integration test helper for setting up test infrastructure and collecting results. */
 public class IntegrationTestHelper {
 
   private static final Logger LOG = LoggerFactory.getLogger(IntegrationTestHelper.class);
@@ -40,20 +37,17 @@ public class IntegrationTestHelper {
   private long failedRecordsCount = 0;
   private Duration processingLatency = Duration.ZERO;
 
-  public IntegrationTestHelper(PayrollPipelineConfig config,
-                              KafkaContainer kafkaContainer,
-                              PostgreSQLContainer<?> postgresContainer) {
+  public IntegrationTestHelper(
+      PayrollPipelineConfig config,
+      KafkaContainer kafkaContainer,
+      PostgreSQLContainer<?> postgresContainer) {
     this.config = config;
     this.kafkaContainer = kafkaContainer;
     this.postgresContainer = postgresContainer;
-    this.httpClient = HttpClient.newBuilder()
-        .timeout(Duration.ofSeconds(30))
-        .build();
+    this.httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(30)).build();
   }
 
-  /**
-   * Setup Kafka topics for testing
-   */
+  /** Setup Kafka topics for testing */
   public void setupKafkaTopics() throws Exception {
     LOG.info("Setting up Kafka topics for testing");
 
@@ -63,9 +57,7 @@ public class IntegrationTestHelper {
     LOG.info("Kafka topics setup completed");
   }
 
-  /**
-   * Setup Iceberg tables for testing
-   */
+  /** Setup Iceberg tables for testing */
   public void setupIcebergTables() throws Exception {
     LOG.info("Setting up Iceberg tables for testing");
 
@@ -75,9 +67,7 @@ public class IntegrationTestHelper {
     LOG.info("Iceberg tables setup completed");
   }
 
-  /**
-   * Send test records to Kafka
-   */
+  /** Send test records to Kafka */
   public void sendRecordsToKafka(List<PayrollEmployee> records) throws Exception {
     LOG.info("Sending {} records to Kafka", records.size());
 
@@ -86,11 +76,9 @@ public class IntegrationTestHelper {
     try (KafkaProducer<String, String> producer = new KafkaProducer<>(producerProps)) {
       for (PayrollEmployee record : records) {
         String recordJson = convertToJson(record);
-        ProducerRecord<String, String> kafkaRecord = new ProducerRecord<>(
-            "payroll-employees",
-            record.getEmployeeId().toString(),
-            recordJson
-        );
+        ProducerRecord<String, String> kafkaRecord =
+            new ProducerRecord<>(
+                "payroll-employees", record.getEmployeeId().toString(), recordJson);
 
         producer.send(kafkaRecord).get(); // Synchronous send for testing
       }
@@ -101,10 +89,9 @@ public class IntegrationTestHelper {
     LOG.info("Successfully sent {} records to Kafka", records.size());
   }
 
-  /**
-   * Send records to Kafka in batches
-   */
-  public void sendRecordsToKafkaInBatches(List<PayrollEmployee> records, int batchSize) throws Exception {
+  /** Send records to Kafka in batches */
+  public void sendRecordsToKafkaInBatches(List<PayrollEmployee> records, int batchSize)
+      throws Exception {
     LOG.info("Sending {} records to Kafka in batches of {}", records.size(), batchSize);
 
     for (int i = 0; i < records.size(); i += batchSize) {
@@ -120,9 +107,7 @@ public class IntegrationTestHelper {
     LOG.info("Completed sending all records in batches");
   }
 
-  /**
-   * Collect integration test results
-   */
+  /** Collect integration test results */
   public PayrollPipelineIntegrationTest.IntegrationTestResults collectResults() {
     LOG.info("Collecting integration test results");
 
@@ -136,14 +121,14 @@ public class IntegrationTestHelper {
         new PayrollPipelineIntegrationTest.ErrorHandlingMetrics(
             failedRecordsCount,
             failedRecordsCount / 2, // Assume half were retried
-            failedRecordsCount / 4  // Assume quarter went to DLQ
-        );
+            failedRecordsCount / 4 // Assume quarter went to DLQ
+            );
 
     PayrollPipelineIntegrationTest.CheckpointMetrics checkpointMetrics =
         new PayrollPipelineIntegrationTest.CheckpointMetrics(
             5, // Simulated completed checkpoints
-            0  // No failed checkpoints
-        );
+            0 // No failed checkpoints
+            );
 
     return new PayrollPipelineIntegrationTest.IntegrationTestResults(
         totalRecordsProcessed,
@@ -151,13 +136,10 @@ public class IntegrationTestHelper {
         failedRecordsCount,
         processingLatency,
         errorMetrics,
-        checkpointMetrics
-    );
+        checkpointMetrics);
   }
 
-  /**
-   * Count records stored in Iceberg
-   */
+  /** Count records stored in Iceberg */
   public long countIcebergRecords() {
     // Simulate Iceberg record count
     // In real implementation, would query Iceberg tables
@@ -166,9 +148,7 @@ public class IntegrationTestHelper {
     return icebergRecords;
   }
 
-  /**
-   * Count audit logs
-   */
+  /** Count audit logs */
   public long countAuditLogs() {
     // Simulate audit log count
     long auditLogs = totalRecordsProcessed * 2; // Assume 2 audit logs per record
@@ -176,44 +156,34 @@ public class IntegrationTestHelper {
     return auditLogs;
   }
 
-  /**
-   * Count failed records
-   */
+  /** Count failed records */
   public long countFailedRecords() {
     LOG.debug("Failed records count: {}", failedRecordsCount);
     return failedRecordsCount;
   }
 
-  /**
-   * Count compliance violations
-   */
+  /** Count compliance violations */
   public long countComplianceViolations() {
     long violations = failedRecordsCount / 3; // Assume third of failures are compliance violations
     LOG.debug("Compliance violations count: {}", violations);
     return violations;
   }
 
-  /**
-   * Count PII access logs
-   */
+  /** Count PII access logs */
   public long countPIIAccessLogs() {
     long piiLogs = totalRecordsProcessed; // Assume one PII access log per processed record
     LOG.debug("PII access logs count: {}", piiLogs);
     return piiLogs;
   }
 
-  /**
-   * Count compliance audits
-   */
+  /** Count compliance audits */
   public long countComplianceAudits() {
     long complianceAudits = totalRecordsProcessed + failedRecordsCount;
     LOG.debug("Compliance audits count: {}", complianceAudits);
     return complianceAudits;
   }
 
-  /**
-   * Get stored records (for security verification)
-   */
+  /** Get stored records (for security verification) */
   public List<String> getStoredRecords() {
     // Simulate getting stored records
     // In real implementation, would query storage systems
@@ -221,16 +191,21 @@ public class IntegrationTestHelper {
 
     for (int i = 0; i < Math.min(10, validRecordsCount); i++) {
       // Simulate encrypted record (SSN and email should be encrypted)
-      records.add("{\"employeeId\":" + (10000 + i) + ",\"firstName\":\"John\",\"lastName\":\"Doe\"," +
-                  "\"ssn\":\"encrypted_ssn_" + i + "\",\"email\":\"encrypted_email_" + i + "\"}");
+      records.add(
+          "{\"employeeId\":"
+              + (10000 + i)
+              + ",\"firstName\":\"John\",\"lastName\":\"Doe\","
+              + "\"ssn\":\"encrypted_ssn_"
+              + i
+              + "\",\"email\":\"encrypted_email_"
+              + i
+              + "\"}");
     }
 
     return records;
   }
 
-  /**
-   * Check health endpoints
-   */
+  /** Check health endpoints */
   public PayrollPipelineIntegrationTest.HealthCheckResults checkHealthEndpoints() {
     LOG.info("Checking health endpoints");
 
@@ -248,9 +223,7 @@ public class IntegrationTestHelper {
     }
   }
 
-  /**
-   * Collect metrics
-   */
+  /** Collect metrics */
   public PayrollPipelineIntegrationTest.MetricsResults collectMetrics() {
     LOG.info("Collecting metrics");
 
@@ -259,26 +232,25 @@ public class IntegrationTestHelper {
     metrics.put("records_valid", validRecordsCount);
     metrics.put("records_failed", failedRecordsCount);
     metrics.put("processing_latency_ms", processingLatency.toMillis());
-    metrics.put("validation_success_rate", validRecordsCount > 0 ? (double) validRecordsCount / totalRecordsProcessed : 0.0);
+    metrics.put(
+        "validation_success_rate",
+        validRecordsCount > 0 ? (double) validRecordsCount / totalRecordsProcessed : 0.0);
 
     return new PayrollPipelineIntegrationTest.MetricsResults(metrics);
   }
 
-  /**
-   * Get resource metrics
-   */
+  /** Get resource metrics */
   public PayrollPipelineIntegrationTest.ResourceMetrics getResourceMetrics() {
     // Simulate resource metrics
     Runtime runtime = Runtime.getRuntime();
-    double memoryUtilization = (double) (runtime.totalMemory() - runtime.freeMemory()) / runtime.maxMemory();
+    double memoryUtilization =
+        (double) (runtime.totalMemory() - runtime.freeMemory()) / runtime.maxMemory();
     double cpuUtilization = 0.6; // Simulated CPU utilization
 
     return new PayrollPipelineIntegrationTest.ResourceMetrics(cpuUtilization, memoryUtilization);
   }
 
-  /**
-   * Cleanup test data
-   */
+  /** Cleanup test data */
   public void cleanupTestData() {
     LOG.info("Cleaning up test data");
 
@@ -318,9 +290,9 @@ public class IntegrationTestHelper {
     // Simplified JSON conversion for testing
     // In real implementation, would use proper JSON serialization
     return String.format(
-        "{\"employeeId\":%d,\"firstName\":\"%s\",\"lastName\":\"%s\",\"age\":%d," +
-        "\"ssn\":\"%s\",\"hourlyRate\":%d,\"gender\":\"%s\",\"email\":\"%s\"," +
-        "\"sourceSystem\":\"%s\",\"ingestionTimestamp\":\"%s\",\"pipelineVersion\":\"%s\"}",
+        "{\"employeeId\":%d,\"firstName\":\"%s\",\"lastName\":\"%s\",\"age\":%d,"
+            + "\"ssn\":\"%s\",\"hourlyRate\":%d,\"gender\":\"%s\",\"email\":\"%s\","
+            + "\"sourceSystem\":\"%s\",\"ingestionTimestamp\":\"%s\",\"pipelineVersion\":\"%s\"}",
         record.getEmployeeId(),
         record.getFirstName(),
         record.getLastName(),
@@ -331,19 +303,20 @@ public class IntegrationTestHelper {
         record.getEmail(),
         record.getSourceSystem(),
         record.getIngestionTimestamp(),
-        record.getPipelineVersion()
-    );
+        record.getPipelineVersion());
   }
 
   private boolean checkHealthEndpoint(String endpoint) {
     try {
-      HttpRequest request = HttpRequest.newBuilder()
-          .uri(URI.create("http://localhost:8080" + endpoint))
-          .timeout(Duration.ofSeconds(10))
-          .GET()
-          .build();
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(URI.create("http://localhost:8080" + endpoint))
+              .timeout(Duration.ofSeconds(10))
+              .GET()
+              .build();
 
-      HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<String> response =
+          httpClient.send(request, HttpResponse.BodyHandlers.ofString());
       return response.statusCode() == 200;
 
     } catch (Exception e) {

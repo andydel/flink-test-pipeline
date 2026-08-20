@@ -20,17 +20,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * HTTP health check server for the payroll data quality pipeline.
- * Provides comprehensive health monitoring endpoints for container orchestration,
- * load balancers, and monitoring systems (Kubernetes, Docker, AWS ELB).
+ * HTTP health check server for the payroll data quality pipeline. Provides comprehensive health
+ * monitoring endpoints for container orchestration, load balancers, and monitoring systems
+ * (Kubernetes, Docker, AWS ELB).
  *
- * Health Check Categories:
- * - Liveness probe: Basic service availability
- * - Readiness probe: Service ready to accept traffic
- * - Startup probe: Service initialization status
- * - Deep health checks: Component-specific health validation
- * - Dependencies: External system connectivity (Kafka, Iceberg, Schema Registry)
- * - Performance: Resource utilization and performance metrics
+ * <p>Health Check Categories: - Liveness probe: Basic service availability - Readiness probe:
+ * Service ready to accept traffic - Startup probe: Service initialization status - Deep health
+ * checks: Component-specific health validation - Dependencies: External system connectivity (Kafka,
+ * Iceberg, Schema Registry) - Performance: Resource utilization and performance metrics
  */
 public class HealthCheckServer {
 
@@ -68,17 +65,17 @@ public class HealthCheckServer {
     this.enabled = config.isEnabled();
 
     if (enabled) {
-      LOG.info("Initializing HealthCheckServer on port: {}, endpoint: {}",
-               config.getPort(), config.getEndpoint());
+      LOG.info(
+          "Initializing HealthCheckServer on port: {}, endpoint: {}",
+          config.getPort(),
+          config.getEndpoint());
       initializeDefaultHealthChecks();
     } else {
       LOG.info("Health check server disabled");
     }
   }
 
-  /**
-   * Start the health check server
-   */
+  /** Start the health check server */
   public void start() throws IOException {
     if (!enabled) {
       return;
@@ -102,8 +99,7 @@ public class HealthCheckServer {
           this::executeHealthChecks,
           config.getCheckInterval().toSeconds(),
           config.getCheckInterval().toSeconds(),
-          TimeUnit.SECONDS
-      );
+          TimeUnit.SECONDS);
 
       isStarted = true;
       overallStatus = HealthStatus.HEALTHY;
@@ -116,9 +112,7 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Stop the health check server
-   */
+  /** Stop the health check server */
   public void stop() {
     if (!enabled || !isStarted) {
       return;
@@ -147,9 +141,7 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Register HTTP endpoints
-   */
+  /** Register HTTP endpoints */
   private void registerEndpoints() {
     // Main health endpoint
     server.createContext(config.getEndpoint(), new HealthHandler());
@@ -175,31 +167,33 @@ public class HealthCheckServer {
     LOG.info("Registered health check endpoints");
   }
 
-  /**
-   * Initialize default health checks
-   */
+  /** Initialize default health checks */
   private void initializeDefaultHealthChecks() {
     // Basic system health
-    registerHealthCheck("system", () -> {
-      // Check basic system resources
-      Runtime runtime = Runtime.getRuntime();
-      long maxMemory = runtime.maxMemory();
-      long usedMemory = runtime.totalMemory() - runtime.freeMemory();
-      double memoryUsage = (double) usedMemory / maxMemory;
+    registerHealthCheck(
+        "system",
+        () -> {
+          // Check basic system resources
+          Runtime runtime = Runtime.getRuntime();
+          long maxMemory = runtime.maxMemory();
+          long usedMemory = runtime.totalMemory() - runtime.freeMemory();
+          double memoryUsage = (double) usedMemory / maxMemory;
 
-      if (memoryUsage > 0.9) {
-        return false; // Memory usage too high
-      }
+          if (memoryUsage > 0.9) {
+            return false; // Memory usage too high
+          }
 
-      return true;
-    });
+          return true;
+        });
 
     // JVM health
-    registerHealthCheck("jvm", () -> {
-      // Check for excessive GC or other JVM issues
-      long uptime = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
-      return uptime > 1000; // At least 1 second uptime
-    });
+    registerHealthCheck(
+        "jvm",
+        () -> {
+          // Check for excessive GC or other JVM issues
+          long uptime = java.lang.management.ManagementFactory.getRuntimeMXBean().getUptime();
+          return uptime > 1000; // At least 1 second uptime
+        });
 
     // Service state health
     registerHealthCheck("service", () -> isStarted && overallStatus != HealthStatus.STOPPING);
@@ -207,24 +201,18 @@ public class HealthCheckServer {
     LOG.info("Default health checks initialized");
   }
 
-  /**
-   * Register a health check
-   */
+  /** Register a health check */
   public void registerHealthCheck(String name, HealthCheck healthCheck) {
     healthChecks.put(name, healthCheck);
     LOG.debug("Registered health check: {}", name);
   }
 
-  /**
-   * Register a health check with supplier
-   */
+  /** Register a health check with supplier */
   public void registerHealthCheck(String name, Supplier<Boolean> healthSupplier) {
     registerHealthCheck(name, new SupplierHealthCheck(healthSupplier));
   }
 
-  /**
-   * Execute all health checks
-   */
+  /** Execute all health checks */
   private void executeHealthChecks() {
     try {
       Map<String, HealthCheckResult> results = new HashMap<>();
@@ -240,13 +228,9 @@ public class HealthCheckServer {
           boolean healthy = check.check();
           Duration duration = Duration.between(start, Instant.now());
 
-          HealthCheckResult result = new HealthCheckResult(
-              name,
-              healthy,
-              healthy ? "OK" : "FAILED",
-              duration,
-              Instant.now()
-          );
+          HealthCheckResult result =
+              new HealthCheckResult(
+                  name, healthy, healthy ? "OK" : "FAILED", duration, Instant.now());
 
           results.put(name, result);
 
@@ -261,8 +245,10 @@ public class HealthCheckServer {
 
         } catch (Exception e) {
           LOG.warn("Health check '{}' failed with exception", name, e);
-          results.put(name, new HealthCheckResult(
-              name, false, "ERROR: " + e.getMessage(), Duration.ZERO, Instant.now()));
+          results.put(
+              name,
+              new HealthCheckResult(
+                  name, false, "ERROR: " + e.getMessage(), Duration.ZERO, Instant.now()));
           allHealthy = false;
         }
       }
@@ -286,37 +272,29 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Check if a health check represents a degraded (non-critical) failure
-   */
+  /** Check if a health check represents a degraded (non-critical) failure */
   private boolean isDegraded(String checkName) {
     // Define which checks are non-critical
     return checkName.equals("metrics") || checkName.equals("monitoring");
   }
 
-  /**
-   * Get current health status
-   */
+  /** Get current health status */
   public HealthStatus getHealthStatus() {
     return overallStatus;
   }
 
-  /**
-   * Get all health check results
-   */
+  /** Get all health check results */
   public Map<String, HealthCheckResult> getHealthResults() {
     return new HashMap<>(healthResults);
   }
 
-  /**
-   * Main health endpoint handler
-   */
+  /** Main health endpoint handler */
   private class HealthHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
       try {
-        boolean isHealthy = overallStatus == HealthStatus.HEALTHY ||
-                           overallStatus == HealthStatus.DEGRADED;
+        boolean isHealthy =
+            overallStatus == HealthStatus.HEALTHY || overallStatus == HealthStatus.DEGRADED;
 
         int statusCode = isHealthy ? 200 : 503;
         String response = createHealthResponse();
@@ -325,65 +303,66 @@ public class HealthCheckServer {
 
       } catch (Exception e) {
         LOG.error("Error handling health check request", e);
-        sendResponse(exchange, 500, "{\"status\":\"ERROR\",\"message\":\"Internal server error\"}",
-                    "application/json");
+        sendResponse(
+            exchange,
+            500,
+            "{\"status\":\"ERROR\",\"message\":\"Internal server error\"}",
+            "application/json");
       }
     }
   }
 
-  /**
-   * Liveness probe handler
-   */
+  /** Liveness probe handler */
   private class LivenessHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
       // Liveness probe - service is running
       boolean isAlive = isStarted && overallStatus != HealthStatus.STOPPING;
       int statusCode = isAlive ? 200 : 503;
-      String response = String.format("{\"status\":\"%s\",\"timestamp\":\"%s\"}",
-                                     isAlive ? "ALIVE" : "DEAD", Instant.now());
+      String response =
+          String.format(
+              "{\"status\":\"%s\",\"timestamp\":\"%s\"}",
+              isAlive ? "ALIVE" : "DEAD", Instant.now());
 
       sendResponse(exchange, statusCode, response, "application/json");
     }
   }
 
-  /**
-   * Readiness probe handler
-   */
+  /** Readiness probe handler */
   private class ReadinessHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
       // Readiness probe - service is ready to accept traffic
       boolean isReady = overallStatus == HealthStatus.HEALTHY;
       int statusCode = isReady ? 200 : 503;
-      String response = String.format("{\"status\":\"%s\",\"timestamp\":\"%s\"}",
-                                     isReady ? "READY" : "NOT_READY", Instant.now());
+      String response =
+          String.format(
+              "{\"status\":\"%s\",\"timestamp\":\"%s\"}",
+              isReady ? "READY" : "NOT_READY", Instant.now());
 
       sendResponse(exchange, statusCode, response, "application/json");
     }
   }
 
-  /**
-   * Startup probe handler
-   */
+  /** Startup probe handler */
   private class StartupHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
       // Startup probe - service has finished initialization
       boolean hasStarted = overallStatus != HealthStatus.STARTING;
       int statusCode = hasStarted ? 200 : 503;
-      String response = String.format("{\"status\":\"%s\",\"uptime_seconds\":%d,\"timestamp\":\"%s\"}",
-                                     hasStarted ? "STARTED" : "STARTING",
-                                     Duration.between(startTime, Instant.now()).getSeconds(),
-                                     Instant.now());
+      String response =
+          String.format(
+              "{\"status\":\"%s\",\"uptime_seconds\":%d,\"timestamp\":\"%s\"}",
+              hasStarted ? "STARTED" : "STARTING",
+              Duration.between(startTime, Instant.now()).getSeconds(),
+              Instant.now());
 
       sendResponse(exchange, statusCode, response, "application/json");
     }
   }
 
-  /**
-   * Detailed health check handler
-   */
+  /** Detailed health check handler */
   private class DetailedHealthHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -394,9 +373,7 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Metrics endpoint handler
-   */
+  /** Metrics endpoint handler */
   private class MetricsHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -405,9 +382,7 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Status endpoint handler
-   */
+  /** Status endpoint handler */
   private class StatusHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
@@ -416,15 +391,15 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Create basic health response
-   */
+  /** Create basic health response */
   private String createHealthResponse() {
     StringBuilder json = new StringBuilder();
     json.append("{");
     json.append("\"status\":\"").append(overallStatus).append("\",");
     json.append("\"timestamp\":\"").append(Instant.now()).append("\",");
-    json.append("\"uptime_seconds\":").append(Duration.between(startTime, Instant.now()).getSeconds()).append(",");
+    json.append("\"uptime_seconds\":")
+        .append(Duration.between(startTime, Instant.now()).getSeconds())
+        .append(",");
     json.append("\"checks\":{");
 
     boolean first = true;
@@ -441,15 +416,15 @@ public class HealthCheckServer {
     return json.toString();
   }
 
-  /**
-   * Create detailed health response
-   */
+  /** Create detailed health response */
   private String createDetailedHealthResponse() {
     StringBuilder json = new StringBuilder();
     json.append("{");
     json.append("\"status\":\"").append(overallStatus).append("\",");
     json.append("\"timestamp\":\"").append(Instant.now()).append("\",");
-    json.append("\"uptime_seconds\":").append(Duration.between(startTime, Instant.now()).getSeconds()).append(",");
+    json.append("\"uptime_seconds\":")
+        .append(Duration.between(startTime, Instant.now()).getSeconds())
+        .append(",");
     json.append("\"server_info\":{");
     json.append("\"started\":").append(isStarted).append(",");
     json.append("\"start_time\":\"").append(startTime).append("\"");
@@ -474,42 +449,35 @@ public class HealthCheckServer {
     return json.toString();
   }
 
-  /**
-   * Create metrics response
-   */
+  /** Create metrics response */
   private String createMetricsResponse() {
     Runtime runtime = Runtime.getRuntime();
     return String.format(
-        "{\"jvm\":{\"memory_used\":%d,\"memory_max\":%d,\"memory_free\":%d}," +
-        "\"system\":{\"uptime_seconds\":%d,\"processors\":%d}," +
-        "\"health\":{\"status\": \"%s\",\"checks_total\":%d}}",
+        "{\"jvm\":{\"memory_used\":%d,\"memory_max\":%d,\"memory_free\":%d},"
+            + "\"system\":{\"uptime_seconds\":%d,\"processors\":%d},"
+            + "\"health\":{\"status\": \"%s\",\"checks_total\":%d}}",
         runtime.totalMemory() - runtime.freeMemory(),
         runtime.maxMemory(),
         runtime.freeMemory(),
         Duration.between(startTime, Instant.now()).getSeconds(),
         runtime.availableProcessors(),
         overallStatus,
-        healthResults.size()
-    );
+        healthResults.size());
   }
 
-  /**
-   * Create status response
-   */
+  /** Create status response */
   private String createStatusResponse() {
     return String.format(
         "{\"status\":\"%s\",\"healthy\":%s,\"degraded\":%s,\"timestamp\":\"%s\"}",
         overallStatus,
         overallStatus == HealthStatus.HEALTHY,
         overallStatus == HealthStatus.DEGRADED,
-        Instant.now()
-    );
+        Instant.now());
   }
 
-  /**
-   * Send HTTP response
-   */
-  private void sendResponse(HttpExchange exchange, int statusCode, String response, String contentType)
+  /** Send HTTP response */
+  private void sendResponse(
+      HttpExchange exchange, int statusCode, String response, String contentType)
       throws IOException {
 
     exchange.getResponseHeaders().set("Content-Type", contentType);
@@ -523,17 +491,13 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Health check interface
-   */
+  /** Health check interface */
   @FunctionalInterface
   public interface HealthCheck {
     boolean check() throws Exception;
   }
 
-  /**
-   * Supplier-based health check implementation
-   */
+  /** Supplier-based health check implementation */
   private static class SupplierHealthCheck implements HealthCheck {
     private final Supplier<Boolean> supplier;
 
@@ -547,9 +511,7 @@ public class HealthCheckServer {
     }
   }
 
-  /**
-   * Health check result data class
-   */
+  /** Health check result data class */
   public static class HealthCheckResult {
     private final String name;
     private final boolean healthy;
@@ -557,7 +519,8 @@ public class HealthCheckServer {
     private final Duration duration;
     private final Instant timestamp;
 
-    public HealthCheckResult(String name, boolean healthy, String message, Duration duration, Instant timestamp) {
+    public HealthCheckResult(
+        String name, boolean healthy, String message, Duration duration, Instant timestamp) {
       this.name = name;
       this.healthy = healthy;
       this.message = message;
@@ -565,16 +528,31 @@ public class HealthCheckServer {
       this.timestamp = timestamp;
     }
 
-    public String getName() { return name; }
-    public boolean isHealthy() { return healthy; }
-    public String getMessage() { return message; }
-    public Duration getDuration() { return duration; }
-    public Instant getTimestamp() { return timestamp; }
+    public String getName() {
+      return name;
+    }
+
+    public boolean isHealthy() {
+      return healthy;
+    }
+
+    public String getMessage() {
+      return message;
+    }
+
+    public Duration getDuration() {
+      return duration;
+    }
+
+    public Instant getTimestamp() {
+      return timestamp;
+    }
 
     @Override
     public String toString() {
-      return String.format("HealthCheckResult{name='%s', healthy=%s, message='%s', duration=%s}",
-                          name, healthy, message, duration);
+      return String.format(
+          "HealthCheckResult{name='%s', healthy=%s, message='%s', duration=%s}",
+          name, healthy, message, duration);
     }
   }
 }

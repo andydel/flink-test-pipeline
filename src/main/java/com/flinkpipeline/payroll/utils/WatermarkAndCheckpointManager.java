@@ -20,14 +20,10 @@ import org.slf4j.LoggerFactory;
  * Implements sophisticated event-time processing with late data handling, checkpoint optimization,
  * and SLA-aware watermark advancement for real-time payroll processing.
  *
- * Features:
- * - Adaptive watermark generation based on data patterns
- * - Late data detection and handling with grace periods
- * - SLA-aware watermark advancement for compliance deadlines
- * - Checkpoint coordination with business cycle alignment
- * - Performance-optimized checkpoint triggers
- * - Integration with pipeline state management
- * - Backpressure-aware watermark generation
+ * <p>Features: - Adaptive watermark generation based on data patterns - Late data detection and
+ * handling with grace periods - SLA-aware watermark advancement for compliance deadlines -
+ * Checkpoint coordination with business cycle alignment - Performance-optimized checkpoint triggers
+ * - Integration with pipeline state management - Backpressure-aware watermark generation
  */
 public class WatermarkAndCheckpointManager {
 
@@ -58,28 +54,34 @@ public class WatermarkAndCheckpointManager {
 
   // Constructor
   public WatermarkAndCheckpointManager(CheckpointConfig checkpointConfig) {
-    this(checkpointConfig, Duration.ofMinutes(5), Duration.ofMinutes(10),
-         PAYROLL_PROCESSING_SLA, true);
+    this(
+        checkpointConfig,
+        Duration.ofMinutes(5),
+        Duration.ofMinutes(10),
+        PAYROLL_PROCESSING_SLA,
+        true);
   }
 
-  public WatermarkAndCheckpointManager(CheckpointConfig checkpointConfig,
-                                      Duration maxOutOfOrderness,
-                                      Duration idleTimeout,
-                                      Duration slaDeadline,
-                                      boolean enableAdaptiveWatermarks) {
+  public WatermarkAndCheckpointManager(
+      CheckpointConfig checkpointConfig,
+      Duration maxOutOfOrderness,
+      Duration idleTimeout,
+      Duration slaDeadline,
+      boolean enableAdaptiveWatermarks) {
     this.checkpointConfig = checkpointConfig;
     this.maxOutOfOrderness = maxOutOfOrderness;
     this.idleTimeout = idleTimeout;
     this.slaDeadline = slaDeadline;
     this.enableAdaptiveWatermarks = enableAdaptiveWatermarks;
 
-    LOG.info("Initialized WatermarkAndCheckpointManager - maxOutOfOrderness: {}, idleTimeout: {}, slaDeadline: {}",
-             maxOutOfOrderness, idleTimeout, slaDeadline);
+    LOG.info(
+        "Initialized WatermarkAndCheckpointManager - maxOutOfOrderness: {}, idleTimeout: {}, slaDeadline: {}",
+        maxOutOfOrderness,
+        idleTimeout,
+        slaDeadline);
   }
 
-  /**
-   * Configure checkpointing for the Flink environment
-   */
+  /** Configure checkpointing for the Flink environment */
   public void configureCheckpointing(StreamExecutionEnvironment env) {
     if (!checkpointConfig.isEnabled()) {
       LOG.info("Checkpointing is disabled");
@@ -100,8 +102,8 @@ public class WatermarkAndCheckpointManager {
 
     // Configure cleanup behavior
     config.setExternalizedCheckpointCleanup(
-        org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION
-    );
+        org.apache.flink.streaming.api.environment.CheckpointConfig.ExternalizedCheckpointCleanup
+            .RETAIN_ON_CANCELLATION);
 
     // Enable incremental checkpoints for RocksDB
     if ("rocksdb".equals(checkpointConfig.getStoragePath())) {
@@ -112,77 +114,71 @@ public class WatermarkAndCheckpointManager {
     LOG.info("Checkpointing configured successfully");
   }
 
-  /**
-   * Create adaptive watermark strategy for payroll employee records
-   */
+  /** Create adaptive watermark strategy for payroll employee records */
   public WatermarkStrategy<PayrollEmployee> createPayrollWatermarkStrategy() {
     LOG.info("Creating adaptive watermark strategy for payroll records");
 
     WatermarkStrategy<PayrollEmployee> strategy;
 
     if (enableAdaptiveWatermarks) {
-      strategy = WatermarkStrategy
-          .<PayrollEmployee>forGenerator(new AdaptiveWatermarkGeneratorSupplier())
-          .withTimestampAssigner(new PayrollTimestampAssigner())
-          .withIdleness(idleTimeout);
+      strategy =
+          WatermarkStrategy.<PayrollEmployee>forGenerator(new AdaptiveWatermarkGeneratorSupplier())
+              .withTimestampAssigner(new PayrollTimestampAssigner())
+              .withIdleness(idleTimeout);
     } else {
-      strategy = WatermarkStrategy
-          .<PayrollEmployee>forBoundedOutOfOrderness(maxOutOfOrderness)
-          .withTimestampAssigner(new PayrollTimestampAssigner())
-          .withIdleness(idleTimeout);
+      strategy =
+          WatermarkStrategy.<PayrollEmployee>forBoundedOutOfOrderness(maxOutOfOrderness)
+              .withTimestampAssigner(new PayrollTimestampAssigner())
+              .withIdleness(idleTimeout);
     }
 
     LOG.info("Watermark strategy created with adaptive mode: {}", enableAdaptiveWatermarks);
     return strategy;
   }
 
-  /**
-   * Create SLA-aware watermark strategy for compliance-critical processing
-   */
+  /** Create SLA-aware watermark strategy for compliance-critical processing */
   public WatermarkStrategy<PayrollEmployee> createSLAAwareWatermarkStrategy() {
     LOG.info("Creating SLA-aware watermark strategy");
 
-    return WatermarkStrategy
-        .<PayrollEmployee>forGenerator(new SLAAwareWatermarkGeneratorSupplier())
+    return WatermarkStrategy.<PayrollEmployee>forGenerator(new SLAAwareWatermarkGeneratorSupplier())
         .withTimestampAssigner(new PayrollTimestampAssigner())
         .withIdleness(Duration.ofMinutes(2)); // Shorter idle timeout for SLA compliance
   }
 
-  /**
-   * Timestamp assigner for payroll employee records
-   */
+  /** Timestamp assigner for payroll employee records */
   private class PayrollTimestampAssigner implements SerializableTimestampAssigner<PayrollEmployee> {
     @Override
     public long extractTimestamp(PayrollEmployee record, long recordTimestamp) {
       // Use ingestion timestamp if available, otherwise use processing time
-      long timestamp = record.getIngestionTimestamp() != null ?
-          record.getIngestionTimestamp().toEpochMilli() : System.currentTimeMillis();
+      long timestamp =
+          record.getIngestionTimestamp() != null
+              ? record.getIngestionTimestamp()
+              : System.currentTimeMillis();
 
       // Track late records
       long currentWatermark = lastWatermark.get();
       if (currentWatermark != Long.MIN_VALUE && timestamp < currentWatermark) {
         lateRecordsCount.incrementAndGet();
-        LOG.debug("Late record detected: record timestamp {}, current watermark {}",
-                 Instant.ofEpochMilli(timestamp), Instant.ofEpochMilli(currentWatermark));
+        LOG.debug(
+            "Late record detected: record timestamp {}, current watermark {}",
+            Instant.ofEpochMilli(timestamp),
+            Instant.ofEpochMilli(currentWatermark));
       }
 
       return timestamp;
     }
   }
 
-  /**
-   * Adaptive watermark generator supplier
-   */
-  private class AdaptiveWatermarkGeneratorSupplier implements WatermarkGeneratorSupplier<PayrollEmployee> {
+  /** Adaptive watermark generator supplier */
+  private class AdaptiveWatermarkGeneratorSupplier
+      implements WatermarkGeneratorSupplier<PayrollEmployee> {
     @Override
     public WatermarkGenerator<PayrollEmployee> createWatermarkGenerator(Context context) {
       return new AdaptiveWatermarkGenerator();
     }
   }
 
-  /**
-   * Adaptive watermark generator that adjusts based on data patterns
-   */
+  /** Adaptive watermark generator that adjusts based on data patterns */
   private class AdaptiveWatermarkGenerator implements WatermarkGenerator<PayrollEmployee> {
     private long maxTimestamp = Long.MIN_VALUE;
     private long lastWatermarkTime = Long.MIN_VALUE;
@@ -228,8 +224,10 @@ public class WatermarkAndCheckpointManager {
         lastWatermark.set(newWatermark);
         watermarkUpdates.incrementAndGet();
 
-        LOG.debug("Emitted adaptive watermark: {} (lag: {}ms)",
-                 Instant.ofEpochMilli(newWatermark), adaptiveLag);
+        LOG.debug(
+            "Emitted adaptive watermark: {} (lag: {}ms)",
+            Instant.ofEpochMilli(newWatermark),
+            adaptiveLag);
       }
     }
 
@@ -249,19 +247,16 @@ public class WatermarkAndCheckpointManager {
     }
   }
 
-  /**
-   * SLA-aware watermark generator supplier
-   */
-  private class SLAAwareWatermarkGeneratorSupplier implements WatermarkGeneratorSupplier<PayrollEmployee> {
+  /** SLA-aware watermark generator supplier */
+  private class SLAAwareWatermarkGeneratorSupplier
+      implements WatermarkGeneratorSupplier<PayrollEmployee> {
     @Override
     public WatermarkGenerator<PayrollEmployee> createWatermarkGenerator(Context context) {
       return new SLAAwareWatermarkGenerator();
     }
   }
 
-  /**
-   * SLA-aware watermark generator for compliance-critical processing
-   */
+  /** SLA-aware watermark generator for compliance-critical processing */
   private class SLAAwareWatermarkGenerator implements WatermarkGenerator<PayrollEmployee> {
     private long maxTimestamp = Long.MIN_VALUE;
     private long lastWatermarkTime = Long.MIN_VALUE;
@@ -301,8 +296,10 @@ public class WatermarkAndCheckpointManager {
         lastWatermark.set(newWatermark);
         watermarkUpdates.incrementAndGet();
 
-        LOG.debug("Emitted SLA-aware watermark: {} (lag: {}ms)",
-                 Instant.ofEpochMilli(newWatermark), slaAwareLag);
+        LOG.debug(
+            "Emitted SLA-aware watermark: {} (lag: {}ms)",
+            Instant.ofEpochMilli(newWatermark),
+            slaAwareLag);
       }
     }
 
@@ -321,15 +318,15 @@ public class WatermarkAndCheckpointManager {
         lastWatermark.set(urgentWatermark);
         watermarkUpdates.incrementAndGet();
 
-        LOG.warn("Emitted urgent watermark: {} - Reason: {}",
-                Instant.ofEpochMilli(urgentWatermark), reason);
+        LOG.warn(
+            "Emitted urgent watermark: {} - Reason: {}",
+            Instant.ofEpochMilli(urgentWatermark),
+            reason);
       }
     }
   }
 
-  /**
-   * Checkpoint listener for tracking checkpoint performance
-   */
+  /** Checkpoint listener for tracking checkpoint performance */
   public static class PayrollCheckpointListener implements CheckpointListener {
     private final AtomicLong checkpointCount = new AtomicLong(0);
     private final AtomicLong checkpointFailures = new AtomicLong(0);
@@ -341,13 +338,14 @@ public class WatermarkAndCheckpointManager {
       Instant now = Instant.now();
       Duration checkpointDuration = Duration.between(lastCheckpointTime, now);
 
-      LOG.info("Checkpoint {} completed successfully in {}ms",
-               checkpointId, checkpointDuration.toMillis());
+      LOG.info(
+          "Checkpoint {} completed successfully in {}ms",
+          checkpointId,
+          checkpointDuration.toMillis());
 
       // Track checkpoint performance
       if (checkpointDuration.compareTo(Duration.ofMinutes(2)) > 0) {
-        LOG.warn("Slow checkpoint detected: {} took {}",
-                checkpointId, checkpointDuration);
+        LOG.warn("Slow checkpoint detected: {} took {}", checkpointId, checkpointDuration);
       }
 
       lastCheckpointTime = now;
@@ -370,16 +368,11 @@ public class WatermarkAndCheckpointManager {
 
     public CheckpointMetrics getMetrics() {
       return new CheckpointMetrics(
-          checkpointCount.get(),
-          checkpointFailures.get(),
-          lastCheckpointTime
-      );
+          checkpointCount.get(), checkpointFailures.get(), lastCheckpointTime);
     }
   }
 
-  /**
-   * Trigger checkpoint based on business events
-   */
+  /** Trigger checkpoint based on business events */
   public void triggerBusinessEventCheckpoint(String businessEvent) {
     LOG.info("Triggering checkpoint for business event: {}", businessEvent);
 
@@ -388,9 +381,7 @@ public class WatermarkAndCheckpointManager {
     LOG.info("Business event checkpoint triggered: {}", businessEvent);
   }
 
-  /**
-   * Check if checkpoint is needed based on business schedule
-   */
+  /** Check if checkpoint is needed based on business schedule */
   public boolean shouldTriggerScheduledCheckpoint() {
     Instant now = Instant.now();
 
@@ -410,9 +401,7 @@ public class WatermarkAndCheckpointManager {
     return false;
   }
 
-  /**
-   * Get watermark and checkpoint metrics
-   */
+  /** Get watermark and checkpoint metrics */
   public WatermarkCheckpointMetrics getMetrics() {
     return new WatermarkCheckpointMetrics(
         lastWatermark.get(),
@@ -421,13 +410,10 @@ public class WatermarkAndCheckpointManager {
         checkpointCount.get(),
         checkpointFailures.get(),
         lastCheckpointTime,
-        lastCheckpointDuration
-    );
+        lastCheckpointDuration);
   }
 
-  /**
-   * Reset metrics (useful for testing)
-   */
+  /** Reset metrics (useful for testing) */
   public void resetMetrics() {
     lastWatermark.set(Long.MIN_VALUE);
     watermarkUpdates.set(0);
@@ -438,23 +424,30 @@ public class WatermarkAndCheckpointManager {
     lastCheckpointDuration = Duration.ZERO;
   }
 
-  /**
-   * Checkpoint metrics data class
-   */
+  /** Checkpoint metrics data class */
   public static class CheckpointMetrics {
     private final long completedCheckpoints;
     private final long failedCheckpoints;
     private final Instant lastCheckpointTime;
 
-    public CheckpointMetrics(long completedCheckpoints, long failedCheckpoints, Instant lastCheckpointTime) {
+    public CheckpointMetrics(
+        long completedCheckpoints, long failedCheckpoints, Instant lastCheckpointTime) {
       this.completedCheckpoints = completedCheckpoints;
       this.failedCheckpoints = failedCheckpoints;
       this.lastCheckpointTime = lastCheckpointTime;
     }
 
-    public long getCompletedCheckpoints() { return completedCheckpoints; }
-    public long getFailedCheckpoints() { return failedCheckpoints; }
-    public Instant getLastCheckpointTime() { return lastCheckpointTime; }
+    public long getCompletedCheckpoints() {
+      return completedCheckpoints;
+    }
+
+    public long getFailedCheckpoints() {
+      return failedCheckpoints;
+    }
+
+    public Instant getLastCheckpointTime() {
+      return lastCheckpointTime;
+    }
 
     public double getSuccessRate() {
       long total = completedCheckpoints + failedCheckpoints;
@@ -463,14 +456,13 @@ public class WatermarkAndCheckpointManager {
 
     @Override
     public String toString() {
-      return String.format("CheckpointMetrics{completed=%d, failed=%d, successRate=%.2f%%, lastTime=%s}",
-                          completedCheckpoints, failedCheckpoints, getSuccessRate() * 100, lastCheckpointTime);
+      return String.format(
+          "CheckpointMetrics{completed=%d, failed=%d, successRate=%.2f%%, lastTime=%s}",
+          completedCheckpoints, failedCheckpoints, getSuccessRate() * 100, lastCheckpointTime);
     }
   }
 
-  /**
-   * Combined watermark and checkpoint metrics
-   */
+  /** Combined watermark and checkpoint metrics */
   public static class WatermarkCheckpointMetrics {
     private final long lastWatermark;
     private final long watermarkUpdates;
@@ -480,9 +472,14 @@ public class WatermarkAndCheckpointManager {
     private final Instant lastCheckpointTime;
     private final Duration lastCheckpointDuration;
 
-    public WatermarkCheckpointMetrics(long lastWatermark, long watermarkUpdates, long lateRecords,
-                                     long checkpointCount, long checkpointFailures,
-                                     Instant lastCheckpointTime, Duration lastCheckpointDuration) {
+    public WatermarkCheckpointMetrics(
+        long lastWatermark,
+        long watermarkUpdates,
+        long lateRecords,
+        long checkpointCount,
+        long checkpointFailures,
+        Instant lastCheckpointTime,
+        Duration lastCheckpointDuration) {
       this.lastWatermark = lastWatermark;
       this.watermarkUpdates = watermarkUpdates;
       this.lateRecords = lateRecords;
@@ -492,13 +489,33 @@ public class WatermarkAndCheckpointManager {
       this.lastCheckpointDuration = lastCheckpointDuration;
     }
 
-    public long getLastWatermark() { return lastWatermark; }
-    public long getWatermarkUpdates() { return watermarkUpdates; }
-    public long getLateRecords() { return lateRecords; }
-    public long getCheckpointCount() { return checkpointCount; }
-    public long getCheckpointFailures() { return checkpointFailures; }
-    public Instant getLastCheckpointTime() { return lastCheckpointTime; }
-    public Duration getLastCheckpointDuration() { return lastCheckpointDuration; }
+    public long getLastWatermark() {
+      return lastWatermark;
+    }
+
+    public long getWatermarkUpdates() {
+      return watermarkUpdates;
+    }
+
+    public long getLateRecords() {
+      return lateRecords;
+    }
+
+    public long getCheckpointCount() {
+      return checkpointCount;
+    }
+
+    public long getCheckpointFailures() {
+      return checkpointFailures;
+    }
+
+    public Instant getLastCheckpointTime() {
+      return lastCheckpointTime;
+    }
+
+    public Duration getLastCheckpointDuration() {
+      return lastCheckpointDuration;
+    }
 
     public double getCheckpointSuccessRate() {
       long total = checkpointCount + checkpointFailures;
@@ -508,10 +525,13 @@ public class WatermarkAndCheckpointManager {
     @Override
     public String toString() {
       return String.format(
-          "WatermarkCheckpointMetrics{watermark=%s, updates=%d, lateRecords=%d, " +
-          "checkpoints=%d, failures=%d, successRate=%.2f%%}",
+          "WatermarkCheckpointMetrics{watermark=%s, updates=%d, lateRecords=%d, "
+              + "checkpoints=%d, failures=%d, successRate=%.2f%%}",
           lastWatermark != Long.MIN_VALUE ? Instant.ofEpochMilli(lastWatermark) : "NONE",
-          watermarkUpdates, lateRecords, checkpointCount, checkpointFailures,
+          watermarkUpdates,
+          lateRecords,
+          checkpointCount,
+          checkpointFailures,
           getCheckpointSuccessRate() * 100);
     }
   }

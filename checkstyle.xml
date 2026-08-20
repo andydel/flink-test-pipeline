@@ -316,10 +316,4 @@
         </module>
     </module>
 
-    <!-- Suppress warnings for test files -->
-    <module name="SuppressionFilter">
-        <property name="file" value="${org.checkstyle.google.suppressionfilter.config}"/>
-        <property name="optional" value="true"/>
-    </module>
-
 </module>

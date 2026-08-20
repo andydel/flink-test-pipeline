@@ -1,17 +1,17 @@
 package com.flinkpipeline.payroll.integration;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.flinkpipeline.payroll.PayrollDataQualityPipeline;
 import com.flinkpipeline.payroll.config.PayrollPipelineConfig;
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.utils.HealthCheckServer;
-import com.flinkpipeline.payroll.utils.MetricsCollector;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.runtime.testutils.MiniClusterResourceConfiguration;
 import org.apache.flink.test.util.MiniClusterWithClientResource;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -28,22 +28,16 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * Comprehensive integration testing framework for the payroll data quality pipeline.
- * Tests end-to-end functionality including data ingestion, validation, routing, storage,
- * error handling, monitoring, and compliance features using containerized infrastructure.
+ * Comprehensive integration testing framework for the payroll data quality pipeline. Tests
+ * end-to-end functionality including data ingestion, validation, routing, storage, error handling,
+ * monitoring, and compliance features using containerized infrastructure.
  *
- * Test Categories:
- * - End-to-end pipeline processing with real data flows
- * - Error handling and recovery scenarios
- * - Performance and scalability under load
- * - Security and compliance validation
- * - Integration with external systems (Kafka, Iceberg, Schema Registry)
- * - Monitoring and alerting functionality
- * - Business logic validation with regulatory compliance
- * - Disaster recovery and failover scenarios
+ * <p>Test Categories: - End-to-end pipeline processing with real data flows - Error handling and
+ * recovery scenarios - Performance and scalability under load - Security and compliance validation
+ * - Integration with external systems (Kafka, Iceberg, Schema Registry) - Monitoring and alerting
+ * functionality - Business logic validation with regulatory compliance - Disaster recovery and
+ * failover scenarios
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Testcontainers
@@ -53,10 +47,11 @@ public class PayrollPipelineIntegrationTest {
 
   // Flink test cluster
   private static final MiniClusterWithClientResource FLINK_CLUSTER =
-      new MiniClusterWithClientResource.Builder()
-          .setNumberTaskManagers(2)
-          .setNumberSlotsPerTaskManager(4)
-          .build();
+      new MiniClusterWithClientResource(
+          new MiniClusterResourceConfiguration.Builder()
+              .setNumberTaskManagers(2)
+              .setNumberSlotsPerTaskManager(4)
+              .build());
 
   // Test containers
   @Container
@@ -141,9 +136,7 @@ public class PayrollPipelineIntegrationTest {
     LOG.info("Individual test teardown completed");
   }
 
-  /**
-   * Test end-to-end pipeline processing with valid records
-   */
+  /** Test end-to-end pipeline processing with valid records */
   @Test
   @Timeout(value = 5, unit = TimeUnit.MINUTES)
   void testEndToEndProcessingWithValidRecords() throws Exception {
@@ -158,13 +151,15 @@ public class PayrollPipelineIntegrationTest {
     // Start pipeline
     pipeline = new PayrollDataQualityPipeline(testConfig);
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for processing
     Thread.sleep(30000); // 30 seconds
@@ -175,7 +170,8 @@ public class PayrollPipelineIntegrationTest {
     // Assertions
     assertEquals(100, results.getTotalRecordsProcessed(), "Should process all input records");
     assertTrue(results.getValidRecordsCount() >= 90, "Should have high validation success rate");
-    assertTrue(results.getProcessingLatency().toMillis() < 10000, "Should process within 10 seconds");
+    assertTrue(
+        results.getProcessingLatency().toMillis() < 10000, "Should process within 10 seconds");
 
     // Verify data in Iceberg
     long icebergRecords = testHelper.countIcebergRecords();
@@ -188,9 +184,7 @@ public class PayrollPipelineIntegrationTest {
     LOG.info("End-to-end processing test completed successfully");
   }
 
-  /**
-   * Test error handling with invalid records
-   */
+  /** Test error handling with invalid records */
   @Test
   @Timeout(value = 3, unit = TimeUnit.MINUTES)
   void testErrorHandlingWithInvalidRecords() throws Exception {
@@ -205,13 +199,15 @@ public class PayrollPipelineIntegrationTest {
     // Start pipeline
     pipeline = new PayrollDataQualityPipeline(testConfig);
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for processing
     Thread.sleep(20000); // 20 seconds
@@ -222,7 +218,8 @@ public class PayrollPipelineIntegrationTest {
     // Assertions
     assertEquals(50, results.getTotalRecordsProcessed(), "Should process all input records");
     assertTrue(results.getFailedRecordsCount() >= 40, "Should detect validation failures");
-    assertTrue(results.getErrorHandlingMetrics().getTotalErrorsHandled() > 0, "Should handle errors");
+    assertTrue(
+        results.getErrorHandlingMetrics().getTotalErrorsHandled() > 0, "Should handle errors");
 
     // Verify failed records are routed correctly
     long failedRecords = testHelper.countFailedRecords();
@@ -235,9 +232,7 @@ public class PayrollPipelineIntegrationTest {
     LOG.info("Error handling test completed successfully");
   }
 
-  /**
-   * Test performance under load
-   */
+  /** Test performance under load */
   @Test
   @Timeout(value = 10, unit = TimeUnit.MINUTES)
   void testPerformanceUnderLoad() throws Exception {
@@ -254,13 +249,15 @@ public class PayrollPipelineIntegrationTest {
 
     Instant startTime = Instant.now();
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for processing with periodic monitoring
     Duration processingTime = monitorProcessingProgress(10000, Duration.ofMinutes(8));
@@ -280,15 +277,16 @@ public class PayrollPipelineIntegrationTest {
     // Resource utilization should be reasonable
     ResourceMetrics resourceMetrics = testHelper.getResourceMetrics();
     assertTrue(resourceMetrics.getCpuUtilization() < 0.9, "CPU utilization should be under 90%");
-    assertTrue(resourceMetrics.getMemoryUtilization() < 0.8, "Memory utilization should be under 80%");
+    assertTrue(
+        resourceMetrics.getMemoryUtilization() < 0.8, "Memory utilization should be under 80%");
 
-    LOG.info("Performance test completed - Throughput: {:.2f} records/second, Processing time: {}",
-             throughput, processingTime);
+    LOG.info(
+        "Performance test completed - Throughput: {:.2f} records/second, Processing time: {}",
+        throughput,
+        processingTime);
   }
 
-  /**
-   * Test security and compliance features
-   */
+  /** Test security and compliance features */
   @Test
   @Timeout(value = 3, unit = TimeUnit.MINUTES)
   void testSecurityAndCompliance() throws Exception {
@@ -304,13 +302,15 @@ public class PayrollPipelineIntegrationTest {
     PayrollPipelineConfig secureConfig = createSecureTestConfiguration();
     pipeline = new PayrollDataQualityPipeline(secureConfig);
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for processing
     Thread.sleep(30000); // 30 seconds
@@ -336,9 +336,7 @@ public class PayrollPipelineIntegrationTest {
     LOG.info("Security and compliance test completed successfully");
   }
 
-  /**
-   * Test health monitoring and alerting
-   */
+  /** Test health monitoring and alerting */
   @Test
   @Timeout(value = 2, unit = TimeUnit.MINUTES)
   void testHealthMonitoringAndAlerting() throws Exception {
@@ -347,13 +345,15 @@ public class PayrollPipelineIntegrationTest {
     // Start pipeline
     pipeline = new PayrollDataQualityPipeline(testConfig);
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for pipeline to start
     Thread.sleep(10000); // 10 seconds
@@ -379,9 +379,7 @@ public class PayrollPipelineIntegrationTest {
     LOG.info("Health monitoring test completed successfully");
   }
 
-  /**
-   * Test disaster recovery and failover
-   */
+  /** Test disaster recovery and failover */
   @Test
   @Timeout(value = 5, unit = TimeUnit.MINUTES)
   void testDisasterRecoveryAndFailover() throws Exception {
@@ -396,13 +394,15 @@ public class PayrollPipelineIntegrationTest {
     // Start pipeline
     pipeline = new PayrollDataQualityPipeline(testConfig);
 
-    CompletableFuture<Void> pipelineExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> pipelineExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for initial processing
     Thread.sleep(15000); // 15 seconds
@@ -417,13 +417,15 @@ public class PayrollPipelineIntegrationTest {
     Thread.sleep(5000); // 5 seconds
     pipeline = new PayrollDataQualityPipeline(testConfig);
 
-    CompletableFuture<Void> recoveryExecution = CompletableFuture.runAsync(() -> {
-      try {
-        pipeline.start();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
+    CompletableFuture<Void> recoveryExecution =
+        CompletableFuture.runAsync(
+            () -> {
+              try {
+                pipeline.start();
+              } catch (Exception e) {
+                throw new RuntimeException(e);
+              }
+            });
 
     // Wait for recovery processing
     Thread.sleep(30000); // 30 seconds
@@ -432,10 +434,13 @@ public class PayrollPipelineIntegrationTest {
     IntegrationTestResults results = testHelper.collectResults();
 
     // Should process all records despite the interruption
-    assertEquals(200, results.getTotalRecordsProcessed(), "Should process all records after recovery");
+    assertEquals(
+        200, results.getTotalRecordsProcessed(), "Should process all records after recovery");
 
     // Verify checkpoint recovery
-    assertTrue(results.getCheckpointMetrics().getCompletedCheckpoints() > 0, "Should have completed checkpoints");
+    assertTrue(
+        results.getCheckpointMetrics().getCompletedCheckpoints() > 0,
+        "Should have completed checkpoints");
 
     LOG.info("Disaster recovery test completed successfully");
   }
@@ -452,7 +457,8 @@ public class PayrollPipelineIntegrationTest {
     return config;
   }
 
-  private Duration monitorProcessingProgress(int expectedRecords, Duration timeout) throws InterruptedException {
+  private Duration monitorProcessingProgress(int expectedRecords, Duration timeout)
+      throws InterruptedException {
     Instant startTime = Instant.now();
     Instant endTime = startTime.plus(timeout);
 
@@ -478,10 +484,13 @@ public class PayrollPipelineIntegrationTest {
     private final ErrorHandlingMetrics errorHandlingMetrics;
     private final CheckpointMetrics checkpointMetrics;
 
-    public IntegrationTestResults(long totalRecordsProcessed, long validRecordsCount,
-                                 long failedRecordsCount, Duration processingLatency,
-                                 ErrorHandlingMetrics errorHandlingMetrics,
-                                 CheckpointMetrics checkpointMetrics) {
+    public IntegrationTestResults(
+        long totalRecordsProcessed,
+        long validRecordsCount,
+        long failedRecordsCount,
+        Duration processingLatency,
+        ErrorHandlingMetrics errorHandlingMetrics,
+        CheckpointMetrics checkpointMetrics) {
       this.totalRecordsProcessed = totalRecordsProcessed;
       this.validRecordsCount = validRecordsCount;
       this.failedRecordsCount = failedRecordsCount;
@@ -490,12 +499,29 @@ public class PayrollPipelineIntegrationTest {
       this.checkpointMetrics = checkpointMetrics;
     }
 
-    public long getTotalRecordsProcessed() { return totalRecordsProcessed; }
-    public long getValidRecordsCount() { return validRecordsCount; }
-    public long getFailedRecordsCount() { return failedRecordsCount; }
-    public Duration getProcessingLatency() { return processingLatency; }
-    public ErrorHandlingMetrics getErrorHandlingMetrics() { return errorHandlingMetrics; }
-    public CheckpointMetrics getCheckpointMetrics() { return checkpointMetrics; }
+    public long getTotalRecordsProcessed() {
+      return totalRecordsProcessed;
+    }
+
+    public long getValidRecordsCount() {
+      return validRecordsCount;
+    }
+
+    public long getFailedRecordsCount() {
+      return failedRecordsCount;
+    }
+
+    public Duration getProcessingLatency() {
+      return processingLatency;
+    }
+
+    public ErrorHandlingMetrics getErrorHandlingMetrics() {
+      return errorHandlingMetrics;
+    }
+
+    public CheckpointMetrics getCheckpointMetrics() {
+      return checkpointMetrics;
+    }
   }
 
   public static class ErrorHandlingMetrics {
@@ -503,15 +529,24 @@ public class PayrollPipelineIntegrationTest {
     private final long retriesAttempted;
     private final long deadLetterRecords;
 
-    public ErrorHandlingMetrics(long totalErrorsHandled, long retriesAttempted, long deadLetterRecords) {
+    public ErrorHandlingMetrics(
+        long totalErrorsHandled, long retriesAttempted, long deadLetterRecords) {
       this.totalErrorsHandled = totalErrorsHandled;
       this.retriesAttempted = retriesAttempted;
       this.deadLetterRecords = deadLetterRecords;
     }
 
-    public long getTotalErrorsHandled() { return totalErrorsHandled; }
-    public long getRetriesAttempted() { return retriesAttempted; }
-    public long getDeadLetterRecords() { return deadLetterRecords; }
+    public long getTotalErrorsHandled() {
+      return totalErrorsHandled;
+    }
+
+    public long getRetriesAttempted() {
+      return retriesAttempted;
+    }
+
+    public long getDeadLetterRecords() {
+      return deadLetterRecords;
+    }
   }
 
   public static class CheckpointMetrics {
@@ -523,8 +558,13 @@ public class PayrollPipelineIntegrationTest {
       this.failedCheckpoints = failedCheckpoints;
     }
 
-    public long getCompletedCheckpoints() { return completedCheckpoints; }
-    public long getFailedCheckpoints() { return failedCheckpoints; }
+    public long getCompletedCheckpoints() {
+      return completedCheckpoints;
+    }
+
+    public long getFailedCheckpoints() {
+      return failedCheckpoints;
+    }
   }
 
   public static class ResourceMetrics {
@@ -536,8 +576,13 @@ public class PayrollPipelineIntegrationTest {
       this.memoryUtilization = memoryUtilization;
     }
 
-    public double getCpuUtilization() { return cpuUtilization; }
-    public double getMemoryUtilization() { return memoryUtilization; }
+    public double getCpuUtilization() {
+      return cpuUtilization;
+    }
+
+    public double getMemoryUtilization() {
+      return memoryUtilization;
+    }
   }
 
   public static class HealthCheckResults {
@@ -545,16 +590,24 @@ public class PayrollPipelineIntegrationTest {
     private final boolean readinessProbeHealthy;
     private final boolean startupProbeHealthy;
 
-    public HealthCheckResults(boolean livenessProbeHealthy, boolean readinessProbeHealthy,
-                             boolean startupProbeHealthy) {
+    public HealthCheckResults(
+        boolean livenessProbeHealthy, boolean readinessProbeHealthy, boolean startupProbeHealthy) {
       this.livenessProbeHealthy = livenessProbeHealthy;
       this.readinessProbeHealthy = readinessProbeHealthy;
       this.startupProbeHealthy = startupProbeHealthy;
     }
 
-    public boolean isLivenessProbeHealthy() { return livenessProbeHealthy; }
-    public boolean isReadinessProbeHealthy() { return readinessProbeHealthy; }
-    public boolean isStartupProbeHealthy() { return startupProbeHealthy; }
+    public boolean isLivenessProbeHealthy() {
+      return livenessProbeHealthy;
+    }
+
+    public boolean isReadinessProbeHealthy() {
+      return readinessProbeHealthy;
+    }
+
+    public boolean isStartupProbeHealthy() {
+      return startupProbeHealthy;
+    }
   }
 
   public static class MetricsResults {
@@ -564,6 +617,8 @@ public class PayrollPipelineIntegrationTest {
       this.metrics = metrics;
     }
 
-    public Map<String, Object> getMetrics() { return metrics; }
+    public Map<String, Object> getMetrics() {
+      return metrics;
+    }
   }
 }

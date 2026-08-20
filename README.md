@@ -15,11 +15,11 @@ A production-ready Apache Flink streaming pipeline for real-time payroll data qu
 ## Architecture
 
 ```
-Kafka (Payroll Records) → Flink Pipeline → Iceberg (Valid Records)
+Kafka (Payroll Records) → Flink Pipeline → Kafka (Validated Records)
                                       ↓
                                Failed Records → HR Workflow Queues
                                       ↓
-                               Audit Logs → Long-term Storage
+                               Audit Logs → (disabled in this build)
 ```
 
 ### Core Components
@@ -54,28 +54,36 @@ mvn clean package -DskipTests
 ### 3. Start the Complete Environment
 
 ```bash
-# Start all services (Kafka, Schema Registry, Postgres, Flink)
+# Start all services (Kafka, Schema Registry, Iceberg REST catalog, MinIO, Flink)
 docker-compose up -d
 
 # Wait for services to be ready (about 60 seconds)
-docker-compose logs -f payroll-flink-jobmanager
+docker-compose logs -f flink-jobmanager
 ```
 
 ### 4. Deploy the Pipeline
 
 ```bash
 # Copy the JAR to Flink container
-docker cp target/payroll-pipeline-1.0.0.jar payroll-flink-jobmanager:/opt/flink/lib/
+docker cp target/payroll-data-quality-pipeline-1.0.0-SNAPSHOT.jar payroll-flink-jobmanager:/opt/flink/lib/
 
 # Deploy the pipeline
-docker-compose exec payroll-flink-jobmanager flink run \
+docker-compose exec flink-jobmanager flink run \
   -c com.flinkpipeline.payroll.PayrollDataQualityPipeline \
-  /opt/flink/lib/payroll-pipeline-1.0.0.jar \
-  --kafka.bootstrap.servers=kafka:29092 \
-  --kafka.topic=payroll-employees \
-  --schema.registry.url=http://schema-registry:8081 \
-  --iceberg.catalog.uri=jdbc:postgresql://postgres:5432/icebergdb \
-  --security.encryption.enabled=true
+  /opt/flink/lib/payroll-data-quality-pipeline-1.0.0-SNAPSHOT.jar
+```
+
+The jar ships with `src/main/resources/application.properties` baked in, which already
+points at the docker-compose services (Kafka on `kafka:29092`, the Iceberg REST catalog
+at `http://rest:8181`, MinIO as the S3 endpoint, etc.), so no extra flags are required
+for the bundled environment. Any of those keys can still be overridden per run, e.g.:
+
+```bash
+docker-compose exec flink-jobmanager flink run \
+  -c com.flinkpipeline.payroll.PayrollDataQualityPipeline \
+  /opt/flink/lib/payroll-data-quality-pipeline-1.0.0-SNAPSHOT.jar \
+  --payroll.kafka.topics=payroll-employees \
+  --payroll.security.pii.encryption.enabled=true
 ```
 
 ### 5. Send Test Data
@@ -85,7 +93,7 @@ docker-compose exec payroll-flink-jobmanager flink run \
 docker-compose --profile testing up payroll-data-generator
 
 # Or manually send sample payroll records
-docker-compose exec payroll-kafka kafka-console-producer \
+docker-compose exec kafka kafka-console-producer \
   --broker-list kafka:29092 \
   --topic payroll-employees
 ```
@@ -93,8 +101,8 @@ docker-compose exec payroll-kafka kafka-console-producer \
 ### 6. Monitor the Pipeline
 
 ```bash
-# Check Flink Web UI
-open http://localhost:8080
+# Check Flink Web UI (published on 8085, not 8080 - see Docker Compose Services below)
+open http://localhost:8085
 
 # Check Kafka UI
 open http://localhost:8082
@@ -112,84 +120,57 @@ open http://localhost:9090  # Prometheus
 
 The `docker-compose.yml` includes:
 
-- **Flink Cluster**: JobManager and TaskManager for stream processing (port 8080)
+- **Flink Cluster**: JobManager and TaskManager for stream processing (JobManager UI/REST published on host port **8085**, not 8080 - Flink's container-internal REST port 8080 is already in use by the JobManager process itself)
 - **Apache Kafka**: Message broker with Zookeeper (port 9092)
 - **Confluent Schema Registry**: Avro schema management (port 8081)
-- **PostgreSQL**: Iceberg catalog and audit log storage (port 5432)
-- **MinIO**: S3-compatible storage for Iceberg data files (ports 9000, 9001)
-- **LocalStack**: AWS S3 simulation for development (port 4566)
+- **Iceberg REST Catalog**: the catalog implementation the pipeline actually talks to (port 8181)
+- **MinIO**: S3-compatible storage backing the Iceberg warehouse (ports 9000, 9001)
 - **Kafka UI**: Web interface for Kafka debugging (port 8082)
-- **Prometheus**: Metrics collection (port 9090, optional profile)
-- **Grafana**: Monitoring dashboards (port 3000, optional profile)
-- **Data Generator**: Test data generation (optional profile)
+- **Prometheus**: Metrics collection (port 9090, optional `monitoring` profile)
+- **Grafana**: Monitoring dashboards (port 3000, optional `monitoring` profile)
+- **Data Generator**: Test data generation (optional `testing` profile)
+- **Spark/Jupyter**: optional Iceberg-warehouse exploration environment, not required by the pipeline (ports 8888, 8079; optional `notebooks` profile - start with `docker-compose --profile notebooks up -d spark-iceberg`)
 
 ## Configuration
 
+Configuration is loaded, in increasing order of precedence, from: built-in defaults →
+`src/main/resources/application.properties` (bundled in the jar) → a `PAYROLL_*`
+environment variable → an external file passed via `-Dpayroll.config.file=<path>` →
+a `--key=value` command-line argument. See `PayrollPipelineConfig` for the full set of
+supported keys - every key is `payroll.*`-prefixed except for the AWS/S3 (`aws.*`) and
+`kafka.topic.payroll.valid` keys.
+
 ### Environment Variables
 
+Any environment variable prefixed `PAYROLL_` is mapped onto the matching
+`payroll.*` configuration key (`_` becomes `.`, lowercased). For example:
+
 ```bash
-# Kafka Configuration
-KAFKA_BOOTSTRAP_SERVERS=kafka:29092
-KAFKA_TOPIC=payroll-employees
-SCHEMA_REGISTRY_URL=http://schema-registry:8081
+# Overrides payroll.kafka.bootstrap.servers
+PAYROLL_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
 
-# Security Configuration
-SECURITY_ENCRYPTION_ENABLED=true
-SECURITY_RBAC_ENABLED=true
-PII_ENCRYPTION_KEY_ID=payroll-pii-key
+# Overrides payroll.iceberg.rest.uri
+PAYROLL_ICEBERG_REST_URI=http://rest:8181
 
-# Iceberg Configuration
-ICEBERG_CATALOG_URI=jdbc:postgresql://postgres:5432/icebergdb
-ICEBERG_WAREHOUSE_PATH=s3a://payroll-data-lake/warehouse
+# Overrides payroll.security.pii.encryption.enabled
+PAYROLL_SECURITY_PII_ENCRYPTION_ENABLED=true
 
-# MinIO Configuration
-MINIO_ROOT_USER=admin
-MINIO_ROOT_PASSWORD=password
-MINIO_DEFAULT_BUCKETS=payroll-data-lake
-
-# Monitoring
-METRICS_ENABLED=true
-HEALTH_CHECK_PORT=8080
+# Overrides payroll.health.port
+PAYROLL_HEALTH_PORT=8090
 ```
+
+AWS/S3 credentials for the Iceberg catalog are read from the non-prefixed
+`aws.access.key.id` / `aws.secret.access.key` / `aws.region` / `aws.s3.endpoint` /
+`aws.s3.path-style-access` keys, so they can only be overridden via
+`application.properties`, `-Dpayroll.config.file`, or `--aws.access.key.id=...` style
+CLI flags - not via environment variables.
 
 ### Pipeline Configuration
 
-Edit `src/main/resources/pipeline.conf`:
-
-```hocon
-payroll-pipeline {
-  validation {
-    rules {
-      ssn-format.enabled = true
-      age-range.min = 16
-      age-range.max = 75
-      minimum-wage.cents = 725  # $7.25/hour federal minimum
-    }
-
-    duplicate-detection {
-      window-size = "PT10M"  # 10 minutes
-      similarity-threshold = 0.8
-    }
-  }
-
-  security {
-    encryption {
-      algorithm = "AES/GCM/NoPadding"
-      key-size = 256
-    }
-
-    rbac {
-      roles = ["payroll_processor", "hr_manager", "compliance_officer"]
-    }
-  }
-
-  error-handling {
-    max-retries = 3
-    backoff-strategy = "exponential"
-    circuit-breaker.failure-threshold = 10
-  }
-}
-```
+Edit `src/main/resources/application.properties` (plain Java properties format, not
+HOCON) and rebuild, or override individual keys per-run as shown above. Quality rules
+themselves are defined in code in `PayrollPipelineConfig.getDefaultQualityRules()`
+(SSN format, age range, wage compliance, email format) rather than in a config file.
 
 ## Development Setup
 
@@ -197,14 +178,13 @@ payroll-pipeline {
 
 1. **Install Dependencies**:
    ```bash
-   # Start local Kafka and PostgreSQL
-   brew install kafka postgresql
+   # Start local Kafka
+   brew install kafka
    brew services start kafka
-   brew services start postgresql
 
    # Install Flink locally
-   wget https://downloads.apache.org/flink/flink-1.18.0/flink-1.18.0-bin-scala_2.12.tgz
-   tar -xzf flink-1.18.0-bin-scala_2.12.tgz
+   wget https://downloads.apache.org/flink/flink-1.18.1/flink-1.18.1-bin-scala_2.12.tgz
+   tar -xzf flink-1.18.1-bin-scala_2.12.tgz
    ```
 
 2. **Build the Project**:
@@ -214,20 +194,20 @@ payroll-pipeline {
 
 3. **Run Tests**:
    ```bash
-   # Unit tests
+   # All tests (unit + testcontainers-based integration tests under src/test/java,
+   # requires Docker - there is no separate Maven profile splitting the two today)
    mvn test
-
-   # Integration tests (requires Docker for TestContainers)
-   mvn verify -P integration-tests
    ```
 
 4. **Start the Pipeline**:
    ```bash
    # Start Flink cluster
-   ./flink-1.18.0/bin/start-cluster.sh
+   ./flink-1.18.1/bin/start-cluster.sh
 
    # Deploy pipeline
-   ./flink-1.18.0/bin/flink run target/payroll-pipeline-1.0.0.jar
+   ./flink-1.18.1/bin/flink run \
+     -c com.flinkpipeline.payroll.PayrollDataQualityPipeline \
+     target/payroll-data-quality-pipeline-1.0.0-SNAPSHOT.jar
    ```
 
 ## Testing
@@ -239,20 +219,21 @@ mvn test
 
 ### Integration Tests
 ```bash
-# Requires Docker for TestContainers
-mvn verify -P integration-tests
+# testcontainers-based integration tests live under src/test/java too and run as
+# part of `mvn test` - there is no separate Maven profile for them today.
+mvn test
 ```
 
 ### Load Testing
 ```bash
 # Generate 10,000 test records
-docker-compose exec flink-jobmanager java -cp /opt/flink/usrlib/payroll-pipeline.jar \
+docker-compose exec flink-jobmanager java -cp /opt/flink/lib/payroll-data-quality-pipeline-1.0.0-SNAPSHOT.jar \
   com.flinkpipeline.payroll.integration.TestDataGenerator \
   --count=10000 --output=/tmp/load-test-data.json
 
 # Send load test data
 docker-compose exec kafka kafka-console-producer \
-  --broker-list kafka:9092 \
+  --broker-list kafka:29092 \
   --topic payroll-employees < /tmp/load-test-data.json
 ```
 
@@ -260,38 +241,42 @@ docker-compose exec kafka kafka-console-producer \
 
 ### Health Checks
 
+The pipeline's `HealthCheckServer` starts inside whichever process runs
+`PayrollDataQualityPipeline.main()` - the JobManager container, when deployed via
+`flink run` per the Quick Start above - listening on `payroll.health.port` (default
+`8090`, published as `8085:8080`/`8090:8090` on the `flink-jobmanager` service; see
+`docker-compose.yml`). It is independent of Flink's own REST API on 8085.
+
 ```bash
 # Liveness probe
-curl http://localhost:8080/health/live
+curl http://localhost:8090/health/live
 
 # Readiness probe
-curl http://localhost:8080/health/ready
+curl http://localhost:8090/health/ready
 
 # Startup probe
-curl http://localhost:8080/health/startup
+curl http://localhost:8090/health/startup
 ```
 
 ### Metrics
 
-Key metrics exposed at `/metrics`:
-
-- `payroll.records.processed.total`: Total records processed
-- `payroll.records.valid.rate`: Valid record processing rate
-- `payroll.records.failed.total`: Failed record count
-- `payroll.validation.latency.p99`: 99th percentile validation latency
-- `payroll.security.pii.operations.total`: PII access operations
-- `payroll.compliance.violations.total`: Compliance violations detected
+`MetricsCollector` currently only logs metrics via SLF4J
+(`payroll.metrics.reporter=slf4j`); the Prometheus code path
+(`MetricsCollector.reportToPrometheus`) is an explicit placeholder that does not expose
+an HTTP endpoint yet, so there is no `/metrics` endpoint to scrape today.
+`docker/prometheus.yml` self-scrapes Prometheus only until this is wired up (see the
+comment in that file for what's needed to add a real Flink metrics target).
 
 ### Logs
 
 ```bash
 # Pipeline logs
 docker-compose logs -f flink-taskmanager
-
-# Audit logs (compliance)
-docker-compose exec postgres psql -U postgres -d icebergdb \
-  -c "SELECT * FROM audit_logs ORDER BY timestamp DESC LIMIT 10;"
 ```
+
+Note: compliance audit logs are written via the `AuditLogIcebergSinkConnector` into
+an Iceberg table (through the REST catalog / MinIO), not into a separate database -
+there is no `audit_logs` SQL table to query directly.
 
 ## Security
 
@@ -317,15 +302,10 @@ Role-based access control with principle of least privilege:
 
 ### Audit Trail
 
-All operations are logged with tamper-evident features:
-
-```sql
--- View audit trail
-SELECT operation_type, user_id, resource_id, timestamp, checksum
-FROM audit_logs
-WHERE pii_accessed = true
-ORDER BY timestamp DESC;
-```
+Audit records (`ComplianceAuditLog`) are written by `AuditLogIcebergSinkConnector`
+into an Iceberg table via the REST catalog, queryable with any Iceberg-aware engine
+(e.g. the optional `spark-iceberg` notebook environment - see the `notebooks` profile
+above) rather than with a direct SQL client against a database.
 
 ## Compliance
 
@@ -361,10 +341,10 @@ The pipeline implements federal employment law compliance:
 
 3. **Iceberg Table Issues**:
    ```bash
-   # Check Iceberg catalog
-   docker-compose exec postgres psql -U postgres -d icebergdb -c "\dt"
+   # Check the Iceberg REST catalog is up
+   curl http://localhost:8181/v1/config
 
-   # Verify Minio storage
+   # Verify MinIO storage
    docker-compose logs minio
    ```
 
@@ -373,8 +353,8 @@ The pipeline implements federal employment law compliance:
    # Check resource utilization
    docker-compose exec flink-taskmanager top
 
-   # View Flink metrics
-   curl http://localhost:8081/jobs
+   # View running Flink jobs (REST API is on 8085, not 8081 - that's Schema Registry)
+   curl http://localhost:8085/jobs/overview
    ```
 
 ### Debug Mode
@@ -394,28 +374,12 @@ docker-compose down && docker-compose up -d
 
 ### Kubernetes
 
-See `k8s/` directory for Kubernetes manifests:
-
-```bash
-# Deploy to Kubernetes
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmap.yaml
-kubectl apply -f k8s/deployment.yaml
-kubectl apply -f k8s/service.yaml
-kubectl apply -f k8s/ingress.yaml
-```
-
-### Scaling
-
-The pipeline supports horizontal scaling:
-
-```bash
-# Scale TaskManagers
-kubectl scale deployment flink-taskmanager --replicas=5
-
-# Auto-scaling based on CPU/memory
-kubectl apply -f k8s/hpa.yaml
-```
+Kubernetes manifests are not included in this repository yet (there is no `k8s/`
+directory). The pipeline JAR and the corrected `docker/Dockerfile` are a reasonable
+starting point for building a Flink-on-Kubernetes deployment using the [official
+Flink Kubernetes operator](https://nightlies.apache.org/flink/flink-kubernetes-operator-docs-stable/),
+but that manifest set does not exist yet - treat this section as a roadmap item, not
+a working deployment path.
 
 ## Contributing
 

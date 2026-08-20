@@ -12,10 +12,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 /**
- * Test class for age range employment eligibility validation rule (DQ-004).
- * Tests age validation according to employment eligibility requirements (16-75 years).
+ * Test class for age range employment eligibility validation rule (DQ-004). Tests age validation
+ * according to employment eligibility requirements (16-75 years).
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until AgeRangeValidationRule is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until AgeRangeValidationRule is
+ * implemented.
  */
 @DisplayName("Age Range Employment Eligibility Tests")
 class AgeValidationTest {
@@ -41,7 +42,8 @@ class AgeValidationTest {
     // assertFalse(result.hasErrors(), "Age " + validAge + " should not have errors");
 
     // For now, just verify the age is within expected range
-    assertTrue(validAge >= 16 && validAge <= 75,
+    assertTrue(
+        validAge >= 16 && validAge <= 75,
         "Age " + validAge + " should be within employment eligibility range (16-75)");
   }
 
@@ -55,7 +57,8 @@ class AgeValidationTest {
     // assertTrue(result.hasErrors(), "Age " + invalidAge + " should have errors");
 
     // For now, verify they're outside the expected range
-    assertFalse(invalidAge >= 16 && invalidAge <= 75,
+    assertFalse(
+        invalidAge >= 16 && invalidAge <= 75,
         "Age " + invalidAge + " should be outside employment eligibility range (16-75)");
   }
 
@@ -73,7 +76,8 @@ class AgeValidationTest {
 
     // TODO: These assertions will fail until error messages are implemented
     // assertEquals(expectedMessage, errorMessage);
-    // assertTrue(errorMessage.contains("employment eligibility"), "Error should explain employment eligibility");
+    // assertTrue(errorMessage.contains("employment eligibility"), "Error should explain employment
+    // eligibility");
     // assertTrue(errorMessage.contains("16-75"), "Error should include valid age range");
 
     // For now, just verify expected message format
@@ -95,7 +99,8 @@ class AgeValidationTest {
 
     // TODO: These assertions will fail until error messages are implemented
     // assertEquals(expectedMessage, errorMessage);
-    // assertTrue(errorMessage.contains("employment eligibility"), "Error should explain employment eligibility");
+    // assertTrue(errorMessage.contains("employment eligibility"), "Error should explain employment
+    // eligibility");
     // assertTrue(errorMessage.contains("16-75"), "Error should include valid age range");
 
     // For now, verify expected message format
@@ -117,12 +122,13 @@ class AgeValidationTest {
 
     // TODO: These assertions will fail until correction guidance is implemented
     // assertEquals(expectedGuidance, correctionGuidance);
-    // assertTrue(correctionGuidance.contains("legal employment"), "Guidance should mention legal requirements");
+    // assertTrue(correctionGuidance.contains("legal employment"), "Guidance should mention legal
+    // requirements");
     // assertTrue(correctionGuidance.contains("verify"), "Guidance should suggest verification");
 
     // For now, verify expected guidance format
     assertTrue(expectedGuidance.contains("legal employment"));
-    assertTrue(expectedGuidance.contains("verify"));
+    assertTrue(expectedGuidance.toLowerCase().contains("verify"));
   }
 
   @Test
@@ -194,8 +200,10 @@ class AgeValidationTest {
 
     // TODO: These assertions will fail until employment law validation is implemented
     // ValidationResult childResult = ageValidationRule.validate(childLaborAge, validationContext);
-    // ValidationResult standardResult = ageValidationRule.validate(standardMinimumAge, validationContext);
-    // ValidationResult retirementResult = ageValidationRule.validate(retirementAge, validationContext);
+    // ValidationResult standardResult = ageValidationRule.validate(standardMinimumAge,
+    // validationContext);
+    // ValidationResult retirementResult = ageValidationRule.validate(retirementAge,
+    // validationContext);
     // ValidationResult maxResult = ageValidationRule.validate(maxEmploymentAge, validationContext);
 
     // assertFalse(childResult.isValid(), "Age 14 should violate child labor laws");
@@ -206,7 +214,8 @@ class AgeValidationTest {
     // For now, verify the legal framework concepts
     assertTrue(childLaborAge < 16, "Child labor age should be below minimum");
     assertTrue(standardMinimumAge == 16, "Standard minimum should be 16");
-    assertTrue(retirementAge <= maxEmploymentAge, "Retirement age should be within employment range");
+    assertTrue(
+        retirementAge <= maxEmploymentAge, "Retirement age should be within employment range");
   }
 
   @Test
@@ -241,9 +250,11 @@ class AgeValidationTest {
     String expectedFieldName = "age";
     String expectedRuleType = "RANGE";
     String expectedValidationExpression = "age >= 16 && age <= 75";
-    String expectedErrorTemplate = "Age {age} is outside employment eligibility range (16-75 years)";
+    String expectedErrorTemplate =
+        "Age {age} is outside employment eligibility range (16-75 years)";
     String expectedComplianceLevel = "REGULATORY";
-    String expectedCorrectionGuidance = "Verify employee age is correct and within legal employment range";
+    String expectedCorrectionGuidance =
+        "Verify employee age is correct and within legal employment range";
 
     // TODO: These assertions will fail until rule configuration loading is implemented
     // PayrollQualityRule rule = PayrollRuleEngine.getRule(expectedRuleId);
@@ -271,12 +282,14 @@ class AgeValidationTest {
 
     // Test string to integer conversion (if needed)
     String ageString = "25";
-    // ValidationResult stringResult = ageValidationRule.validateFromString(ageString, validationContext);
+    // ValidationResult stringResult = ageValidationRule.validateFromString(ageString,
+    // validationContext);
     // assertTrue(stringResult.isValid(), "Valid age string should be converted and validated");
 
     // Test invalid string formats
     String invalidAgeString = "twenty-five";
-    // ValidationResult invalidStringResult = ageValidationRule.validateFromString(invalidAgeString, validationContext);
+    // ValidationResult invalidStringResult = ageValidationRule.validateFromString(invalidAgeString,
+    // validationContext);
     // assertFalse(invalidStringResult.isValid(), "Invalid age string should fail validation");
 
     // For now, verify input handling concepts
@@ -314,8 +327,7 @@ class AgeValidationTest {
         Arguments.of(76, false, "Above maximum employment age"),
         Arguments.of(80, false, "Well above maximum"),
         Arguments.of(100, false, "Extreme age"),
-        Arguments.of(120, false, "Unrealistic age")
-    );
+        Arguments.of(120, false, "Unrealistic age"));
   }
 
   @Test
@@ -325,7 +337,8 @@ class AgeValidationTest {
     int overageValue = 76;
 
     // TODO: This test will fail until error code generation is implemented
-    // ValidationResult underageResult = ageValidationRule.validate(underageValue, validationContext);
+    // ValidationResult underageResult = ageValidationRule.validate(underageValue,
+    // validationContext);
     // ValidationResult overageResult = ageValidationRule.validate(overageValue, validationContext);
 
     // String underageErrorCode = underageResult.getErrorCode();

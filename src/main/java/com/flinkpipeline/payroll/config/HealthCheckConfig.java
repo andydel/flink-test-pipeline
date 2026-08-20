@@ -2,9 +2,7 @@ package com.flinkpipeline.payroll.config;
 
 import java.time.Duration;
 
-/**
- * Configuration for health check endpoints and monitoring.
- */
+/** Configuration for health check endpoints and monitoring. */
 public class HealthCheckConfig {
   private final boolean enabled;
   private final int port;
@@ -18,8 +16,19 @@ public class HealthCheckConfig {
     this.checkInterval = checkInterval;
   }
 
-  public boolean isEnabled() { return enabled; }
-  public int getPort() { return port; }
-  public String getEndpoint() { return endpoint; }
-  public Duration getCheckInterval() { return checkInterval; }
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public String getEndpoint() {
+    return endpoint;
+  }
+
+  public Duration getCheckInterval() {
+    return checkInterval;
+  }
 }

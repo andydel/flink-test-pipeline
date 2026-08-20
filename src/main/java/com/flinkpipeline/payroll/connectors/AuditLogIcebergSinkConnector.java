@@ -9,12 +9,20 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.data.GenericArrayData;
 import org.apache.flink.table.data.GenericRowData;
 import org.apache.flink.table.data.RowData;
 import org.apache.flink.table.data.StringData;
 import org.apache.flink.table.data.TimestampData;
+import org.apache.flink.table.runtime.typeutils.InternalTypeInfo;
+import org.apache.flink.table.types.logical.ArrayType;
+import org.apache.flink.table.types.logical.IntType;
+import org.apache.flink.table.types.logical.RowType;
+import org.apache.flink.table.types.logical.TimestampType;
+import org.apache.flink.table.types.logical.VarCharType;
+import org.apache.flink.table.types.utils.TypeConversions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,12 +141,68 @@ public class AuditLogIcebergSinkConnector {
       // Create or verify audit log table
       createOrVerifyAuditTable(tableEnv);
 
-      // Convert ComplianceAuditLog to RowData
+      // Convert ComplianceAuditLog to RowData with explicit type information
+      RowType auditRowType =
+          RowType.of(
+              new org.apache.flink.table.types.logical.LogicalType[] {
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new TimestampType(3),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new IntType(),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new ArrayType(new VarCharType(VarCharType.MAX_LENGTH)),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new ArrayType(new VarCharType(VarCharType.MAX_LENGTH)),
+                new TimestampType(3),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new VarCharType(VarCharType.MAX_LENGTH),
+                new IntType(),
+                new IntType(),
+                new IntType(),
+                new IntType(),
+                new IntType()
+              },
+              new String[] {
+                "audit_id",
+                "audit_timestamp",
+                "audit_type",
+                "employee_id",
+                "user_id",
+                "action_performed",
+                "data_classification",
+                "pii_fields",
+                "access_purpose",
+                "processing_context",
+                "system_source",
+                "session_id",
+                "ip_address",
+                "user_agent",
+                "compliance_flags",
+                "retention_expires",
+                "checksum",
+                "metadata_json",
+                "audit_date_epoch",
+                "audit_hour_value",
+                "partition_year",
+                "partition_month",
+                "partition_day"
+              });
+
       DataStream<RowData> rowDataStream =
-          auditStream.map(new AuditLogToRowDataMapper()).name("Convert Audit Log to RowData");
+          auditStream
+              .map(new AuditLogToRowDataMapper())
+              .name("Convert Audit Log to RowData")
+              .returns(InternalTypeInfo.of(auditRowType));
 
       // Configure and create Iceberg sink
-      configureSinkToAuditTable(rowDataStream, tableEnv);
+      configureSinkToAuditTable(rowDataStream, tableEnv, auditRowType);
 
       // Schedule retention and cleanup policies
       scheduleAuditLogMaintenance(tableEnv);
@@ -256,10 +320,10 @@ public class AuditLogIcebergSinkConnector {
           metadata_json STRING,
           audit_date DATE NOT NULL,
           audit_hour INT NOT NULL,
-          year INT NOT NULL,
-          month INT NOT NULL,
-          day INT NOT NULL
-        ) PARTITIONED BY (audit_date, audit_type, year, month)
+          `year` INT NOT NULL,
+          `month` INT NOT NULL,
+          `day` INT NOT NULL
+        ) PARTITIONED BY (audit_date, audit_type, `year`, `month`)
         WITH (
           'format-version' = '2',
           'write.target-file-size-bytes' = '67108864',
@@ -279,11 +343,16 @@ public class AuditLogIcebergSinkConnector {
 
   /** Configure sink to write to audit log table */
   private void configureSinkToAuditTable(
-      DataStream<RowData> rowDataStream, StreamTableEnvironment tableEnv) {
+      DataStream<RowData> rowDataStream, StreamTableEnvironment tableEnv, RowType auditRowType) {
     String fullTableName = String.format("%s.%s.%s", catalogName, databaseName, tableName);
 
     // Create temporary view from stream
-    tableEnv.createTemporaryView("audit_log_stream", rowDataStream);
+    Schema auditStreamSchema =
+        Schema.newBuilder()
+            .fromRowDataType(TypeConversions.fromLogicalToDataType(auditRowType))
+            .build();
+
+    tableEnv.createTemporaryView("audit_log_stream", rowDataStream, auditStreamSchema);
 
     // Configure streaming insert with partition computation
     String insertSql =
@@ -292,7 +361,7 @@ public class AuditLogIcebergSinkConnector {
         INSERT INTO %s
         SELECT
           audit_id,
-          audit_timestamp,
+          CAST(audit_timestamp AS TIMESTAMP(6)) as audit_timestamp,
           audit_type,
           employee_id,
           user_id,
@@ -306,14 +375,14 @@ public class AuditLogIcebergSinkConnector {
           ip_address,
           user_agent,
           compliance_flags,
-          retention_expires,
+          CAST(retention_expires AS TIMESTAMP(6)) as retention_expires,
           checksum,
           metadata_json,
           CAST(audit_timestamp AS DATE) as audit_date,
-          HOUR(audit_timestamp) as audit_hour,
-          YEAR(audit_timestamp) as year,
-          MONTH(audit_timestamp) as month,
-          DAYOFMONTH(audit_timestamp) as day
+          CAST(HOUR(audit_timestamp) AS INT) as audit_hour,
+          CAST(YEAR(audit_timestamp) AS INT) as `year`,
+          CAST(MONTH(audit_timestamp) AS INT) as `month`,
+          CAST(DAYOFMONTH(audit_timestamp) AS INT) as `day`
         FROM audit_log_stream
         """,
             fullTableName);

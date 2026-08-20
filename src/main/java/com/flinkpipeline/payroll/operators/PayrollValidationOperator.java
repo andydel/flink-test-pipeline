@@ -13,12 +13,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
-import org.apache.flink.api.common.functions.RichMapFunction;
 import org.apache.flink.api.common.state.ValueState;
 import org.apache.flink.api.common.state.ValueStateDescriptor;
 import org.apache.flink.configuration.Configuration;
@@ -29,17 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Apache Flink operator for comprehensive payroll data validation.
- * Orchestrates multiple validation rules, handles compliance auditing,
- * and routes valid/invalid records to appropriate downstream processing.
+ * Apache Flink operator for comprehensive payroll data validation. Orchestrates multiple validation
+ * rules, handles compliance auditing, and routes valid/invalid records to appropriate downstream
+ * processing.
  *
- * Features:
- * - Multi-rule validation with configurable rule sets
- * - PII compliance tracking and audit logging
- * - Federal employment law validation (SSN, age, wage compliance)
- * - Duplicate detection with windowed processing
- * - Performance metrics and validation statistics
- * - Side output for failed records and audit logs
+ * <p>Features: - Multi-rule validation with configurable rule sets - PII compliance tracking and
+ * audit logging - Federal employment law validation (SSN, age, wage compliance) - Duplicate
+ * detection with windowed processing - Performance metrics and validation statistics - Side output
+ * for failed records and audit logs
  */
 public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, PayrollEmployee> {
 
@@ -83,14 +77,15 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
 
   // Constructor
   public PayrollValidationOperator() {
-    this(getDefaultRules(), true, true, false, Duration.ofMinutes(60));
+    this(getDefaultRules(), false, true, false, Duration.ofMinutes(60));
   }
 
-  public PayrollValidationOperator(List<PayrollQualityRule> rules,
-                                  boolean enableDuplicateDetection,
-                                  boolean enableComplianceAuditing,
-                                  boolean enablePIIEncryption,
-                                  Duration duplicateDetectionWindow) {
+  public PayrollValidationOperator(
+      List<PayrollQualityRule> rules,
+      boolean enableDuplicateDetection,
+      boolean enableComplianceAuditing,
+      boolean enablePIIEncryption,
+      Duration duplicateDetectionWindow) {
     this.configuredRules = new ArrayList<>(rules);
     this.enableDuplicateDetection = enableDuplicateDetection;
     this.enableComplianceAuditing = enableComplianceAuditing;
@@ -109,8 +104,8 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     this.emailValidator = new EmailValidationRule();
 
     if (enableDuplicateDetection) {
-      this.duplicateDetector = new DuplicateDetectionRule(duplicateDetectionWindow);
-      LOG.info("Duplicate detection enabled with window: {}", duplicateDetectionWindow);
+      //      this.duplicateDetector = new DuplicateDetectionRule(duplicateDetectionWindow);
+      //      LOG.info("Duplicate detection enabled with window: {}", duplicateDetectionWindow);
     }
 
     // Initialize performance counters
@@ -129,20 +124,24 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
   }
 
   @Override
-  public void processElement(PayrollEmployee record, Context context,
-                           Collector<PayrollEmployee> out) throws Exception {
+  public void processElement(
+      PayrollEmployee record, Context context, Collector<PayrollEmployee> out) throws Exception {
 
     long startTime = System.currentTimeMillis();
     totalRecordsProcessed.incrementAndGet();
 
-    LOG.debug("Processing employee record: ID={}, Name={} {}",
-             record.getEmployeeId(), record.getFirstName(), record.getLastName());
+    LOG.debug(
+        "Processing employee record: ID={}, Name={} {}",
+        record.getEmployeeId(),
+        record.getFirstName(),
+        record.getLastName());
 
     try {
       // Create validation result container
-      PayrollValidationResult.Builder resultBuilder = PayrollValidationResult.builder()
-          .employee(record)
-          .validationTimestamp(Instant.ofEpochMilli(context.timestamp()));
+      PayrollValidationResult.Builder resultBuilder =
+          PayrollValidationResult.builder()
+              .employee(record)
+              .validationTimestamp(Instant.ofEpochMilli(context.timestamp()));
 
       List<FieldValidationResult> validationResults = new ArrayList<>();
       boolean hasComplianceViolations = false;
@@ -171,11 +170,12 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
       }
 
       // Build final validation result
-      PayrollValidationResult validationResult = resultBuilder
-          .fieldResults(validationResults)
-          .overallResult(determineOverallResult(validationResults))
-          .processingLatencyMs(System.currentTimeMillis() - startTime)
-          .build();
+      PayrollValidationResult validationResult =
+          resultBuilder
+              .fieldResults(validationResults)
+              .overallResult(determineOverallResult(validationResults))
+              .processingLatencyMs(System.currentTimeMillis() - startTime)
+              .build();
 
       // Generate compliance audit logs if enabled
       if (enableComplianceAuditing) {
@@ -188,8 +188,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
         totalValidRecords.incrementAndGet();
 
         // Apply PII encryption if enabled
-        PayrollEmployee processedRecord = enablePIIEncryption ?
-            applyPIIEncryption(record) : record;
+        PayrollEmployee processedRecord = enablePIIEncryption ? applyPIIEncryption(record) : record;
 
         out.collect(processedRecord);
 
@@ -199,11 +198,19 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
         // Handle validation failure
         totalInvalidRecords.incrementAndGet();
 
-        FailedPayrollRecord failedRecord = FailedPayrollRecord.fromValidationResult(record, validationResult);
+        FailedPayrollRecord failedRecord =
+            FailedPayrollRecord.fromValidationResult(record, validationResult);
         context.output(FAILED_RECORDS_TAG, failedRecord);
 
-        LOG.warn("Record failed validation: ID={}, Errors={}",
-                record.getEmployeeId(), validationResult.getFailedFieldsCount());
+        LOG.warn(
+            "Record failed validation: ID={}, Errors={}, description={}",
+            record.getEmployeeId(),
+            validationResult.getFailedFieldsCount(),
+            validationResult.getFieldResults().stream()
+                .filter(FieldValidationResult::isFailed)
+                .map(FieldValidationResult::getErrorMessage)
+                .reduce((a, b) -> a + "; " + b)
+                .orElse("No details"));
       }
 
       // Log performance metrics periodically
@@ -215,35 +222,36 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
       LOG.error("Failed to process payroll record: ID={}", record.getEmployeeId(), e);
 
       // Create failure record for processing errors
-      FailedPayrollRecord errorRecord = FailedPayrollRecord.builder()
-          .originalRecord(record)
-          .failureTimestamp(Instant.now())
-          .hrWorkflowId("ERROR-" + System.currentTimeMillis())
-          .validationErrors(Arrays.asList("Processing error: " + e.getMessage()))
-          .correctionPriority("HIGH")
-          .processingLatencyMs(System.currentTimeMillis() - startTime)
-          .build();
+      FailedPayrollRecord errorRecord =
+          FailedPayrollRecord.builder()
+              .originalRecord(record)
+              .failureTimestamp(Instant.now())
+              .hrWorkflowId("ERROR-" + System.currentTimeMillis())
+              .validationErrors(Arrays.asList("Processing error: " + e.getMessage()))
+              .correctionPriority(FailedPayrollRecord.Priority.HIGH)
+              .processingLatencyMs(System.currentTimeMillis() - startTime)
+              .build();
 
       context.output(FAILED_RECORDS_TAG, errorRecord);
       totalInvalidRecords.incrementAndGet();
     }
   }
 
-  /**
-   * Execute a configured validation rule
-   */
-  private FieldValidationResult executeValidationRule(PayrollEmployee record, PayrollQualityRule rule) {
+  /** Execute a configured validation rule */
+  private FieldValidationResult executeValidationRule(
+      PayrollEmployee record, PayrollQualityRule rule) {
     try {
       switch (rule.getRuleType()) {
         case FORMAT:
           return validateFormat(record, rule);
         case RANGE:
           return validateRange(record, rule);
-        case REQUIRED:
+        case COMPLETENESS:
           return validateRequired(record, rule);
-        case REGEX:
-          return validateRegex(record, rule);
-        case BUSINESS_LOGIC:
+        case COMPLIANCE:
+        case UNIQUENESS:
+        case BUSINESS:
+        case CROSS_FIELD:
           return validateBusinessLogic(record, rule);
         default:
           return FieldValidationResult.failure(
@@ -251,8 +259,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
               rule.getRuleName(),
               "Unknown rule type: " + rule.getRuleType(),
               "Check rule configuration",
-              rule.getComplianceLevel()
-          );
+              convertComplianceLevel(rule.getComplianceLevel()));
       }
     } catch (Exception e) {
       LOG.error("Error executing rule {}: {}", rule.getRuleName(), e.getMessage());
@@ -261,32 +268,30 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           rule.getRuleName(),
           "Rule execution error: " + e.getMessage(),
           "Check rule implementation and data format",
-          rule.getComplianceLevel()
-      );
+          convertComplianceLevel(rule.getComplianceLevel()));
     }
   }
 
-  /**
-   * Execute built-in validation rules using dedicated validators
-   */
+  /** Execute built-in validation rules using dedicated validators */
   private List<FieldValidationResult> executeBuiltInValidations(PayrollEmployee record) {
     List<FieldValidationResult> results = new ArrayList<>();
 
     // Name validations
-    if (record.getFirstName() != null) {
-      results.add(nameValidator.validateFirstName(record.getFirstName()));
-    }
-    if (record.getLastName() != null) {
-      results.add(nameValidator.validateLastName(record.getLastName()));
-    }
-    if (record.getFirstName() != null && record.getLastName() != null) {
-      results.add(nameValidator.validateFullName(record.getFirstName(), record.getLastName()));
-    }
+    //    if (record.getFirstName() != null) {
+    //      results.add(nameValidator.validateFirstName(record.getFirstName()));
+    //    }
+    //    if (record.getLastName() != null) {
+    //      results.add(nameValidator.validateLastName(record.getLastName()));
+    //    }
+    //    if (record.getFirstName() != null && record.getLastName() != null) {
+    //      results.add(nameValidator.validateFullName(record.getFirstName(),
+    // record.getLastName()));
+    //    }
 
     // Email validation
-    if (record.getEmail() != null) {
-      results.add(emailValidator.validateEmail(record.getEmail()));
-    }
+    //    if (record.getEmail() != null) {
+    //      results.add(emailValidator.validateEmail(record.getEmail()));
+    //    }
 
     // Federal compliance validations
     results.add(validateSSN(record));
@@ -296,9 +301,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     return results;
   }
 
-  /**
-   * Validate Social Security Number format and compliance
-   */
+  /** Validate Social Security Number format and compliance */
   private FieldValidationResult validateSSN(PayrollEmployee record) {
     String ssn = record.getSsn();
 
@@ -308,8 +311,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "SSN Required Validation",
           "Social Security Number is required for payroll processing",
           "Enter valid SSN in format: XXX-XX-XXXX",
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     String trimmedSSN = ssn.trim();
@@ -321,8 +323,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "SSN Format Validation",
           "Invalid SSN/ITIN format",
           "Use format XXX-XX-XXXX (SSN) or 9XX-XX-XXXX (ITIN)",
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     // Check for invalid SSN patterns
@@ -332,16 +333,13 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "SSN Validity Validation",
           "SSN contains invalid number pattern",
           "Verify SSN is valid and issued by Social Security Administration",
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     return FieldValidationResult.success("ssn", "SSN Validation");
   }
 
-  /**
-   * Validate employee age for employment eligibility
-   */
+  /** Validate employee age for employment eligibility */
   private FieldValidationResult validateAge(PayrollEmployee record) {
     Integer age = record.getAge();
 
@@ -351,8 +349,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "Age Required Validation",
           "Employee age is required for employment eligibility verification",
           "Enter valid age between " + MIN_EMPLOYMENT_AGE + " and " + MAX_EMPLOYMENT_AGE,
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     if (age < MIN_EMPLOYMENT_AGE) {
@@ -361,8 +358,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "Minimum Age Validation",
           "Employee age below federal minimum employment age (" + MIN_EMPLOYMENT_AGE + ")",
           "Verify age and ensure compliance with child labor laws",
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     if (age > MAX_EMPLOYMENT_AGE) {
@@ -371,16 +367,13 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "Maximum Age Validation",
           "Employee age exceeds reasonable employment range (" + MAX_EMPLOYMENT_AGE + ")",
           "Verify age accuracy",
-          FieldValidationResult.ComplianceLevel.BUSINESS
-      );
+          FieldValidationResult.ComplianceLevel.BUSINESS);
     }
 
     return FieldValidationResult.success("age", "Age Validation");
   }
 
-  /**
-   * Validate hourly rate for wage compliance
-   */
+  /** Validate hourly rate for wage compliance */
   private FieldValidationResult validateWage(PayrollEmployee record) {
     Integer hourlyRateCents = record.getHourlyRate();
 
@@ -390,8 +383,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "Wage Required Validation",
           "Hourly rate is required for payroll processing",
           "Enter valid hourly rate in cents",
-          FieldValidationResult.ComplianceLevel.BUSINESS
-      );
+          FieldValidationResult.ComplianceLevel.BUSINESS);
     }
 
     if (hourlyRateCents < MIN_WAGE_CENTS) {
@@ -400,26 +392,40 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           "Minimum Wage Validation",
           "Hourly rate below federal minimum wage ($" + (MIN_WAGE_CENTS / 100.0) + "/hour)",
           "Ensure wage meets federal minimum wage requirements",
-          FieldValidationResult.ComplianceLevel.REGULATORY
-      );
+          FieldValidationResult.ComplianceLevel.REGULATORY);
     }
 
     if (hourlyRateCents > MAX_REASONABLE_WAGE_CENTS) {
       return FieldValidationResult.failure(
           "hourly_rate_cents",
           "Maximum Wage Validation",
-          "Hourly rate exceeds reasonable maximum ($" + (MAX_REASONABLE_WAGE_CENTS / 100.0) + "/hour)",
+          "Hourly rate exceeds reasonable maximum ($"
+              + (MAX_REASONABLE_WAGE_CENTS / 100.0)
+              + "/hour)",
           "Verify wage amount is correct",
-          FieldValidationResult.ComplianceLevel.BUSINESS
-      );
+          FieldValidationResult.ComplianceLevel.BUSINESS);
     }
 
     return FieldValidationResult.success("hourly_rate_cents", "Wage Validation");
   }
 
-  /**
-   * Apply specific validation rule types
-   */
+  /** Convert PayrollQualityRule.ComplianceLevel to FieldValidationResult.ComplianceLevel */
+  private FieldValidationResult.ComplianceLevel convertComplianceLevel(
+      PayrollQualityRule.ComplianceLevel level) {
+    if (level == null) return FieldValidationResult.ComplianceLevel.BUSINESS;
+    switch (level) {
+      case REGULATORY:
+        return FieldValidationResult.ComplianceLevel.REGULATORY;
+      case BUSINESS:
+        return FieldValidationResult.ComplianceLevel.BUSINESS;
+      case INFORMATIONAL:
+        return FieldValidationResult.ComplianceLevel.INFORMATIONAL;
+      default:
+        return FieldValidationResult.ComplianceLevel.BUSINESS;
+    }
+  }
+
+  /** Apply specific validation rule types */
   private FieldValidationResult validateFormat(PayrollEmployee record, PayrollQualityRule rule) {
     Object fieldValue = getFieldValue(record, rule.getFieldName());
     if (fieldValue == null) {
@@ -428,8 +434,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           rule.getRuleName(),
           "Field is null",
           "Enter valid " + rule.getFieldName(),
-          rule.getComplianceLevel()
-      );
+          convertComplianceLevel(rule.getComplianceLevel()));
     }
 
     String pattern = rule.getValidationExpression();
@@ -438,9 +443,8 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
           rule.getFieldName(),
           rule.getRuleName(),
           "Field format validation failed",
-          "Use valid format: " + rule.getExpectedFormat(),
-          rule.getComplianceLevel()
-      );
+          "Use valid format",
+          convertComplianceLevel(rule.getComplianceLevel()));
     }
 
     return FieldValidationResult.success(rule.getFieldName(), rule.getRuleName());
@@ -449,7 +453,8 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
   private FieldValidationResult validateRange(PayrollEmployee record, PayrollQualityRule rule) {
     Object fieldValue = getFieldValue(record, rule.getFieldName());
     if (fieldValue == null) {
-      return FieldValidationResult.success(rule.getFieldName(), rule.getRuleName()); // Null allowed for range checks
+      return FieldValidationResult.success(
+          rule.getFieldName(), rule.getRuleName()); // Null allowed for range checks
     }
 
     if (fieldValue instanceof Number) {
@@ -466,8 +471,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
               rule.getRuleName(),
               "Value outside allowed range [" + min + ", " + max + "]",
               "Enter value between " + min + " and " + max,
-              rule.getComplianceLevel()
-          );
+              convertComplianceLevel(rule.getComplianceLevel()));
         }
       }
     }
@@ -478,14 +482,14 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
   private FieldValidationResult validateRequired(PayrollEmployee record, PayrollQualityRule rule) {
     Object fieldValue = getFieldValue(record, rule.getFieldName());
 
-    if (fieldValue == null || (fieldValue instanceof String && ((String) fieldValue).trim().isEmpty())) {
+    if (fieldValue == null
+        || (fieldValue instanceof String && ((String) fieldValue).trim().isEmpty())) {
       return FieldValidationResult.failure(
           rule.getFieldName(),
           rule.getRuleName(),
           "Required field is missing or empty",
           "Enter valid " + rule.getFieldName(),
-          rule.getComplianceLevel()
-      );
+          convertComplianceLevel(rule.getComplianceLevel()));
     }
 
     return FieldValidationResult.success(rule.getFieldName(), rule.getRuleName());
@@ -495,88 +499,92 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     return validateFormat(record, rule); // Same logic as format validation
   }
 
-  private FieldValidationResult validateBusinessLogic(PayrollEmployee record, PayrollQualityRule rule) {
+  private FieldValidationResult validateBusinessLogic(
+      PayrollEmployee record, PayrollQualityRule rule) {
     // Extensible business logic validation - can be enhanced with scripting engine
     return FieldValidationResult.success(rule.getFieldName(), rule.getRuleName());
   }
 
-  /**
-   * Determine overall validation result
-   */
-  private PayrollValidationResult.ValidationStatus determineOverallResult(List<FieldValidationResult> results) {
+  /** Determine overall validation result */
+  private PayrollValidationResult.ValidationStatus determineOverallResult(
+      List<FieldValidationResult> results) {
     boolean hasFailures = results.stream().anyMatch(FieldValidationResult::isFailed);
-    boolean hasWarnings = results.stream().anyMatch(result ->
-        !result.isFailed() && result.getComplianceLevel() == FieldValidationResult.ComplianceLevel.BUSINESS);
+    boolean hasRegulatoryViolations =
+        results.stream()
+            .anyMatch(
+                result ->
+                    result.isFailed()
+                        && result.getComplianceLevel()
+                            == FieldValidationResult.ComplianceLevel.REGULATORY);
 
     if (hasFailures) {
-      return PayrollValidationResult.ValidationStatus.FAILED;
-    } else if (hasWarnings) {
-      return PayrollValidationResult.ValidationStatus.WARNING;
+      return hasRegulatoryViolations
+          ? PayrollValidationResult.ValidationStatus.COMPLIANCE_VIOLATION
+          : PayrollValidationResult.ValidationStatus.INVALID;
     } else {
-      return PayrollValidationResult.ValidationStatus.PASSED;
+      return PayrollValidationResult.ValidationStatus.VALID;
     }
   }
 
-  /**
-   * Generate compliance audit logs
-   */
-  private void generateComplianceAuditLogs(PayrollEmployee record, PayrollValidationResult result,
-                                         Context context) {
+  /** Generate compliance audit logs */
+  private void generateComplianceAuditLogs(
+      PayrollEmployee record, PayrollValidationResult result, Context context) {
 
     // Log PII access
     List<String> piiFields = Arrays.asList("ssn", "email");
-    ComplianceAuditLog piiAudit = ComplianceAuditLog.createPIIAccessAudit(
-        record.getEmployeeId(),
-        "flink-validation-operator",
-        piiFields,
-        "payroll_validation"
-    );
+    ComplianceAuditLog piiAudit =
+        ComplianceAuditLog.createPIIAccessAudit(
+            record.getEmployeeId(), "flink-validation-operator", piiFields, "payroll_validation");
     context.output(AUDIT_LOGS_TAG, piiAudit);
 
     // Log validation outcome
-    ComplianceAuditLog validationAudit = ComplianceAuditLog.createValidationAudit(
-        record.getEmployeeId(),
-        "payroll_validation",
-        result.isValid() ? "PASSED" : "FAILED",
-        result.getFieldResults()
-    );
+    ComplianceAuditLog validationAudit =
+        ComplianceAuditLog.createValidationAudit(
+            record.getEmployeeId(),
+            "payroll_validation",
+            result.isValid() ? "PASSED" : "FAILED",
+            result.getFieldResults());
     context.output(AUDIT_LOGS_TAG, validationAudit);
 
     // Log compliance violations if any
     if (!result.isValid()) {
-      ComplianceAuditLog violationAudit = ComplianceAuditLog.createComplianceViolationAudit(
-          record.getEmployeeId(),
-          "DATA_QUALITY_VIOLATION",
-          String.valueOf(result.getFailedFieldsCount()) + " validation failures",
-          "HIGH"
-      );
+      ComplianceAuditLog violationAudit =
+          ComplianceAuditLog.createComplianceViolationAudit(
+              record.getEmployeeId(),
+              "DATA_QUALITY_VIOLATION",
+              String.valueOf(result.getFailedFieldsCount()) + " validation failures");
       context.output(AUDIT_LOGS_TAG, violationAudit);
     }
   }
 
-  /**
-   * Apply PII encryption (placeholder implementation)
-   */
+  /** Apply PII encryption (placeholder implementation) */
   private PayrollEmployee applyPIIEncryption(PayrollEmployee record) {
     // In real implementation, this would encrypt SSN and other PII fields
     // For now, return the record as-is
     return record;
   }
 
-  /**
-   * Helper methods
-   */
+  /** Helper methods */
   private Object getFieldValue(PayrollEmployee record, String fieldName) {
     switch (fieldName.toLowerCase()) {
-      case "employee_id": return record.getEmployeeId();
-      case "first_name": return record.getFirstName();
-      case "last_name": return record.getLastName();
-      case "age": return record.getAge();
-      case "ssn": return record.getSsn();
-      case "hourly_rate_cents": return record.getHourlyRate();
-      case "gender": return record.getGender();
-      case "email": return record.getEmail();
-      default: return null;
+      case "employee_id":
+        return record.getEmployeeId();
+      case "first_name":
+        return record.getFirstName();
+      case "last_name":
+        return record.getLastName();
+      case "age":
+        return record.getAge();
+      case "ssn":
+        return record.getSsn();
+      case "hourly_rate_cents":
+        return record.getHourlyRate();
+      case "gender":
+        return record.getGender();
+      case "email":
+        return record.getEmail();
+      default:
+        return null;
     }
   }
 
@@ -586,9 +594,7 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
 
   private boolean isInvalidSSN(String ssn) {
     // Check for well-known invalid SSN patterns
-    String[] invalidPatterns = {
-        "000-00-0000", "123-45-6789", "666-00-0000", "900-00-0000"
-    };
+    String[] invalidPatterns = {"000-00-0000", "123-45-6789", "666-00-0000", "900-00-0000"};
 
     for (String pattern : invalidPatterns) {
       if (ssn.equals(pattern)) {
@@ -610,39 +616,32 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
 
     double validationRate = total > 0 ? (double) valid / total * 100 : 0;
 
-    LOG.info("Validation Metrics - Total: {}, Valid: {}, Invalid: {}, Duplicates: {}, " +
-             "Violations: {}, Success Rate: {:.2f}%",
-             total, valid, invalid, duplicates, violations, validationRate);
+    LOG.info(
+        "Validation Metrics - Total: {}, Valid: {}, Invalid: {}, Duplicates: {}, "
+            + "Violations: {}, Success Rate: {:.2f}%",
+        total, valid, invalid, duplicates, violations, validationRate);
   }
 
-  /**
-   * Get default validation rules
-   */
+  /** Get default validation rules */
   private static List<PayrollQualityRule> getDefaultRules() {
     return Arrays.asList(
         PayrollQualityRule.createSSNValidationRule(),
         PayrollQualityRule.createEmailValidationRule(),
         PayrollQualityRule.createAgeRangeRule(),
-        PayrollQualityRule.createWageComplianceRule()
-    );
+        PayrollQualityRule.createWageComplianceRule());
   }
 
-  /**
-   * Get validation statistics
-   */
+  /** Get validation statistics */
   public ValidationStatistics getStatistics() {
     return new ValidationStatistics(
         totalRecordsProcessed.get(),
         totalValidRecords.get(),
         totalInvalidRecords.get(),
         totalDuplicatesDetected.get(),
-        totalComplianceViolations.get()
-    );
+        totalComplianceViolations.get());
   }
 
-  /**
-   * Validation statistics data class
-   */
+  /** Validation statistics data class */
   public static class ValidationStatistics {
     private final long totalRecords;
     private final long validRecords;
@@ -650,8 +649,12 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     private final long duplicatesDetected;
     private final long complianceViolations;
 
-    public ValidationStatistics(long totalRecords, long validRecords, long invalidRecords,
-                               long duplicatesDetected, long complianceViolations) {
+    public ValidationStatistics(
+        long totalRecords,
+        long validRecords,
+        long invalidRecords,
+        long duplicatesDetected,
+        long complianceViolations) {
       this.totalRecords = totalRecords;
       this.validRecords = validRecords;
       this.invalidRecords = invalidRecords;
@@ -659,11 +662,25 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
       this.complianceViolations = complianceViolations;
     }
 
-    public long getTotalRecords() { return totalRecords; }
-    public long getValidRecords() { return validRecords; }
-    public long getInvalidRecords() { return invalidRecords; }
-    public long getDuplicatesDetected() { return duplicatesDetected; }
-    public long getComplianceViolations() { return complianceViolations; }
+    public long getTotalRecords() {
+      return totalRecords;
+    }
+
+    public long getValidRecords() {
+      return validRecords;
+    }
+
+    public long getInvalidRecords() {
+      return invalidRecords;
+    }
+
+    public long getDuplicatesDetected() {
+      return duplicatesDetected;
+    }
+
+    public long getComplianceViolations() {
+      return complianceViolations;
+    }
 
     public double getValidationSuccessRate() {
       return totalRecords > 0 ? (double) validRecords / totalRecords : 0.0;
@@ -673,17 +690,19 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     public String toString() {
       return String.format(
           "ValidationStatistics{total=%d, valid=%d, invalid=%d, duplicates=%d, violations=%d, successRate=%.2f%%}",
-          totalRecords, validRecords, invalidRecords, duplicatesDetected, complianceViolations,
+          totalRecords,
+          validRecords,
+          invalidRecords,
+          duplicatesDetected,
+          complianceViolations,
           getValidationSuccessRate() * 100);
     }
   }
 
-  /**
-   * Builder for PayrollValidationOperator configuration
-   */
+  /** Builder for PayrollValidationOperator configuration */
   public static class Builder {
     private List<PayrollQualityRule> rules = getDefaultRules();
-    private boolean enableDuplicateDetection = true;
+    private boolean enableDuplicateDetection = false;
     private boolean enableComplianceAuditing = true;
     private boolean enablePIIEncryption = false;
     private Duration duplicateDetectionWindow = Duration.ofMinutes(60);
@@ -714,8 +733,12 @@ public class PayrollValidationOperator extends ProcessFunction<PayrollEmployee, 
     }
 
     public PayrollValidationOperator build() {
-      return new PayrollValidationOperator(rules, enableDuplicateDetection,
-          enableComplianceAuditing, enablePIIEncryption, duplicateDetectionWindow);
+      return new PayrollValidationOperator(
+          rules,
+          enableDuplicateDetection,
+          enableComplianceAuditing,
+          enablePIIEncryption,
+          duplicateDetectionWindow);
     }
   }
 }

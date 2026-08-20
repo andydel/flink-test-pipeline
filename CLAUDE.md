@@ -23,5 +23,17 @@ Java 17+ (LTS): Follow standard conventions
 - 001-build-a-flink: Added Java 17+ (LTS) + Apache Flink 1.18+, Kafka Connector, Iceberg Connector, AWS SDK, Avro Schema Registry
 - 001-build-a-flink: Added Java 17+ (LTS) + Apache Flink 1.18+, Kafka Connector, Iceberg Connector, AWS SDK
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+## General notes on coding styles
+
+All code changes must be done on a branch.  Create a branch before you start a new feature.
+
+If you are unsure about anything, for example architectural decisions always ask.
+
+All new classes or methods must be unit tested.  Unit tests should be written before the implementation code.
+
+When designing new classes or functions check with the user if there is any ambiguity as to what teh function signature should look like.
+
+When completing work run all the tests and ensure they pass.
+
+Read and adhere to the java-coding-style-guide.md
+

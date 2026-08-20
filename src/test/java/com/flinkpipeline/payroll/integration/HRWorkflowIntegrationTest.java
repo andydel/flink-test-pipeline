@@ -3,7 +3,6 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -15,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for HR correction workflow scenarios in the payroll pipeline.
- * Tests end-to-end HR workflow integration, correction guidance, ticket management,
- * and feedback loops for payroll data quality improvement.
+ * Integration test for HR correction workflow scenarios in the payroll pipeline. Tests end-to-end
+ * HR workflow integration, correction guidance, ticket management, and feedback loops for payroll
+ * data quality improvement.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("HR Correction Workflow Integration Tests")
 class HRWorkflowIntegrationTest {
@@ -85,12 +85,12 @@ class HRWorkflowIntegrationTest {
   @DisplayName("Should create HR tickets for validation failures with actionable guidance")
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldCreateHRTicketsForValidationFailuresWithActionableGuidance() throws Exception {
-    List<PayrollEmployee> problematicEmployees = Arrays.asList(
-        createEmployeeWithInvalidSSN(7001, "INVALID-SSN"),
-        createEmployeeWithInvalidAge(7002, 15),
-        createEmployeeWithInvalidWage(7003, 5.00),
-        createEmployeeWithInvalidEmail(7004, "invalid-email")
-    );
+    List<PayrollEmployee> problematicEmployees =
+        Arrays.asList(
+            createEmployeeWithInvalidSSN(7001, "INVALID-SSN"),
+            createEmployeeWithInvalidAge(7002, 15),
+            createEmployeeWithInvalidWage(7003, 5.00),
+            createEmployeeWithInvalidEmail(7004, "invalid-email"));
 
     // TODO: This assertion will fail until HR ticket creation is implemented
     // pipeline.start();
@@ -138,12 +138,13 @@ class HRWorkflowIntegrationTest {
   @DisplayName("Should prioritize HR tickets based on compliance risk and business impact")
   @Timeout(value = 45, unit = TimeUnit.SECONDS)
   void shouldPrioritizeHRTicketsBasedOnComplianceRiskAndBusinessImpact() throws Exception {
-    List<PayrollEmployee> priorityTestEmployees = Arrays.asList(
-        createEmployeeWithComplianceViolation(7005, "REGULATORY_VIOLATION"),  // Critical
-        createEmployeeWithBusinessImpact(7006, "PAYROLL_BLOCKING"),          // High
-        createEmployeeWithMinorIssue(7007, "FORMAT_WARNING"),                // Medium
-        createEmployeeWithInformationalIssue(7008, "DATA_QUALITY_INFO")      // Low
-    );
+    List<PayrollEmployee> priorityTestEmployees =
+        Arrays.asList(
+            createEmployeeWithComplianceViolation(7005, "REGULATORY_VIOLATION"), // Critical
+            createEmployeeWithBusinessImpact(7006, "PAYROLL_BLOCKING"), // High
+            createEmployeeWithMinorIssue(7007, "FORMAT_WARNING"), // Medium
+            createEmployeeWithInformationalIssue(7008, "DATA_QUALITY_INFO") // Low
+            );
 
     // TODO: This assertion will fail until ticket prioritization is implemented
     // pipeline.start();
@@ -248,7 +249,8 @@ class HRWorkflowIntegrationTest {
     //     "Ticket should be resolved after successful correction");
 
     // For now, verify lifecycle test concepts
-    assertNotNull(correctionTestEmployee.getEmployeeId(), "Should have employee for lifecycle testing");
+    assertNotNull(
+        correctionTestEmployee.getEmployeeId(), "Should have employee for lifecycle testing");
   }
 
   @Test
@@ -271,7 +273,8 @@ class HRWorkflowIntegrationTest {
 
     // Simulate multiple failed correction attempts
     // for (int attempt = 1; attempt <= MAX_CORRECTION_ATTEMPTS; attempt++) {
-    //   PayrollEmployee failedCorrection = createFailedCorrectionEmployee(persistentFailureEmployee, attempt);
+    //   PayrollEmployee failedCorrection =
+    // createFailedCorrectionEmployee(persistentFailureEmployee, attempt);
     //
     //   CorrectionAttempt correctionAttempt = new CorrectionAttempt(
     //       originalTicket.getTicketId(),
@@ -319,11 +322,11 @@ class HRWorkflowIntegrationTest {
   @DisplayName("Should integrate with external HR systems for ticket management")
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldIntegrateWithExternalHRSystemsForTicketManagement() throws Exception {
-    List<PayrollEmployee> externalIntegrationEmployees = Arrays.asList(
-        createEmployeeWithInvalidSSN(7011, "EXT-INTEGRATION-1"),
-        createEmployeeWithInvalidAge(7012, 12),
-        createEmployeeWithInvalidWage(7013, 200.00)
-    );
+    List<PayrollEmployee> externalIntegrationEmployees =
+        Arrays.asList(
+            createEmployeeWithInvalidSSN(7011, "EXT-INTEGRATION-1"),
+            createEmployeeWithInvalidAge(7012, 12),
+            createEmployeeWithInvalidWage(7013, 200.00));
 
     // TODO: This assertion will fail until external HR integration is implemented
     // pipeline.start();
@@ -359,10 +362,12 @@ class HRWorkflowIntegrationTest {
     // }
 
     // Verify bidirectional synchronization
-    // mockHRSystem.updateExternalTicketStatus(externalTickets.get(0).getExternalTicketId(), "IN_PROGRESS");
+    // mockHRSystem.updateExternalTicketStatus(externalTickets.get(0).getExternalTicketId(),
+    // "IN_PROGRESS");
     // Thread.sleep(3000);
 
-    // HRTicket internalTicket = mockHRSystem.getTicket(externalTickets.get(0).getInternalTicketId());
+    // HRTicket internalTicket =
+    // mockHRSystem.getTicket(externalTickets.get(0).getInternalTicketId());
     // assertEquals("IN_PROGRESS", internalTicket.getStatus().toString(),
     //     "Internal ticket should sync with external status updates");
 
@@ -449,7 +454,8 @@ class HRWorkflowIntegrationTest {
     //     "Should create tickets for all bulk employees");
 
     // Simulate bulk correction operation
-    // List<BulkCorrectionRequest> bulkRequests = createBulkCorrectionRequests(hrTicketSink.getResults());
+    // List<BulkCorrectionRequest> bulkRequests =
+    // createBulkCorrectionRequests(hrTicketSink.getResults());
     // mockHRSystem.processBulkCorrections(bulkRequests);
     // Thread.sleep(10000);
 
@@ -492,7 +498,8 @@ class HRWorkflowIntegrationTest {
     // Thread.sleep(1000);
     // mockHRSystem.assignTicket(ticket.getTicketId(), "HR_SPECIALIST_789");
     // Thread.sleep(1000);
-    // mockHRSystem.addTicketComment(ticket.getTicketId(), "HR_USER_456", "Investigating SSN format issue");
+    // mockHRSystem.addTicketComment(ticket.getTicketId(), "HR_USER_456", "Investigating SSN format
+    // issue");
     // Thread.sleep(1000);
 
     // Wait for audit trail generation
@@ -533,9 +540,7 @@ class HRWorkflowIntegrationTest {
     assertNotNull(auditTestEmployee.getEmployeeId(), "Should have employee for audit testing");
   }
 
-  /**
-   * Helper methods to create specific employee types for testing
-   */
+  /** Helper methods to create specific employee types for testing */
   private PayrollEmployee createEmployeeWithInvalidSSN(int employeeId, String testCase) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
@@ -555,7 +560,9 @@ class HRWorkflowIntegrationTest {
         .firstName("Test")
         .lastName("Employee")
         .age(invalidAge)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("test" + employeeId + "@company.com")
@@ -568,7 +575,9 @@ class HRWorkflowIntegrationTest {
         .firstName("Test")
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(invalidWage)
         .gender("male")
         .email("test" + employeeId + "@company.com")
@@ -581,14 +590,17 @@ class HRWorkflowIntegrationTest {
         .firstName("Test")
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email(invalidEmail)
         .build();
   }
 
-  private PayrollEmployee createEmployeeWithComplianceViolation(int employeeId, String violationType) {
+  private PayrollEmployee createEmployeeWithComplianceViolation(
+      int employeeId, String violationType) {
     return createEmployeeWithInvalidSSN(employeeId, violationType);
   }
 
@@ -597,7 +609,8 @@ class HRWorkflowIntegrationTest {
   }
 
   private PayrollEmployee createEmployeeWithMinorIssue(int employeeId, String issueType) {
-    return createEmployeeWithInvalidEmail(employeeId, "minor.issue@invalid"); // Email format warning
+    return createEmployeeWithInvalidEmail(
+        employeeId, "minor.issue@invalid"); // Email format warning
   }
 
   private PayrollEmployee createEmployeeWithInformationalIssue(int employeeId, String issueType) {
@@ -606,7 +619,9 @@ class HRWorkflowIntegrationTest {
         .firstName("Info")
         .lastName("Issue")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("prefer-not-to-say") // Informational data quality issue
         .email("info" + employeeId + "@company.com")
@@ -626,7 +641,8 @@ class HRWorkflowIntegrationTest {
         .build();
   }
 
-  private PayrollEmployee createFailedCorrectionEmployee(PayrollEmployee originalEmployee, int attemptNumber) {
+  private PayrollEmployee createFailedCorrectionEmployee(
+      PayrollEmployee originalEmployee, int attemptNumber) {
     return PayrollEmployee.builder()
         .employeeId(originalEmployee.getEmployeeId())
         .firstName(originalEmployee.getFirstName())
@@ -643,10 +659,18 @@ class HRWorkflowIntegrationTest {
     List<PayrollEmployee> dataset = new java.util.ArrayList<>();
     for (int i = 0; i < size; i++) {
       switch (i % 4) {
-        case 0: dataset.add(createEmployeeWithInvalidSSN(8000 + i, "DASHBOARD_SSN_" + i)); break;
-        case 1: dataset.add(createEmployeeWithInvalidAge(8000 + i, 15)); break;
-        case 2: dataset.add(createEmployeeWithInvalidWage(8000 + i, 5.00)); break;
-        case 3: dataset.add(createEmployeeWithInvalidEmail(8000 + i, "invalid@email")); break;
+        case 0:
+          dataset.add(createEmployeeWithInvalidSSN(8000 + i, "DASHBOARD_SSN_" + i));
+          break;
+        case 1:
+          dataset.add(createEmployeeWithInvalidAge(8000 + i, 15));
+          break;
+        case 2:
+          dataset.add(createEmployeeWithInvalidWage(8000 + i, 5.00));
+          break;
+        case 3:
+          dataset.add(createEmployeeWithInvalidEmail(8000 + i, "invalid@email"));
+          break;
       }
     }
     return dataset;
@@ -660,9 +684,7 @@ class HRWorkflowIntegrationTest {
     return dataset;
   }
 
-  /**
-   * Helper methods for ticket management
-   */
+  /** Helper methods for ticket management */
   // private HRTicket findTicketByEmployeeId(int employeeId) {
   //   return hrTicketSink.getResults().stream()
   //       .filter(ticket -> ticket.getEmployeeId().equals(employeeId))
@@ -681,9 +703,7 @@ class HRWorkflowIntegrationTest {
   //       .collect(Collectors.toList());
   // }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

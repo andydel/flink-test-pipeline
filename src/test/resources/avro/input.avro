@@ -1,0 +1,39 @@
+{
+    "type": "record",
+    "namespace": "com.flinkpipeline.payroll",
+    "name": "PayrollEmployee",
+    "fields": [
+        {
+            "name": "employee_id",
+            "type": "int"
+        },
+        {
+            "name": "first_name",
+            "type": "string"
+        },
+        {
+            "name": "last_name",
+            "type": "string"
+        },
+        {
+            "name": "age",
+            "type": "int"
+        },
+        {
+            "name": "ssn",
+            "type": "string"
+        },
+        {
+            "name": "hourly_rate",
+            "type": "int"
+        },
+        {
+            "name": "gender",
+            "type": "string"
+        },
+        {
+            "name": "email",
+            "type": "string"
+        }
+    ]
+}

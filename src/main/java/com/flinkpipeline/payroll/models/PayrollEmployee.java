@@ -3,10 +3,10 @@ package com.flinkpipeline.payroll.models;
 import java.util.Objects;
 
 /**
- * Represents an employee payroll record from the Avro schema.
- * Contains all fields required for payroll processing and validation.
+ * Represents an employee payroll record from the Avro schema. Contains all fields required for
+ * payroll processing and validation.
  *
- * This class follows the data model specification and includes validation constraints.
+ * <p>This class follows the data model specification and includes validation constraints.
  */
 public class PayrollEmployee {
 
@@ -18,13 +18,23 @@ public class PayrollEmployee {
   private Integer hourlyRate; // Stored in cents for precision
   private String gender;
   private String email;
+  private String sourceSystem;
+  private Long ingestionTimestamp;
+  private String pipelineVersion;
 
   // Default constructor for serialization
   public PayrollEmployee() {}
 
   // Constructor with all fields
-  public PayrollEmployee(Integer employeeId, String firstName, String lastName,
-                        Integer age, String ssn, Integer hourlyRate, String gender, String email) {
+  public PayrollEmployee(
+      Integer employeeId,
+      String firstName,
+      String lastName,
+      Integer age,
+      String ssn,
+      Integer hourlyRate,
+      String gender,
+      String email) {
     this.employeeId = employeeId;
     this.firstName = firstName;
     this.lastName = lastName;
@@ -101,32 +111,48 @@ public class PayrollEmployee {
     this.email = email;
   }
 
+  public String getSourceSystem() {
+    return sourceSystem;
+  }
+
+  public void setSourceSystem(String sourceSystem) {
+    this.sourceSystem = sourceSystem;
+  }
+
+  public Long getIngestionTimestamp() {
+    return ingestionTimestamp;
+  }
+
+  public void setIngestionTimestamp(Long ingestionTimestamp) {
+    this.ingestionTimestamp = ingestionTimestamp;
+  }
+
+  public String getPipelineVersion() {
+    return pipelineVersion;
+  }
+
+  public void setPipelineVersion(String pipelineVersion) {
+    this.pipelineVersion = pipelineVersion;
+  }
+
   // Utility methods
 
-  /**
-   * Converts hourly rate from cents to dollars for display
-   */
+  /** Converts hourly rate from cents to dollars for display */
   public double getHourlyRateInDollars() {
     return hourlyRate != null ? hourlyRate / 100.0 : 0.0;
   }
 
-  /**
-   * Sets hourly rate from dollars (converts to cents)
-   */
+  /** Sets hourly rate from dollars (converts to cents) */
   public void setHourlyRateFromDollars(double dollars) {
     this.hourlyRate = (int) Math.round(dollars * 100);
   }
 
-  /**
-   * Checks if this employee record contains PII fields
-   */
+  /** Checks if this employee record contains PII fields */
   public boolean containsPII() {
     return ssn != null || email != null;
   }
 
-  /**
-   * Creates a copy of this employee with PII fields masked for logging
-   */
+  /** Creates a copy of this employee with PII fields masked for logging */
   public PayrollEmployee createMaskedCopy() {
     PayrollEmployee masked = new PayrollEmployee();
     masked.employeeId = this.employeeId;
@@ -136,23 +162,26 @@ public class PayrollEmployee {
     masked.ssn = this.ssn != null ? "***-**-****" : null;
     masked.hourlyRate = this.hourlyRate;
     masked.gender = this.gender;
-    masked.email = this.email != null ? "*****@" +
-        this.email.substring(this.email.indexOf('@') + 1) : null;
+    masked.email =
+        this.email != null ? "*****@" + this.email.substring(this.email.indexOf('@') + 1) : null;
     return masked;
   }
 
-  /**
-   * Validates that all required fields are present
-   */
+  /** Validates that all required fields are present */
   public boolean hasRequiredFields() {
-    return employeeId != null &&
-           firstName != null && !firstName.trim().isEmpty() &&
-           lastName != null && !lastName.trim().isEmpty() &&
-           age != null &&
-           ssn != null && !ssn.trim().isEmpty() &&
-           hourlyRate != null &&
-           gender != null && !gender.trim().isEmpty() &&
-           email != null && !email.trim().isEmpty();
+    return employeeId != null
+        && firstName != null
+        && !firstName.trim().isEmpty()
+        && lastName != null
+        && !lastName.trim().isEmpty()
+        && age != null
+        && ssn != null
+        && !ssn.trim().isEmpty()
+        && hourlyRate != null
+        && gender != null
+        && !gender.trim().isEmpty()
+        && email != null
+        && !email.trim().isEmpty();
   }
 
   @Override
@@ -160,14 +189,14 @@ public class PayrollEmployee {
     if (this == obj) return true;
     if (obj == null || getClass() != obj.getClass()) return false;
     PayrollEmployee that = (PayrollEmployee) obj;
-    return Objects.equals(employeeId, that.employeeId) &&
-           Objects.equals(firstName, that.firstName) &&
-           Objects.equals(lastName, that.lastName) &&
-           Objects.equals(age, that.age) &&
-           Objects.equals(ssn, that.ssn) &&
-           Objects.equals(hourlyRate, that.hourlyRate) &&
-           Objects.equals(gender, that.gender) &&
-           Objects.equals(email, that.email);
+    return Objects.equals(employeeId, that.employeeId)
+        && Objects.equals(firstName, that.firstName)
+        && Objects.equals(lastName, that.lastName)
+        && Objects.equals(age, that.age)
+        && Objects.equals(ssn, that.ssn)
+        && Objects.equals(hourlyRate, that.hourlyRate)
+        && Objects.equals(gender, that.gender)
+        && Objects.equals(email, that.email);
   }
 
   @Override
@@ -181,25 +210,34 @@ public class PayrollEmployee {
     return createMaskedCopy().toStringWithPII();
   }
 
-  /**
-   * Returns string representation with PII fields visible (use with caution)
-   */
+  /** Returns string representation with PII fields visible (use with caution) */
   public String toStringWithPII() {
-    return "PayrollEmployee{" +
-           "employeeId=" + employeeId +
-           ", firstName='" + firstName + '\'' +
-           ", lastName='" + lastName + '\'' +
-           ", age=" + age +
-           ", ssn='" + ssn + '\'' +
-           ", hourlyRate=" + hourlyRate +
-           ", gender='" + gender + '\'' +
-           ", email='" + email + '\'' +
-           '}';
+    return "PayrollEmployee{"
+        + "employeeId="
+        + employeeId
+        + ", firstName='"
+        + firstName
+        + '\''
+        + ", lastName='"
+        + lastName
+        + '\''
+        + ", age="
+        + age
+        + ", ssn='"
+        + ssn
+        + '\''
+        + ", hourlyRate="
+        + hourlyRate
+        + ", gender='"
+        + gender
+        + '\''
+        + ", email='"
+        + email
+        + '\''
+        + '}';
   }
 
-  /**
-   * Builder pattern for creating PayrollEmployee instances
-   */
+  /** Builder pattern for creating PayrollEmployee instances */
   public static class Builder {
     private Integer employeeId;
     private String firstName;
@@ -209,6 +247,27 @@ public class PayrollEmployee {
     private Integer hourlyRate;
     private String gender;
     private String email;
+    private String sourceSystem;
+    private Long ingestionTimestamp;
+    private String pipelineVersion;
+
+    public Builder from(PayrollEmployee employee) {
+      if (employee == null) {
+        return this;
+      }
+      this.employeeId = employee.getEmployeeId();
+      this.firstName = employee.getFirstName();
+      this.lastName = employee.getLastName();
+      this.age = employee.getAge();
+      this.ssn = employee.getSsn();
+      this.hourlyRate = employee.getHourlyRate();
+      this.gender = employee.getGender();
+      this.email = employee.getEmail();
+      this.sourceSystem = employee.getSourceSystem();
+      this.ingestionTimestamp = employee.getIngestionTimestamp();
+      this.pipelineVersion = employee.getPipelineVersion();
+      return this;
+    }
 
     public Builder employeeId(Integer employeeId) {
       this.employeeId = employeeId;
@@ -255,14 +314,32 @@ public class PayrollEmployee {
       return this;
     }
 
+    public Builder sourceSystem(String sourceSystem) {
+      this.sourceSystem = sourceSystem;
+      return this;
+    }
+
+    public Builder ingestionTimestamp(Long ingestionTimestamp) {
+      this.ingestionTimestamp = ingestionTimestamp;
+      return this;
+    }
+
+    public Builder pipelineVersion(String pipelineVersion) {
+      this.pipelineVersion = pipelineVersion;
+      return this;
+    }
+
     public PayrollEmployee build() {
-      return new PayrollEmployee(employeeId, firstName, lastName, age, ssn, hourlyRate, gender, email);
+      PayrollEmployee employee =
+          new PayrollEmployee(employeeId, firstName, lastName, age, ssn, hourlyRate, gender, email);
+      employee.setSourceSystem(sourceSystem);
+      employee.setIngestionTimestamp(ingestionTimestamp);
+      employee.setPipelineVersion(pipelineVersion);
+      return employee;
     }
   }
 
-  /**
-   * Creates a new builder instance
-   */
+  /** Creates a new builder instance */
   public static Builder builder() {
     return new Builder();
   }

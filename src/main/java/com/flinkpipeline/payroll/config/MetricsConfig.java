@@ -2,9 +2,7 @@ package com.flinkpipeline.payroll.config;
 
 import java.time.Duration;
 
-/**
- * Configuration for metrics collection and reporting.
- */
+/** Configuration for metrics collection and reporting. */
 public class MetricsConfig {
   private final boolean enabled;
   private final String reporter;
@@ -18,8 +16,19 @@ public class MetricsConfig {
     this.endpoint = endpoint;
   }
 
-  public boolean isEnabled() { return enabled; }
-  public String getReporter() { return reporter; }
-  public Duration getInterval() { return interval; }
-  public String getEndpoint() { return endpoint; }
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public String getReporter() {
+    return reporter;
+  }
+
+  public Duration getInterval() {
+    return interval;
+  }
+
+  public String getEndpoint() {
+    return endpoint;
+  }
 }

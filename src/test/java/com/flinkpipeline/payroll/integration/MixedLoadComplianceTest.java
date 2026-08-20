@@ -3,7 +3,6 @@ package com.flinkpipeline.payroll.integration;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.flinkpipeline.payroll.models.PayrollEmployee;
-import com.flinkpipeline.payroll.models.PayrollValidationResult;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
@@ -15,11 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 
 /**
- * Integration test for mixed load scenarios with comprehensive PII compliance validation.
- * Tests end-to-end processing of mixed valid/invalid payroll records with PII encryption,
- * compliance auditing, and real-time monitoring under realistic load conditions.
+ * Integration test for mixed load scenarios with comprehensive PII compliance validation. Tests
+ * end-to-end processing of mixed valid/invalid payroll records with PII encryption, compliance
+ * auditing, and real-time monitoring under realistic load conditions.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until full integration is
+ * implemented.
  */
 @DisplayName("Mixed Load with PII Compliance Integration Tests")
 class MixedLoadComplianceTest {
@@ -172,12 +172,12 @@ class MixedLoadComplianceTest {
   @DisplayName("Should create comprehensive compliance audit trail")
   @Timeout(value = 90, unit = TimeUnit.SECONDS)
   void shouldCreateComprehensiveComplianceAuditTrail() throws Exception {
-    List<PayrollEmployee> auditTestEmployees = Arrays.asList(
-        createValidEmployee(6001, "AUDIT_TEST_1"),
-        createInvalidSSNEmployee(6002, "AUDIT_TEST_2"),
-        createInvalidAgeEmployee(6003, "AUDIT_TEST_3"),
-        createValidEmployee(6004, "AUDIT_TEST_4")
-    );
+    List<PayrollEmployee> auditTestEmployees =
+        Arrays.asList(
+            createValidEmployee(6001, "AUDIT_TEST_1"),
+            createInvalidSSNEmployee(6002, "AUDIT_TEST_2"),
+            createInvalidAgeEmployee(6003, "AUDIT_TEST_3"),
+            createValidEmployee(6004, "AUDIT_TEST_4"));
 
     // TODO: This assertion will fail until compliance auditing is implemented
     // pipeline.start();
@@ -210,13 +210,15 @@ class MixedLoadComplianceTest {
     //   }
 
     //   // Verify retention compliance
-    //   assertTrue(auditLog.getRetentionExpires() > System.currentTimeMillis() + COMPLIANCE_AUDIT_RETENTION.toMillis() - 1000,
+    //   assertTrue(auditLog.getRetentionExpires() > System.currentTimeMillis() +
+    // COMPLIANCE_AUDIT_RETENTION.toMillis() - 1000,
     //       "Audit retention should meet compliance requirements");
     // }
 
     // For now, verify audit test concepts
     assertEquals(4, auditTestEmployees.size(), "Should test various audit scenarios");
-    assertTrue(COMPLIANCE_AUDIT_RETENTION.toDays() >= 365 * 7, "Should meet 7-year retention requirement");
+    assertTrue(
+        COMPLIANCE_AUDIT_RETENTION.toDays() >= 365 * 7, "Should meet 7-year retention requirement");
   }
 
   @Test
@@ -262,7 +264,10 @@ class MixedLoadComplianceTest {
     // }
 
     // For now, verify concurrent processing concepts
-    assertEquals(concurrentBatchSize * 2, batch1.size() + batch2.size(), "Should process concurrent batches");
+    assertEquals(
+        concurrentBatchSize * 2,
+        batch1.size() + batch2.size(),
+        "Should process concurrent batches");
   }
 
   @Test
@@ -341,38 +346,43 @@ class MixedLoadComplianceTest {
 
     // Should appear exactly once in output despite multiple processing
     // long validatedCount = validatedSink.getResults().stream()
-    //     .filter(result -> result.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
+    //     .filter(result ->
+    // result.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
     //     .count();
     // assertEquals(1, validatedCount,
     //     "Employee should appear exactly once despite multiple processing");
 
     // Should have exactly one audit entry
     // long auditCount = auditSink.getResults().stream()
-    //     .filter(audit -> audit.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
+    //     .filter(audit ->
+    // audit.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
     //     .count();
     // assertEquals(1, auditCount,
     //     "Should have exactly one audit entry");
 
     // Should have exactly one encryption event
     // long encryptionCount = encryptionEventSink.getResults().stream()
-    //     .filter(event -> event.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
+    //     .filter(event ->
+    // event.getEmployeeId().equals(duplicateProcessingEmployee.getEmployeeId()))
     //     .count();
     // assertEquals(1, encryptionCount,
     //     "Should have exactly one encryption event");
 
     // For now, verify exactly-once concepts
-    assertNotNull(duplicateProcessingEmployee.getEmployeeId(), "Should have employee for exactly-once testing");
+    assertNotNull(
+        duplicateProcessingEmployee.getEmployeeId(),
+        "Should have employee for exactly-once testing");
   }
 
   @Test
   @DisplayName("Should handle PII compliance violations appropriately")
   @Timeout(value = 60, unit = TimeUnit.SECONDS)
   void shouldHandlePIIComplianceViolationsAppropriately() throws Exception {
-    List<PayrollEmployee> complianceTestEmployees = Arrays.asList(
-        createEmployeeWithComplianceRisk(6006, "HIGH_RISK"),
-        createEmployeeWithComplianceRisk(6007, "MEDIUM_RISK"),
-        createValidEmployee(6008, "COMPLIANT")
-    );
+    List<PayrollEmployee> complianceTestEmployees =
+        Arrays.asList(
+            createEmployeeWithComplianceRisk(6006, "HIGH_RISK"),
+            createEmployeeWithComplianceRisk(6007, "MEDIUM_RISK"),
+            createValidEmployee(6008, "COMPLIANT"));
 
     // TODO: This assertion will fail until compliance violation handling is implemented
     // pipeline.start();
@@ -450,7 +460,8 @@ class MixedLoadComplianceTest {
 
     // Verify processing performance
     // long totalProcessingTime = e2eEndTime - e2eStartTime;
-    // double recordsPerSecond = (double) comprehensiveDataset.size() / (totalProcessingTime / 1000.0);
+    // double recordsPerSecond = (double) comprehensiveDataset.size() / (totalProcessingTime /
+    // 1000.0);
     // assertTrue(recordsPerSecond > 2.0,
     //     "Should achieve reasonable end-to-end throughput");
 
@@ -466,9 +477,7 @@ class MixedLoadComplianceTest {
     assertTrue(comprehensiveDataset.size() >= 50, "Should have comprehensive test dataset");
   }
 
-  /**
-   * Helper method to generate mixed load dataset
-   */
+  /** Helper method to generate mixed load dataset */
   private List<PayrollEmployee> generateMixedLoadDataset(int size) {
     List<PayrollEmployee> dataset = new java.util.ArrayList<>();
     for (int i = 0; i < size; i++) {
@@ -478,19 +487,25 @@ class MixedLoadComplianceTest {
       } else {
         // Create various types of invalid records
         switch (i % 4) {
-          case 0: dataset.add(createInvalidSSNEmployee(10000 + i, "MIXED_INVALID_SSN_" + i)); break;
-          case 1: dataset.add(createInvalidAgeEmployee(10000 + i, "MIXED_INVALID_AGE_" + i)); break;
-          case 2: dataset.add(createInvalidWageEmployee(10000 + i, "MIXED_INVALID_WAGE_" + i)); break;
-          case 3: dataset.add(createInvalidEmailEmployee(10000 + i, "MIXED_INVALID_EMAIL_" + i)); break;
+          case 0:
+            dataset.add(createInvalidSSNEmployee(10000 + i, "MIXED_INVALID_SSN_" + i));
+            break;
+          case 1:
+            dataset.add(createInvalidAgeEmployee(10000 + i, "MIXED_INVALID_AGE_" + i));
+            break;
+          case 2:
+            dataset.add(createInvalidWageEmployee(10000 + i, "MIXED_INVALID_WAGE_" + i));
+            break;
+          case 3:
+            dataset.add(createInvalidEmailEmployee(10000 + i, "MIXED_INVALID_EMAIL_" + i));
+            break;
         }
       }
     }
     return dataset;
   }
 
-  /**
-   * Helper method to generate valid employees with PII
-   */
+  /** Helper method to generate valid employees with PII */
   private List<PayrollEmployee> generateValidEmployeesWithPII(int count) {
     List<PayrollEmployee> employees = new java.util.ArrayList<>();
     for (int i = 0; i < count; i++) {
@@ -499,9 +514,7 @@ class MixedLoadComplianceTest {
     return employees;
   }
 
-  /**
-   * Helper method to create comprehensive test dataset
-   */
+  /** Helper method to create comprehensive test dataset */
   private List<PayrollEmployee> createComprehensiveTestDataset() {
     List<PayrollEmployee> dataset = new java.util.ArrayList<>();
 
@@ -515,24 +528,24 @@ class MixedLoadComplianceTest {
     }
 
     // Add edge cases
-    dataset.add(createEmployeeWithWage(12200, 7.25));   // Minimum wage
+    dataset.add(createEmployeeWithWage(12200, 7.25)); // Minimum wage
     dataset.add(createEmployeeWithWage(12201, 150.00)); // Maximum wage
-    dataset.add(createEmployeeWithAge(12202, 16));      // Minimum age
-    dataset.add(createEmployeeWithAge(12203, 75));      // Maximum age
+    dataset.add(createEmployeeWithAge(12202, 16)); // Minimum age
+    dataset.add(createEmployeeWithAge(12203, 75)); // Maximum age
 
     return dataset;
   }
 
-  /**
-   * Helper methods to create specific employee types
-   */
+  /** Helper methods to create specific employee types */
   private PayrollEmployee createValidEmployee(int employeeId, String prefix) {
     return PayrollEmployee.builder()
         .employeeId(employeeId)
         .firstName(prefix + "_First")
         .lastName(prefix + "_Last")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email(prefix.toLowerCase() + "@company.com")
@@ -558,7 +571,9 @@ class MixedLoadComplianceTest {
         .firstName(prefix + "_First")
         .lastName(prefix + "_Last")
         .age(15) // Below minimum employment age
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email(prefix.toLowerCase() + "@company.com")
@@ -571,7 +586,9 @@ class MixedLoadComplianceTest {
         .firstName(prefix + "_First")
         .lastName(prefix + "_Last")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(5.00) // Below minimum wage
         .gender("male")
         .email(prefix.toLowerCase() + "@company.com")
@@ -584,7 +601,9 @@ class MixedLoadComplianceTest {
         .firstName(prefix + "_First")
         .lastName(prefix + "_Last")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("invalid-email-format")
@@ -597,7 +616,9 @@ class MixedLoadComplianceTest {
         .firstName("Test")
         .lastName("Employee")
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(wageDollars)
         .gender("male")
         .email("test" + employeeId + "@company.com")
@@ -610,7 +631,9 @@ class MixedLoadComplianceTest {
         .firstName("Test")
         .lastName("Employee")
         .age(age)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("test" + employeeId + "@company.com")
@@ -624,16 +647,16 @@ class MixedLoadComplianceTest {
         .firstName("Compliance")
         .lastName("Risk" + riskLevel)
         .age(30)
-        .ssn(String.format("%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
+        .ssn(
+            String.format(
+                "%03d-%02d-%04d", employeeId % 999, (employeeId / 100) % 99, employeeId % 9999))
         .hourlyRateFromDollars(25.00)
         .gender("male")
         .email("compliance.risk" + employeeId + "@company.com")
         .build();
   }
 
-  /**
-   * Helper method to create test configuration
-   */
+  /** Helper method to create test configuration */
   // private PayrollPipelineConfiguration createTestConfiguration() {
   //   // TODO: Implement when configuration class is available
   //   return new PayrollPipelineConfiguration()

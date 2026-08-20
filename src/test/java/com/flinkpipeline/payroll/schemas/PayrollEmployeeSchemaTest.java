@@ -2,28 +2,25 @@ package com.flinkpipeline.payroll.schemas;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import org.apache.avro.Schema;
 import org.apache.avro.generic.GenericData;
+import org.apache.avro.generic.GenericDatumWriter;
 import org.apache.avro.generic.GenericRecord;
-import org.apache.avro.io.DatumReader;
-import org.apache.avro.io.DatumWriter;
-import org.apache.avro.io.DecoderFactory;
+import org.apache.avro.io.BinaryEncoder;
 import org.apache.avro.io.EncoderFactory;
-import org.apache.avro.io.JsonDecoder;
-import org.apache.avro.io.JsonEncoder;
-import org.apache.avro.specific.SpecificDatumReader;
-import org.apache.avro.specific.SpecificDatumWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 /**
- * Test class for validating payroll employee Avro schema.
- * Tests schema structure, field validation, and serialization/deserialization.
+ * Test class for validating payroll employee Avro schema. Tests schema structure, field validation,
+ * and serialization/deserialization.
  *
- * IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollEmployee model is implemented.
+ * <p>IMPORTANT: This test MUST FAIL initially (TDD principle) until PayrollEmployee model is
+ * implemented.
  */
 @DisplayName("Payroll Employee Schema Validation Tests")
 class PayrollEmployeeSchemaTest {
@@ -35,8 +32,8 @@ class PayrollEmployeeSchemaTest {
   @BeforeEach
   void setUp() throws IOException {
     // Load the payroll employee schema from avro directory
-    try (InputStream schemaStream = getClass().getClassLoader()
-        .getResourceAsStream("avro/input.avro")) {
+    try (InputStream schemaStream =
+        getClass().getClassLoader().getResourceAsStream("avro/input.avro")) {
       assertNotNull(schemaStream, "Payroll employee schema file not found");
 
       String schemaJson = new String(schemaStream.readAllBytes());
@@ -91,34 +88,30 @@ class PayrollEmployeeSchemaTest {
   @DisplayName("Should validate field types and constraints")
   void shouldValidateFieldTypesAndConstraints() {
     // Employee ID should be int
-    assertEquals(Schema.Type.INT,
-        payrollEmployeeSchema.getField("employee_id").schema().getType());
+    assertEquals(Schema.Type.INT, payrollEmployeeSchema.getField("employee_id").schema().getType());
 
     // Names should be strings
-    assertEquals(Schema.Type.STRING,
-        payrollEmployeeSchema.getField("first_name").schema().getType());
-    assertEquals(Schema.Type.STRING,
-        payrollEmployeeSchema.getField("last_name").schema().getType());
+    assertEquals(
+        Schema.Type.STRING, payrollEmployeeSchema.getField("first_name").schema().getType());
+    assertEquals(
+        Schema.Type.STRING, payrollEmployeeSchema.getField("last_name").schema().getType());
 
     // Age should be int
-    assertEquals(Schema.Type.INT,
-        payrollEmployeeSchema.getField("age").schema().getType());
+    assertEquals(Schema.Type.INT, payrollEmployeeSchema.getField("age").schema().getType());
 
     // SSN should be string
-    assertEquals(Schema.Type.STRING,
-        payrollEmployeeSchema.getField("ssn").schema().getType());
+    assertEquals(Schema.Type.STRING, payrollEmployeeSchema.getField("ssn").schema().getType());
 
     // Hourly rate should be int (cents)
-    assertEquals(Schema.Type.INT,
-        payrollEmployeeSchema.getField("hourly_rate").schema().getType());
+    assertEquals(Schema.Type.INT, payrollEmployeeSchema.getField("hourly_rate").schema().getType());
 
     // Gender should be enum or string
     Schema genderSchema = payrollEmployeeSchema.getField("gender").schema();
-    assertTrue(genderSchema.getType() == Schema.Type.ENUM || genderSchema.getType() == Schema.Type.STRING);
+    assertTrue(
+        genderSchema.getType() == Schema.Type.ENUM || genderSchema.getType() == Schema.Type.STRING);
 
     // Email should be string
-    assertEquals(Schema.Type.STRING,
-        payrollEmployeeSchema.getField("email").schema().getType());
+    assertEquals(Schema.Type.STRING, payrollEmployeeSchema.getField("email").schema().getType());
   }
 
   @Test
@@ -142,14 +135,21 @@ class PayrollEmployeeSchemaTest {
   @Test
   @DisplayName("Should validate required fields are not null")
   void shouldValidateRequiredFieldsNotNull() {
-    // Test that required fields cannot be null
+    // employee_id is a non-nullable Avro int. GenericData.Record.put() performs no
+    // eager type checking, so the null only surfaces once Avro actually tries to
+    // write the record - that's where "required field cannot be null" is enforced.
     GenericRecord recordWithNulls = new GenericData.Record(payrollEmployeeSchema);
+    recordWithNulls.put("employee_id", null);
 
-    // This should fail validation when PayrollEmployee model is implemented
-    assertThrows(Exception.class, () -> {
-      recordWithNulls.put("employee_id", null);
-      // TODO: Add validation logic when PayrollEmployee is implemented
-    });
+    assertThrows(
+        Exception.class,
+        () -> {
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+          BinaryEncoder encoder = EncoderFactory.get().binaryEncoder(out, null);
+          new GenericDatumWriter<GenericRecord>(payrollEmployeeSchema)
+              .write(recordWithNulls, encoder);
+          encoder.flush();
+        });
   }
 
   @Test

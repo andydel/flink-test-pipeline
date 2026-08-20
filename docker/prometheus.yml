@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # The base flink:1.18.1 image does not ship the Prometheus metrics reporter by
+  # default (it lives under /opt/flink/opt and must be copied into /opt/flink/lib
+  # and configured via metrics.reporters in flink-conf.yaml before Flink exposes a
+  # scrape endpoint). Once that's wired up, add a target here, e.g.:
+  #
+  # - job_name: "flink"
+  #   static_configs:
+  #     - targets: ["flink-jobmanager:9249", "flink-taskmanager:9249"]

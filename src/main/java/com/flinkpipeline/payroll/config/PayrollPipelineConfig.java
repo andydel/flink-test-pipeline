@@ -50,6 +50,7 @@ public class PayrollPipelineConfig {
   private final MetricsConfig metricsConfig;
   private final HealthCheckConfig healthCheckConfig;
   private final StateConfig stateConfig;
+  private final String validPayrollTopic;
 
   // Constructor
   public PayrollPipelineConfig(
@@ -65,7 +66,8 @@ public class PayrollPipelineConfig {
       CheckpointConfig checkpointConfig,
       MetricsConfig metricsConfig,
       HealthCheckConfig healthCheckConfig,
-      StateConfig stateConfig) {
+      StateConfig stateConfig,
+      String validPayrollTopic) {
     this.environment = environment;
     this.applicationName = applicationName;
     this.version = version;
@@ -79,6 +81,7 @@ public class PayrollPipelineConfig {
     this.metricsConfig = metricsConfig;
     this.healthCheckConfig = healthCheckConfig;
     this.stateConfig = stateConfig;
+    this.validPayrollTopic = validPayrollTopic;
 
     LOG.info(
         "Initialized PayrollPipelineConfig for environment: {}, version: {}", environment, version);
@@ -228,7 +231,8 @@ public class PayrollPipelineConfig {
         buildCheckpointConfig(properties),
         buildMetricsConfig(properties),
         buildHealthCheckConfig(properties),
-        buildStateConfig(properties));
+        buildStateConfig(properties),
+        properties.getProperty("kafka.topic.payroll.valid", "payroll-valid-employees"));
   }
 
   private static ExecutionConfig buildExecutionConfig(Properties properties) {
@@ -272,6 +276,12 @@ public class PayrollPipelineConfig {
         nullIfBlank(properties.getProperty("payroll.iceberg.rest.credentials.key"));
     String restCredentialsToken =
         nullIfBlank(properties.getProperty("payroll.iceberg.rest.credentials.token"));
+    String s3Endpoint = nullIfBlank(properties.getProperty("aws.s3.endpoint"));
+    boolean pathStyleAccess =
+        Boolean.parseBoolean(properties.getProperty("aws.s3.path-style-access", "true"));
+    String s3AccessKey = nullIfBlank(properties.getProperty("aws.access.key.id"));
+    String s3SecretKey = nullIfBlank(properties.getProperty("aws.secret.access.key"));
+    String s3Region = nullIfBlank(properties.getProperty("aws.region"));
 
     return new IcebergConfig(
         properties.getProperty("payroll.iceberg.warehouse.path", "/tmp/iceberg/warehouse"),
@@ -283,7 +293,12 @@ public class PayrollPipelineConfig {
                 properties.getProperty("payroll.iceberg.compaction.interval.minutes", "30"))),
         restUri,
         restCredentialsKey,
-        restCredentialsToken);
+        restCredentialsToken,
+        s3Endpoint,
+        pathStyleAccess,
+        s3AccessKey,
+        s3SecretKey,
+        s3Region);
   }
 
   private static HrWorkflowConfig buildHrWorkflowConfig(Properties properties) {
@@ -330,7 +345,7 @@ public class PayrollPipelineConfig {
   private static HealthCheckConfig buildHealthCheckConfig(Properties properties) {
     return new HealthCheckConfig(
         Boolean.parseBoolean(properties.getProperty("payroll.health.enabled", "true")),
-        Integer.parseInt(properties.getProperty("payroll.health.port", "8080")),
+        Integer.parseInt(properties.getProperty("payroll.health.port", "8090")),
         properties.getProperty("payroll.health.endpoint", "/health"),
         Duration.ofSeconds(
             Long.parseLong(properties.getProperty("payroll.health.check.interval.seconds", "30"))));
@@ -459,6 +474,10 @@ public class PayrollPipelineConfig {
 
   public StateConfig getStateConfig() {
     return stateConfig;
+  }
+
+  public String getValidPayrollTopic() {
+    return validPayrollTopic;
   }
 
   @Override
