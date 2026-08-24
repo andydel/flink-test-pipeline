@@ -1,5 +1,5 @@
 # Payroll Data Generator for Testing
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk-jammy
 
 # Install required tools
 RUN apt-get update && apt-get install -y \

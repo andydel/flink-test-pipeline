@@ -68,7 +68,7 @@ def randomize_record(base_record, counter):
     last = base_record.get("last_name", "Employee")
     record["first_name"] = first
     record["last_name"] = last
-    record["age"] = max(18, min(70, base_record.get("age", 30) + random.randint(-2, 2)))
+    record["age"] = max(16, min(75, base_record.get("age", 30) + random.randint(-25, 25)))
     record["gender"] = base_record.get("gender", "unspecified")
     record["ssn"] = f"{random.randint(100, 999)}-{random.randint(10, 99)}-{random.randint(1000, 9999)}"
     record["email"] = (
