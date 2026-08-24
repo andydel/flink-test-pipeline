@@ -152,9 +152,8 @@ services:
       DYNAMIC_CONFIG_ENABLED: 'true'
 
 
-  # Optional Spark/Jupyter environment for exploring the Iceberg warehouse.
-  # Not required by the Flink pipeline itself - start with:
-  #   docker-compose --profile notebooks up -d spark-iceberg
+  # Spark/Jupyter environment for exploring the Iceberg warehouse.
+  # Not required by the Flink pipeline itself, but starts with the rest of the stack.
   spark-iceberg:
     image: tabulario/spark-iceberg
     container_name: spark-iceberg
@@ -175,8 +174,6 @@ services:
     links:
       - rest:rest
       - minio:minio
-    profiles:
-      - notebooks
   rest:
     image: tabulario/iceberg-rest:0.1.0
     restart: unless-stopped
@@ -223,8 +220,7 @@ services:
     entrypoint: >
       /bin/sh -c "
       until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done;
-      /usr/bin/mc rm -r --force minio/warehouse;
-      /usr/bin/mc mb minio/warehouse;
+      /usr/bin/mc mb --ignore-existing minio/warehouse;
       /usr/bin/mc anonymous set public minio/warehouse;
       tail -f /dev/null
       "

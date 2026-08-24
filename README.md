@@ -129,7 +129,7 @@ The `docker-compose.yml` includes:
 - **Prometheus**: Metrics collection (port 9090, optional `monitoring` profile)
 - **Grafana**: Monitoring dashboards (port 3000, optional `monitoring` profile)
 - **Data Generator**: Test data generation (optional `testing` profile)
-- **Spark/Jupyter**: optional Iceberg-warehouse exploration environment, not required by the pipeline (ports 8888, 8079; optional `notebooks` profile - start with `docker-compose --profile notebooks up -d spark-iceberg`)
+- **Spark/Jupyter**: Iceberg-warehouse exploration environment, not required by the pipeline itself but starts with the rest of the stack (ports 8888, 8079)
 
 ## Configuration
 
