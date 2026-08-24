@@ -64,7 +64,7 @@ public class TestDataGenerator {
               .employeeId(10000 + i)
               .firstName(getRandomFirstName())
               .lastName(getRandomLastName())
-              .age(random.nextInt(50) + 18) // Age 18-67
+              .age(random.nextInt(60) + 16) // Age 16-75
               .ssn(generateValidSSN())
               .hourlyRate(random.nextInt(5000) + 1500) // $15-65/hour in cents
               .gender(random.nextBoolean() ? "M" : "F")
@@ -142,7 +142,7 @@ public class TestDataGenerator {
               .employeeId(30000 + i)
               .firstName("TestFirstName" + i)
               .lastName("TestLastName" + i)
-              .age(random.nextInt(50) + 18)
+              .age(random.nextInt(60) + 16)
               .ssn(
                   "123-45-67"
                       + String.format("%02d", i % 100)) // Consistent SSN pattern for testing
@@ -173,7 +173,7 @@ public class TestDataGenerator {
               .employeeId(40000 + i)
               .firstName(getRandomFirstName() + (isComplex ? "-ComplexName" : ""))
               .lastName(getRandomLastName() + (isComplex ? "-ComplexLastName" : ""))
-              .age(random.nextInt(50) + 18)
+              .age(random.nextInt(60) + 16)
               .ssn(generateValidSSN())
               .hourlyRate(random.nextInt(5000) + 1500)
               .gender(random.nextBoolean() ? "M" : "F")
